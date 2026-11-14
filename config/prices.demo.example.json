@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "provider_mode": "demo",
+  "unit": "CREDIT",
+  "scale": 6,
+  "rates": [
+    {"model_id":"studio-chat","kind":"chat","operation":"chat","input_per_million_micros":"1000000","output_per_million_micros":"4000000"},
+    {"model_id":"studio-image","kind":"image","operation":"generate","preset_id":"square","artifact_micros":"200000"},
+    {"model_id":"studio-image","kind":"image","operation":"generate","preset_id":"landscape","artifact_micros":"250000"},
+    {"model_id":"studio-image","kind":"image","operation":"edit","preset_id":"square","artifact_micros":"300000"},
+    {"model_id":"studio-image","kind":"image","operation":"edit","preset_id":"landscape","artifact_micros":"350000"},
+    {"model_id":"studio-video","kind":"video","operation":"generate","preset_id":"landscape-five","artifact_micros":"2000000"},
+    {"model_id":"studio-video","kind":"video","operation":"generate","preset_id":"portrait-ten","artifact_micros":"5000000"}
+  ]
+}

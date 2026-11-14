@@ -1,0 +1,70 @@
+{
+  "measured_at": "2026-11-13T13:55:11.727Z",
+  "build": {
+    "version": "0.9.0",
+    "binary_sha256": "b7a95a1149528950aad362b4b8fd7088d5f6c9c5cffa791f3bf4ed832d277abb",
+    "go": "go version go1.26.11 windows/amd64"
+  },
+  "scope": "Isolated loopback HTTP/1.1, memory storage, authentication disabled, demo providers; server and load client share this machine.",
+  "limitations": [
+    "Not a gateway, database, TLS, cluster, 10000-stream or production SLO test.",
+    "Latency includes Node fetch and same-machine client scheduling; no CPU/RSS/FD profiling included.",
+    "Task case measures create plus cancel; demo stream duration is deliberately paced."
+  ],
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26100",
+    "arch": "x64",
+    "logical_cpus": 6,
+    "cpu": "AMD Ryzen 5 3500X 6-Core Processor             ",
+    "memory_bytes": 17107918848,
+    "node": "v22.18.0"
+  },
+  "results": [
+    {
+      "name": "bootstrap-http",
+      "concurrency": 32,
+      "elapsed_ms": 467.56,
+      "operations_per_second": 2138.75,
+      "samples": 1000,
+      "min_ms": 3.91,
+      "p50_ms": 13.77,
+      "p95_ms": 22.04,
+      "p99_ms": 28.73,
+      "max_ms": 40.88
+    },
+    {
+      "name": "task-create-and-cancel",
+      "concurrency": 8,
+      "elapsed_ms": 113.44,
+      "operations_per_second": 881.54,
+      "samples": 100,
+      "min_ms": 3.97,
+      "p50_ms": 8.14,
+      "p95_ms": 12.36,
+      "p99_ms": 13.71,
+      "max_ms": 14.64
+    },
+    {
+      "name": "llm-full-demo-stream",
+      "concurrency": 4,
+      "elapsed_ms": 5120.46,
+      "operations_per_second": 2.34,
+      "samples": 12,
+      "min_ms": 1705.49,
+      "p50_ms": 1706.29,
+      "p95_ms": 1707.97,
+      "p99_ms": 1707.97,
+      "max_ms": 1707.97
+    },
+    {
+      "name": "llm-first-delta-including-submit",
+      "samples": 12,
+      "min_ms": 55.07,
+      "p50_ms": 56.11,
+      "p95_ms": 56.79,
+      "p99_ms": 56.79,
+      "max_ms": 56.79
+    }
+  ]
+}

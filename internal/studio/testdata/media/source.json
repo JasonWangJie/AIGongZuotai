@@ -1,0 +1,10 @@
+{
+  "documentation_url": "https://api.aiimg.lol/async-image-api-docs",
+  "public_document_asset": "https://api.aiimg.lol/static/js/async/6168.9dd1da9042.js",
+  "document_updated": "2026-11-12",
+  "observed_on": "2026-11-13",
+  "asset_bytes": 31988,
+  "asset_sha256": "a47236adf179146d533a92716fea3eb69a4519024ac4055523e4b2a7560828ba",
+  "fixtures_are_synthetic": true,
+  "live_generation_requests_sent": 0
+}

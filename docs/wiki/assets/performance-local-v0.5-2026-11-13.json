@@ -1,0 +1,70 @@
+{
+  "measured_at": "2026-11-13T08:38:45.858Z",
+  "build": {
+    "version": "0.5.0",
+    "binary_sha256": "129739b6e535e387c925133a401637ecb06d17a17c5bb4a8ed6f6116a25c1ef7",
+    "go": "go version go1.26.11 windows/amd64"
+  },
+  "scope": "Isolated loopback HTTP/1.1, memory storage, authentication disabled, demo providers; server and load client share this machine.",
+  "limitations": [
+    "Not a gateway, database, TLS, cluster, 10000-stream or production SLO test.",
+    "Latency includes Node fetch and same-machine client scheduling; no CPU/RSS/FD profiling included.",
+    "Task case measures create plus cancel; demo stream duration is deliberately paced."
+  ],
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26100",
+    "arch": "x64",
+    "logical_cpus": 6,
+    "cpu": "AMD Ryzen 5 3500X 6-Core Processor             ",
+    "memory_bytes": 17107918848,
+    "node": "v22.18.0"
+  },
+  "results": [
+    {
+      "name": "bootstrap-http",
+      "concurrency": 32,
+      "elapsed_ms": 431.78,
+      "operations_per_second": 2316,
+      "samples": 1000,
+      "min_ms": 3.87,
+      "p50_ms": 12.66,
+      "p95_ms": 20.8,
+      "p99_ms": 27.22,
+      "max_ms": 34.34
+    },
+    {
+      "name": "task-create-and-cancel",
+      "concurrency": 8,
+      "elapsed_ms": 114.54,
+      "operations_per_second": 873.09,
+      "samples": 100,
+      "min_ms": 3.52,
+      "p50_ms": 8.37,
+      "p95_ms": 12.09,
+      "p99_ms": 13.54,
+      "max_ms": 13.61
+    },
+    {
+      "name": "llm-full-demo-stream",
+      "concurrency": 4,
+      "elapsed_ms": 5120.73,
+      "operations_per_second": 2.34,
+      "samples": 12,
+      "min_ms": 1705.72,
+      "p50_ms": 1706.48,
+      "p95_ms": 1707.79,
+      "p99_ms": 1707.79,
+      "max_ms": 1707.79
+    },
+    {
+      "name": "llm-first-delta-including-submit",
+      "samples": 12,
+      "min_ms": 55.43,
+      "p50_ms": 55.69,
+      "p95_ms": 56.22,
+      "p99_ms": 56.22,
+      "max_ms": 56.22
+    }
+  ]
+}

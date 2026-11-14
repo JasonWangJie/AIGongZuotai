@@ -1,0 +1,25 @@
+{
+  "version": "0.5.0",
+  "verified_at": "2026-11-13T08:47:45.614503+00:00",
+  "scope": "Local demo providers only; main preview uses PostgreSQL and custom QA uses memory. No paid generation.",
+  "checks": [
+    "1280x720 desktop model and exact preset controls",
+    "390x844 responsive inspector, document scrollWidth=390",
+    "image 16:9 / 1536x864 / 1K / count=3 accepted",
+    "video 9:16 / 1080p / 10 seconds accepted; demo poster only",
+    "216 UTF-8 bytes over a 128 byte model limit retained and blocked",
+    "explicit model change adjusts preset/count with notice",
+    "directory retirement after restart preserves text and prompts review",
+    "PostgreSQL upgrade retained project, old task and cloud draft v5",
+    "new UI task persisted model name/version/capabilities and 1024x1024 parameters",
+    "final main preview console has no warnings or errors"
+  ],
+  "screenshots": [
+    "models-phase5.jpg",
+    "mobile-models-phase5.jpg",
+    "video-presets-phase5.jpg",
+    "catalog-update-phase5.jpg",
+    "workbench-phase5.jpg"
+  ],
+  "status": "passed"
+}

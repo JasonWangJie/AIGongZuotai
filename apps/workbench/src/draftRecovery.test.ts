@@ -1,0 +1,12 @@
+import { describe, expect, it } from 'vitest';
+import { DraftRecoveryStore } from './draftRecovery';
+import { draftReducer, initialDraftState } from './draftState';
+
+const key = 'user-a:project-a';
+function edited() { return draftReducer(draftReducer(initialDraftState('project-a'), { type: 'loaded', draft: { project_id: 'project-a', revision: 2, updated_at: null, nodes: [] } }), { type: 'edit', nodes: [{ id: 'n1', title: '未保存', note: '保留内容' }] }); }
+describe('in-page draft recovery across session expiry', () => {
+  it('restores only the same user and project after a component unmount', () => { const store = new DraftRecoveryStore(), state = edited(); store.remember(key, state); expect(store.restore(key, 'project-a').nodes).toEqual(state.nodes); expect(store.restore('user-b:project-a', 'project-a').nodes).toEqual([]); expect(store.restore(key, 'project-b').nodes).toEqual([]); expect(store.hasUnsaved()).toBe(true); });
+  it('restores a pending save with its exact key and body as uncertain instead of automatically sending', () => { const store = new DraftRecoveryStore(), state = edited(), operation = { key: 'same-key', body: { expected_revision: 2, nodes: state.nodes } }; store.remember(key, draftReducer(state, { type: 'saving', operation })); const restored = store.restore(key, 'project-a'); expect(restored.phase).toBe('uncertain'); expect(restored.pending).toBe(operation); expect(restored.nodes).toEqual(state.nodes); });
+  it('clears acknowledged content and does not resurrect explicitly discarded edits from a late response', () => { const store = new DraftRecoveryStore(), state = edited(); store.remember(key, state); store.remember(key, initialDraftState('project-a')); expect(store.hasUnsaved()).toBe(false); store.remember(key, state); store.discard(key); store.remember(key, state); expect(store.hasUnsaved()).toBe(false); expect(store.restore(key, 'project-a').nodes).toEqual([]); store.remember(key, state); expect(store.hasUnsaved()).toBe(true); });
+  it('protects new edits after an explicitly discarded navigation fails without reviving old callbacks', () => { const store = new DraftRecoveryStore(), state = edited(); store.remember(key, state); store.discard(key); store.remember(key, state); expect(store.has(key)).toBe(false); const fresh = draftReducer(state, { type: 'edit', nodes: [{ id: 'n2', title: '离开失败后新增', note: '必须恢复' }] }); store.remember(key, fresh, true); expect(store.restore(key, 'project-a').nodes).toEqual(fresh.nodes); });
+});

@@ -1,0 +1,70 @@
+{
+  "measured_at": "2026-11-13T14:53:23.228Z",
+  "build": {
+    "version": "0.10.0",
+    "binary_sha256": "1945fb5f3875691826a7368454316ef71eb6247b4ca998a8dbece510001e5ae4",
+    "go": "go version go1.26.11 windows/amd64"
+  },
+  "scope": "Isolated loopback HTTP/1.1, memory storage, authentication disabled, demo providers; server and load client share this machine.",
+  "limitations": [
+    "Not a gateway, database, TLS, cluster, 10000-stream or production SLO test.",
+    "Latency includes Node fetch and same-machine client scheduling; no CPU/RSS/FD profiling included.",
+    "Task case measures create plus cancel; demo stream duration is deliberately paced."
+  ],
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26100",
+    "arch": "x64",
+    "logical_cpus": 6,
+    "cpu": "AMD Ryzen 5 3500X 6-Core Processor             ",
+    "memory_bytes": 17107918848,
+    "node": "v22.18.0"
+  },
+  "results": [
+    {
+      "name": "bootstrap-http",
+      "concurrency": 32,
+      "elapsed_ms": 442.05,
+      "operations_per_second": 2262.21,
+      "samples": 1000,
+      "min_ms": 4.38,
+      "p50_ms": 12.77,
+      "p95_ms": 22.08,
+      "p99_ms": 29.48,
+      "max_ms": 34.48
+    },
+    {
+      "name": "task-create-and-cancel",
+      "concurrency": 8,
+      "elapsed_ms": 114.48,
+      "operations_per_second": 873.54,
+      "samples": 100,
+      "min_ms": 3.58,
+      "p50_ms": 8.26,
+      "p95_ms": 12.42,
+      "p99_ms": 13.66,
+      "max_ms": 13.86
+    },
+    {
+      "name": "llm-full-demo-stream",
+      "concurrency": 4,
+      "elapsed_ms": 5120.84,
+      "operations_per_second": 2.34,
+      "samples": 12,
+      "min_ms": 1705.38,
+      "p50_ms": 1706.26,
+      "p95_ms": 1708.44,
+      "p99_ms": 1708.44,
+      "max_ms": 1708.44
+    },
+    {
+      "name": "llm-first-delta-including-submit",
+      "samples": 12,
+      "min_ms": 55.17,
+      "p50_ms": 55.98,
+      "p95_ms": 56.93,
+      "p99_ms": 56.93,
+      "max_ms": 56.93
+    }
+  ]
+}

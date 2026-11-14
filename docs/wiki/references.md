@@ -1,0 +1,81 @@
+# V07 · 私有参考素材与图片编辑
+
+后续V08增加[资产目录和回收站](assets.md)：参考图可修改目录名称/标签并软删除/恢复，仍没有永久删除。回收站引用从选择列表隐藏，原件/缩略图与新编辑拒绝；已有任务冻结请求保持原样。下文V07限额及旧验收事实保留，生命周期以V08说明为准。
+
+本批实现上传私有图片、项目内复用、有序参考图编辑和原请求恢复。关联[任务源中的V07](../planning/tasks.json)、[022后端台账](../changes/2026-11-13-022-reference-assets.md)及[023适配器台账](../changes/2026-11-13-023-media-edit-provider.md)。当前仍是本地单写服务；demo编辑返回模拟产物，只有显式live配置才调用编辑接口，尚未用真实收费模型验收效果。
+
+## 目录与边界
+
+`REFERENCE_DIR` 默认 `.runtime/references`，保存原图、缩略图和不可变编辑请求文件。它与 `ASSET_DIR`（默认 `.runtime/assets`）、`APP_WEB_DIR`、Vite的 `apps/workbench/public` 必须分别位于不相等、不互为父子的目录树，启动时检查已有祖先和符号链接。生成结果仍在ASSET_DIR；不能把这两个写入者放在同一目录，否则私有引用存储的计数和备份边界失效。
+
+文件通过os.Root限制路径，用内容摘要命名并在写完后原子发布。公开API只返回随机参考ID，隐藏磁盘路径、blob标识和SHA256。读取先检查真实会话、工作区与项目，再验证文件大小、摘要并使用同一文件句柄返回；支持HEAD和Range，响应private/no-store、nosniff。服务器只监听回环地址，本批没有公网对象存储或公开分享链接。
+
+## 限额与格式验证
+
+| 项目 | 当前限制 |
+| --- | --- |
+| 原始格式 | PNG、JPEG、WebP；按真实内容识别并完整解码，不信任扩展名或浏览器MIME |
+| 单张原图 | 8 MiB；最多16,000,000像素；宽高各不超过8192 |
+| 预览 | 原图验证后生成最长边不超过512像素的PNG缩略图；前端列表不预解码大原图 |
+| 上传处理 | 进程内最多4个；单个HTTP上传读期限2分钟，入口无法设置期限时明确拒绝 |
+| 编辑准备 | 最多2个并行准备；每次最多4张，模型目录可以收窄 |
+| 工作区引用 | 100条、128 MiB；字节按每条原图加缩略图的逻辑占用计算 |
+| 整个参考目录 | 2 GiB、4096文件，含原图、缩略图、请求正文和遗留孤立文件 |
+| 编辑正文 | 单份multipart文件最多33 MiB；数据库只保存身份/摘要/长度等元数据 |
+
+以上是本平台政策，不是供应商通用限制。相同文件内容会物理去重，但用新幂等键建立的新引用仍占一条工作区名额和逻辑字节。启动扫描包含异常退出遗留文件，写入前预留空间，避免绕过工作区配额堆积无限孤立文件。目录不能同时由其他进程写入；目前没有跨进程存储锁、删除、过期或自动GC，V08再实现可验证的生命周期管理。
+
+## 上传、列表与读取API
+
+所有接口继承账户模式的cookie鉴权及项目选择。项目由 `X-Project-ID` 或 `project_id` 查询参数选定；客户端不能在multipart里声明其他身份。bootstrap增加 `reference_limits`，字段包含上述格式、原图、维度、引用数量和工作区上限。
+
+| 接口 | 请求及响应 |
+| --- | --- |
+| `POST /api/v1/references` | 必需Idempotency-Key；multipart只能有一个名为file的文件部分；201 ReferenceAsset |
+| `GET /api/v1/references` | 当前项目列表；limit默认100、1—100，offset默认0；返回items/limit/offset/has_more |
+| `GET /api/v1/references/{id}/thumbnail` | 同项目私有PNG缩略图；HEAD/Range可用 |
+| `GET /api/v1/references/{id}/content` | 同项目原图；按需查看或下载，不用于列表预览 |
+
+ReferenceAsset包含id、project_id、name、content_type、byte_size、width、height、created_at、url、thumbnail_url。两个URL已经带所属project_id，img元素无需自定义请求头；其他项目或工作区即使知道ID仍返回404。
+
+上传幂等按工作区限定的键和项目、规范化文件名、真实内容SHA256、长度计算，**不把浏览器随机multipart boundary计入hash**。重放返回原201资源和 `Idempotency-Replayed: true`；同键异文件、异名或异项目409。已知键重放优先于当前工作区容量；新键先粗检容量，写盘后在受理锁内再次精确核对。上传元数据、幂等与 `reference.uploaded` 活动在同一PG事务提交，审计仅保存有限动作和kind，不保存文件名、路径、摘要或图像内容。
+
+100%上传进度只说明浏览器发送完成，不代表服务端格式验证或事务成功。网络中断应保留原File和键，由用户明确重试核对；不能把abort解释成服务端撤销上传。
+
+## 编辑能力与不可变提交
+
+模型capabilities新增 `image_edit_supported` 和 `max_reference_images`。只允许image模型开启；开启时最大引用数1—4，关闭时必须0。demo默认studio-image开启4张；无目录的live默认不推测编辑能力，需运营者在MODEL_CATALOG_FILE明确启用并核对实际模型。目录变化仍须重启，版本规则不变。
+
+任务请求使用 `operation: "edit"`，在 `inputs.reference_asset_ids` 中发送有序参考ID；至少1张、不能重复，必须属于目标项目。普通生成省略operation或填generate，不得附带引用。其他原有字段和完整规格组合照常发送，前端必须冻结原body/key和引用顺序。
+
+受理顺序为：会话/项目归属 → 原键重放或冲突 → 当前模型/版本/操作/参考ACL与规格 → 准入 → **释放业务锁，校验原图并准备磁盘请求** → 重新检查幂等/归属/准入 → 事务提交任务、引用关联、幂等和审计。全局业务锁和PG串行连接不跨越解码、hash或multipart文件准备；同时同键准备最终只产生一个任务。额外未采用的请求文件保留并计入硬限，不冒险删除另一操作的文件。
+
+Task返回operation、reference_asset_ids及原有model_name/version/capabilities和parameters快照。006迁移增加引用元数据、上传幂等和有序关联表；复合外键同时限制task与reference属于相同project/workspace。新增可选请求字段均omitempty，固定V06 JSON字面量hash测试验证旧普通生成键兼容。
+
+live编辑经服务端 `/v1/images/edits_async` 发送包含实际文件的multipart，不把浏览器的cookie URL、localhost地址或外链传给上游。原boundary、正文、私有模型、上游幂等键和凭据身份在排队前固定。具体协议与文件校验见[异步网关](media-gateway.md)。
+
+## 失败、恢复与备份
+
+- 413：原图超限；422：真实格式、像素或编辑能力/引用不合法；400：multipart结构不合法。
+- 429 REFERENCE_UPLOAD_BUSY / REFERENCE_PREPARATION_BUSY：短期处理槽位满，Retry-After为3秒；不能自动换键生成。
+- 429 REFERENCE_WORKSPACE_LIMIT：工作区逻辑容量已满，可复用已有引用；目前没有删除入口，不承诺等待后自动恢复。
+- 507 REFERENCE_STORAGE_FULL：整个私有目录硬限；需处理存储生命周期，不能通过新键规避。
+- 503或连接中断：可能无法确认受理，保存原文件/body/key；错误消息不泄漏本机路径。
+
+重启后QUEUED编辑读取已保存的请求文件，目录停用或默认参数变化不会重建正文。上游handle已知时只继续查询。SUBMITTING无handle恢复为SUBMIT_UNKNOWN，不能自动重提；正文丢失、长度/摘要/boundary不符在联网前转待核实。文件存在不是“上游未受理”的证明。
+
+进程关闭或writer失联会取消外部请求；取消引起的失败返回不写成供应商FAILED。保留已持久状态：已知handle后续可继续查询，无handle的SUBMITTING仍按受理未知恢复。正常运行中的供应商失败/超时继续执行既有错误分类，不用停机分支掩盖。
+
+PostgreSQL元数据与磁盘文件不是跨介质事务：文件先发布，DB失败可能留下孤立文件，计入目录硬限；失败事务不会留下引用元数据、任务绑定、幂等或审计。memory模式元数据仅存内存，重启失去列表和引用关系，磁盘文件仍在并计入容量，不可当成持久资产库。
+
+升级前同时备份数据库、REFERENCE_DIR和ASSET_DIR。006会拒绝不认识编辑快照的旧程序；回退须在独立数据库和配套文件目录恢复匹配版本的备份，禁止删除迁移登记强行降级。只备份数据库无法恢复原图或不可变编辑正文。
+
+## 已验证与未完成
+
+本地验证覆盖真实格式/缩略图/磁盘硬限、随机boundary上传幂等、满额重放、跨项目/账户读取与引用拒绝、事务审计故障回滚、复合外键、005→006升级和旧程序拒绝。真实PG测试覆盖两次重启：停用模型后原multipart字节提交、原handle只续查。独立HTTP协议fixture覆盖上传→编辑→查询→安全导入→私有结果下载。
+
+全量结果及限制见022、023和[025集成台账](../changes/2026-11-13-025-reference-integration.md)。未发真实收费请求，未验收供应商编辑效果、收费和实际素材策略；mask、视频参考/编辑、对象存储、删除/GC、生产备份恢复与多实例并发不在本批完成范围。
+
+## V12报价入口加固
+
+报价、图片编辑和私有读取共用严格参考ID语法（ref_加32位小写十六进制）。不合法或含NUL的ID在数据库编码前拒绝，不能触发数据库熔断；重复引用、权限及回收状态仍按原规则核验。恶意输入与服务继续就绪的实际PG回归见[046](../changes/2026-11-13-046-billing-integration.md)。

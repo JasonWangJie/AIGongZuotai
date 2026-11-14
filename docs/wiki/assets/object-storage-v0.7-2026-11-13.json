@@ -1,0 +1,42 @@
+{
+  "observed_on": "2026-11-13",
+  "batch": "V08",
+  "service": "SeaweedFS 4.53 windows amd64",
+  "service_commit": "4ab66fb76da83700739f5839e62fcaf15fb7d02a",
+  "release_package_sha256": "d458d60e6a4120a64244b0ad7bc02cbc0e2fca71a7f775a88edc01da3b435cd7",
+  "release_digest_verified": true,
+  "all_service_listeners_loopback": true,
+  "credentials": "random isolated fixture; intentionally omitted",
+  "aws_sdk_s3_version": "v1.114.10",
+  "storage_test_functions": 7,
+  "initial_six_test_seconds": 0.499,
+  "final_seven_test_seconds": 1.444,
+  "real_http_lifecycle_test_seconds": 0.47,
+  "real_s3_test": "TestS3RealPrivateImportMigrationAndRanges",
+  "verified": [
+    "local protocol provider query -> safe original import -> actual S3 service",
+    "create-only upload with supplied SHA256 and full remote length/hash readback",
+    "private 512px PNG thumbnail",
+    "anonymous direct object request returns 403",
+    "authenticated application-side proxy bytes, GET, HEAD, single/multiple Range",
+    "changed storage identity refuses access",
+    "missing remote object returns unavailable despite retained local copy",
+    "temporary PUT failure and lost PUT response classification",
+    "corrupt local bytes cannot reach object upload",
+    "offline paginated plan and reentrant verified copy",
+    "actual CLI plan -> apply -> verify_existing; original and thumbnail retained",
+    "actual App HTTP task -> catalog -> content/thumbnail/Range against real S3",
+    "cross-project access denied; trash blocks new and legacy URLs but retains S3 objects; restore reopens",
+    "public metadata excludes storage info; original generation key never resubmits",
+    "provider-disabled new App reads S3 using injected test memory source; no PG persistence claim"
+  ],
+  "scope": {
+    "real_s3_compatible_service": true,
+    "real_paid_ai_gateway": false,
+    "production_aws": false,
+    "production_tls_and_credential_rotation": false,
+    "high_load_or_multi_region": false,
+    "references_and_edit_bodies_migrated": false,
+    "local_or_remote_automatic_deletion": false
+  }
+}

@@ -1,0 +1,5660 @@
+openapi: 3.1.0
+info:
+  title: AI 工作台本地开发 API
+  version: 0.13.0
+  description: '回环单写工作台。默认memory+demo；DATABASE_URL启用PostgreSQL，AUTH_MODE=required启用真实cookie会话和工作区隔离。LLM与已配置异步媒体支持live，逐模型能力以models[].capabilities为准。PG持久化创建、幂等、检查点和handle；重启未完成LLM为INTERRUPTED，提交不明不重发。
+    V03支持PostgreSQL项目云草稿与不可变修订/CAS；V04提供同事务业务活动审计（非计费），不记录prompt/output/凭据。 V05增加工作区资源准入、缓存就绪检查、私有工作区运行状态、独立运维令牌Prometheus指标和服务端request_id；不是分布式配额或供应商健康检测。
+    V06支持版本化有限模型目录和精确规格预设，目录启动加载、更改重启生效；已受理媒体原始提交体冻结，不随模型目录改写。 V07增加私有参考图片上传、512像素预览、有序引用编辑和不可变multipart请求文件；目录及模型声明不替代真实供应商验收。
+    V08提供独立私有资产目录和S3兼容后端；V09支持持久元数据回放和任务租约；V10增加项目私有多轮会话、不可变消息分支与受理时冻结的上下文预算，继续生成是显式新请求。 V11增加邮箱验证、密码找回/变更、会话撤销和账户私有安全事件；邮件默认关闭，配置后通过加密持久队列异步发送。敏感请求响应不明时先核对或重新登录，不沿用生成请求的自动重试语义。
+    V12增加CREDIT六位精度权益报价、同事务冻结/结算、待核实、流水与离线核账；默认关闭，无真实支付接口。 V14-A增加默认关闭的工作区运营权限、异常工单、预演与密码确认处置；没有在线角色授予、真实退款或完整内容审核。
+
+    V14-B1仅文本审核本地链：开启后全文检查前不公开delta，真实审核商和多模态分别待验收。'
+servers:
+- url: http://127.0.0.1:8080
+paths:
+  /healthz:
+    get:
+      operationId: health
+      security: []
+      description: 仅进程存活。数据库熔断或应用停止接单后，只要HTTP处理仍运行就返回200。
+      responses:
+        '200':
+          description: 进程仍能响应HTTP
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - status
+                properties:
+                  status:
+                    type: string
+                    const: alive
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/bootstrap:
+    get:
+      operationId: bootstrap
+      responses:
+        '200':
+          description: 当前身份工作区、项目与版本化模型目录
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - workspace
+                - project
+                - models
+                - mode
+                - storage
+                - catalog_version
+                - reference_limits
+                - account_security
+                - billing
+                properties:
+                  workspace:
+                    $ref: '#/components/schemas/Workspace'
+                  project:
+                    $ref: '#/components/schemas/Project'
+                  models:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Model'
+                  mode:
+                    type: string
+                    enum:
+                    - demo
+                    - live
+                  storage:
+                    type: string
+                    enum:
+                    - memory
+                    - postgres
+                  auth_enabled:
+                    type: boolean
+                  user:
+                    anyOf:
+                    - $ref: '#/components/schemas/User'
+                    - type: 'null'
+                  projects:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+                  capabilities:
+                    type: object
+                    description: 兼容旧客户端的按kind聚合提示；v0.5客户端以每个Model.capabilities为准。
+                    properties:
+                      chat:
+                        type: object
+                        properties:
+                          enabled:
+                            type: boolean
+                          cancel_supported:
+                            type: boolean
+                          max_count:
+                            type: integer
+                          aspect_ratios:
+                            type: array
+                            items:
+                              type: string
+                      image:
+                        type: object
+                        properties:
+                          enabled:
+                            type: boolean
+                          cancel_supported:
+                            type: boolean
+                          max_count:
+                            type: integer
+                          aspect_ratios:
+                            type: array
+                            items:
+                              type: string
+                      video:
+                        type: object
+                        properties:
+                          enabled:
+                            type: boolean
+                          cancel_supported:
+                            type: boolean
+                          max_count:
+                            type: integer
+                          aspect_ratios:
+                            type: array
+                            items:
+                              type: string
+                  catalog_version:
+                    type: string
+                  reference_limits:
+                    $ref: '#/components/schemas/ReferenceLimits'
+                  account_security:
+                    $ref: '#/components/schemas/AccountSecurityCapabilities'
+                  billing:
+                    $ref: '#/components/schemas/BillingCapabilities'
+                  moderation:
+                    $ref: '#/components/schemas/ModerationCapability'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - $ref: '#/components/parameters/ProjectHeader'
+  /api/v1/runs:
+    get:
+      operationId: listRuns
+      responses:
+        '200':
+          description: 所选项目的历史页，创建时间倒序；PG按需读取，客户端按ID去重。
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Run'
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+                  has_more:
+                    type: boolean
+                    description: 页满时保守为true，下一页可能为空；offset在并发新增时可能重复。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 100
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 100000
+          default: 0
+      - $ref: '#/components/parameters/ProjectHeader'
+    post:
+      operationId: createRun
+      description: '同键同输入返回当前原运行，同键不同输入 409；排队满 503。不自动重发模型。 幂等重放先于准入；新请求超工作区/模型额度429 ADMISSION_WORKSPACE_LIMIT/ADMISSION_MODEL_LIMIT，不新增资源/幂等/审计。终态释放，未知/待核实保留占用。
+        幂等命中先于当前模型启停/版本/参数校验；新请求禁用模型或无效预设422，旧能力版本409 MODEL_VERSION_CHANGED。新媒体受理时冻结精确上游字节；预V06无原始提交体且无handle的live排队任务保守进入待核实，不猜测新模型配置。
+
+        审核开启时原键优先。新文本先审核实际完整上下文，锁外调用后重核摘要/CAS；确定拒绝不生成/冻结。MODERATION_INPUT_BLOCKED(422)、MODERATION_INPUT_REVIEW(409)、MODERATION_INPUT_INVALID(422)、MODERATION_UNAVAILABLE(503)、MODERATION_BUSY(429)均为前置未受理；先前受理不明的请求仍保留原body/key。新媒体返回MODERATION_MEDIA_UNSUPPORTED(422)。'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunInput'
+      responses:
+        '201':
+          description: 运行已创建或幂等重放
+          headers:
+            Idempotency-Replayed:
+              description: 仅幂等重放时为 true
+              schema:
+                type: string
+                const: 'true'
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+        default:
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+  /api/v1/runs/{id}/snapshot:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    get:
+      operationId: getRunSnapshot
+      responses:
+        '200':
+          description: 运行完整输出和当前状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/runs/{id}/events:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    get:
+      operationId: subscribeRun
+      description: 'SSE id为Run.seq；message.delta={run_id,seq,delta}。终态run.completed/run.cancelled/run.failed/run.interrupted={run_id,seq,status}。超窗或重启后run.snapshot为完整Run。Last-Event-ID优先after；历史已落PG但事件环未持久，提供完整快照。seq单调允许恢复跳号，恢复保留段严格超过可能未持久的事件上界。
+        工作区SSE上限429 ADMISSION_STREAM_LIMIT，全局128上限503 STREAM_LIMIT，两者Retry-After:3。断开释放，非取消生成。
+
+        有审核摘要的运行不发未审message.delta；输出仅在全文允许及COMPLETED提交后以run.snapshot完整交付，终态可只读补GET。关闭配置不放行旧隔离内容。'
+      parameters:
+      - in: query
+        name: after
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+      - in: header
+        name: Last-Event-ID
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+      - in: query
+        name: project_id
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 有界事件回放、实时增量或完整快照；15秒心跳
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: 'id: 1
+
+                event: message.delta
+
+                data: {"run_id":"run_example","seq":1,"delta":"你好"}
+
+
+                '
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+  /api/v1/runs/{id}/cancel:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    post:
+      operationId: cancelRun
+      description: 取消运行context；已终态不改变。取消不能证明上游停止计费。
+      responses:
+        '200':
+          description: 当前运行
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/tasks:
+    get:
+      operationId: listTasks
+      responses:
+        '200':
+          description: 所选项目的历史页，创建时间倒序；PG按需读取，客户端按ID去重。
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+                  has_more:
+                    type: boolean
+                    description: 页满时保守为true，下一页可能为空；offset在并发新增时可能重复。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 100
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 100000
+          default: 0
+      - $ref: '#/components/parameters/ProjectHeader'
+    post:
+      operationId: createTask
+      description: 'demo或已配置的真实异步媒体；未配置501。相同工作区+操作+幂等键不同输入409。PG持久精确上游请求和受理handle。 幂等重放先于准入；新请求超工作区/模型额度429 ADMISSION_WORKSPACE_LIMIT/ADMISSION_MODEL_LIMIT，不新增资源/幂等/审计。终态释放，未知/待核实保留占用。
+        幂等命中先于当前模型启停/版本/参数校验；新请求禁用模型或无效预设422，旧能力版本409 MODEL_VERSION_CHANGED。新媒体受理时冻结精确上游字节；预V06无原始提交体且无handle的live排队任务保守进入待核实，不猜测新模型配置。
+        编辑先验证有序reference_asset_ids归属及模型编辑能力，受理前冻结multipart文件；数据表只保存内容摘要/长度/Content-Type/文件ID，不保存图片Base64。文件缺失/损坏在上游前拒绝，仍保留原任务身份；没有mask或直接外部URL编辑接口。
+
+        审核开启时原键优先。新文本先审核实际完整上下文，锁外调用后重核摘要/CAS；确定拒绝不生成/冻结。MODERATION_INPUT_BLOCKED(422)、MODERATION_INPUT_REVIEW(409)、MODERATION_INPUT_INVALID(422)、MODERATION_UNAVAILABLE(503)、MODERATION_BUSY(429)均为前置未受理；先前受理不明的请求仍保留原body/key。新媒体返回MODERATION_MEDIA_UNSUPPORTED(422)。'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '202':
+          description: 已受理或幂等重放，尚未代表完成
+          headers:
+            Idempotency-Replayed:
+              schema:
+                type: string
+                const: 'true'
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        default:
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+  /api/v1/tasks/{id}:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    get:
+      operationId: getTask
+      responses:
+        '200':
+          description: 当前媒体任务快照
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/tasks/{id}/cancel:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    post:
+      operationId: cancelTask
+      description: demo支持取消；live供应商未提供取消确认时返回409 CANCEL_UNSUPPORTED，原状态保留继续查询。
+      responses:
+        '200':
+          description: 当前媒体任务
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /demo-assets/{file}:
+    get:
+      operationId: getDemoAsset
+      security: []
+      parameters:
+      - in: path
+        name: file
+        required: true
+        schema:
+          type: string
+          enum:
+          - image-1.svg
+          - image-2.svg
+          - image-3.svg
+          - image-4.svg
+          - video-poster.svg
+      responses:
+        '200':
+          description: 本地SVG；视频仅模拟海报，不是视频文件
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        '404':
+          description: 未知静态产物
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+  /api/v1/workspaces/{workspace_id}/events:
+    get:
+      operationId: subscribeWorkspace
+      description: PG模式按项目持久通知流：resource.changed仅含资源标识/版本/状态和闭集动作；task.updated附带读取时当前授权Task快照，不能视为事件当时的完整快照。通知序号独立于Task.version与Run.seq，LLM
+        token仍通过run专用流传输。Last-Event-ID优先after，opaque游标绑定数据库、账户、工作区和项目，所有请求仍验证会话范围。初次或超过保留窗口发送stream.reset{reason,cursor}，客户端有界刷新必要列表并保留未确认操作/编辑，不能重新发送生成。兼容task快照和元数据可能共用cursor，断线时客户端须依据元数据补读，不依赖第二帧必达。memory保持内存广播且不跨重启。工作区上限429
+        ADMISSION_STREAM_LIMIT、全局128上限503 STREAM_LIMIT；断开释放名额但不取消生成。
+      responses:
+        '200':
+          description: text/event-stream：stream.reset、resource.changed、兼容task.updated及心跳。消费者checkpoint只代表已投影，不是浏览器确认。每项目保留2048条，已消费全局100000条；每批最多100条。
+          content:
+            text/event-stream:
+              schema:
+                type: string
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - in: query
+        name: project_id
+        schema:
+          type: string
+      - in: header
+        name: Last-Event-ID
+        description: PG持久通知opaque游标；优先于after。不接受跨账户、项目或数据库游标。
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 1024
+      - in: query
+        name: after
+        description: 仅在无Last-Event-ID时使用；PG格式同持久通知游标，不能填run数字seq。
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 1024
+      x-event-data-schemas:
+        resource.changed:
+          $ref: '#/components/schemas/DurableResourceChanged'
+        stream.reset:
+          $ref: '#/components/schemas/DurableStreamReset'
+        task.updated:
+          type: object
+          required:
+          - task
+          properties:
+            task:
+              $ref: '#/components/schemas/Task'
+    parameters:
+    - in: path
+      name: workspace_id
+      required: true
+      schema:
+        type: string
+  /api/v1/auth/register:
+    post:
+      operationId: register
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - email
+              - password
+              - name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                password:
+                  type: string
+                  writeOnly: true
+                  description: 注册10至72 UTF-8字节，登录不得超过72字节
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+      responses:
+        '201':
+          description: 成功并设置HttpOnly SameSite=Strict会话cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Identity'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - email
+              - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                password:
+                  type: string
+                  writeOnly: true
+                  description: 注册10至72 UTF-8字节，登录不得超过72字节
+      responses:
+        '200':
+          description: 成功并设置HttpOnly SameSite=Strict会话cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Identity'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      security: []
+      responses:
+        '200':
+          description: 撤销当前会话并清除cookie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/auth/session:
+    get:
+      operationId: getSession
+      security: []
+      responses:
+        '200':
+          description: 匿名也是200，user为null；已登录包含身份、工作区和项目
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Identity'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects:
+    get:
+      operationId: listProjects
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+      responses:
+        '201':
+          description: 项目创建成功，每工作区最多100个
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/assets/{id}:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    get:
+      operationId: getPrivateAsset
+      description: 必须验证所属任务的工作区；返回已验证并安全导入的本地图片或视频，支持Range，不返回网关URL。 V08起旧内容接口也检查active目录授权；同一作用域多条目录共享同artifact
+        ID时任意active授权仍可读取。S3持久收据身份不匹配或对象缺失不回退local副本。
+      responses:
+        '200':
+          description: 媒体字节
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        '206':
+          description: Range媒体片段
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/tasks/{id}/reconcile:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    post:
+      operationId: reconcileTask
+      description: 仅恢复原持久handle的Query，不再次Submit。需要所有权，允许RECONCILE_REQUIRED/PROVIDER_STATE_UNKNOWN及有handle的SUBMIT_UNKNOWN；无handle409、冷却未过429。禁止客户端提供upstream
+        ID。无请求体或空对象。
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '202':
+          description: 已恢复核对调度并持久递增版本
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/audit:
+    get:
+      operationId: listAuditEvents
+      description: 已授权业务动作的只读活动记录，非消费账单。PG与动作同事务提交，幂等重放无重复受理审计；memory仅最近512条。按(created_at,id)倒序keyset分页。未覆盖登录尝试、供应商轮询、计费或完整安全审计。
+      parameters:
+      - $ref: '#/components/parameters/ProjectHeader'
+      - in: query
+        name: scope
+        schema:
+          type: string
+          enum:
+          - project
+          - workspace
+          default: project
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          maxLength: 1024
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditPage'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/draft:
+    parameters:
+    - in: path
+      name: project
+      required: true
+      schema:
+        type: string
+      description: 当前账户工作区内项目，显式X-Project-ID或project_id查询须与此路径一致。
+    get:
+      operationId: getProjectDraft
+      responses:
+        '200':
+          description: 云草稿，未保存为revision0/nodes空/updated_at null；memory模式501
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDraft'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      operationId: saveProjectDraft
+      description: 必须Idempotency-Key。409版本冲突/同键异参，413体积超限，422节点无效，429达到1000修订上限，501无PG。恢复旧版须GET旧内容后以新key和当前expected_revision保存，不改写旧修订。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftSaveInput'
+      responses:
+        '200':
+          description: CAS保存或幂等重放原版本；审计与正文/版本同事务
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDraft'
+          headers:
+            Idempotency-Replayed:
+              schema:
+                type: string
+                const: 'true'
+              description: 原键同payload重放时返回true
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/draft/revisions:
+    parameters:
+    - in: path
+      name: project
+      required: true
+      schema:
+        type: string
+      description: 当前账户工作区内项目，显式X-Project-ID或project_id查询须与此路径一致。
+    get:
+      operationId: listProjectDraftRevisions
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - in: query
+        name: before_revision
+        schema:
+          type: integer
+          minimum: 1
+        description: 排他上界，仅列比它更早的修订。
+      responses:
+        '200':
+          description: 不可变修订元数据，不列revision0；memory模式501
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftRevisionPage'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/draft/revisions/{revision}:
+    parameters:
+    - in: path
+      name: project
+      required: true
+      schema:
+        type: string
+      description: 当前账户工作区内项目，显式X-Project-ID或project_id查询须与此路径一致。
+    - in: path
+      name: revision
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 9223372036854775807
+    get:
+      operationId: getProjectDraftRevision
+      responses:
+        '200':
+          description: 指定历史修订；无记录404，memory模式501
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDraft'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /readyz:
+    get:
+      operationId: readiness
+      security: []
+      description: 读取最近观测的ctx/DB熔断原子状态，不触发SQL或供应商。心跳约每秒启动，但连接锁排队和5秒操作超时可延长发现窗口，不保证瞬时可达。
+      responses:
+        '200':
+          description: 最近观测可接单
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        '503':
+          description: 停止接单或DB已熔断
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /metrics:
+    get:
+      operationId: operatorMetrics
+      security:
+      - MetricsBearer: []
+      description: Prometheus text 0.0.4固定基数。请求计数/延迟在handler结束记录，SSE包含整个连接寿命。全局资源gauges为cached进程缓存视图，不包含已淘汰PG待核实记录；无tenant/user/path/id/key/prompt标签。
+      responses:
+        '200':
+          description: 只读运维指标，计数器重启清空
+          content:
+            text/plain; version=0.0.4:
+              schema:
+                type: string
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/runtime:
+    get:
+      operationId: workspaceRuntime
+      parameters:
+      - $ref: '#/components/parameters/ProjectHeader'
+      description: 当前认证workspace跨项目占用，不可用参数选择其他workspace。PG聚合全部持久非终态；memory统计缓存。不提供全局占用。active-queued仍含未知/待核实，不能标成运行数。
+      responses:
+        '200':
+          description: 本工作区准入与订阅状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceRuntime'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/models:
+    get:
+      operationId: getModelCatalog
+      description: 返回启动时校验的有限目录；修改文件需重启才生效。默认目录保留studio-chat/image/video。私有上游模型、URL和密钥不进入响应。鉴权和就绪检查先于304。
+      parameters:
+      - in: header
+        name: If-None-Match
+        schema:
+          type: string
+      - $ref: '#/components/parameters/ProjectHeader'
+      responses:
+        '200':
+          description: 公开模型目录及版本
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: 当前目录强ETag；在身份校验之后处理If-None-Match。
+            Cache-Control:
+              schema:
+                type: string
+              description: private, no-cache；仅在当前身份缓存复用。
+            X-Request-ID:
+              schema:
+                type: string
+              description: 服务端请求编号。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelCatalog'
+        '304':
+          description: 当前身份已获授权且目录未变化，无body；客户端复用当前作用域缓存。
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: 当前目录强ETag；在身份校验之后处理If-None-Match。
+            Cache-Control:
+              schema:
+                type: string
+              description: private, no-cache；仅在当前身份缓存复用。
+            X-Request-ID:
+              schema:
+                type: string
+              description: 服务端请求编号。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/references:
+    get:
+      operationId: listReferences
+      description: 仅列当前项目参考素材；通过原分页limit/offset读取。 V08起排除回收站中的参考素材。
+      parameters:
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 当前工作区项目；与X-Project-ID同时提供时必须一致。
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 100
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 100000
+          default: 0
+      responses:
+        '200':
+          description: 当前项目列表
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                - limit
+                - offset
+                - has_more
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReferenceAsset'
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+                  has_more:
+                    type: boolean
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: uploadReference
+      description: 单个file part，不接受额外字段/文件。先验证账户项目，再流式接收、真实格式/像素预算/完整解码和预览；只支持PNG/JPEG/WebP，不接受GIF/SVG或mask。幂等按项目+规范化文件名+原字节摘要及大小计算；原件/预览文件先发布，元数据/上传幂等/审计同事务。断线不等于未受理，保留原File/key核对；孤立文件可用离线维护计划核对后回收；已注册含trash的引用仍保留。
+      parameters:
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 当前工作区项目；与X-Project-ID同时提供时必须一致。
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 单张最多8MiB，完整有效图像最多1600万像素，单边不超过8192。
+      responses:
+        '201':
+          description: 已受理或原上传重放；同key内容相同返回原ID，新multipart boundary不改变幂等。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+            Idempotency-Replayed:
+              schema:
+                type: string
+                const: 'true'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferenceAsset'
+        '400':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+        '415':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        '507':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/references/{id}/content:
+    get:
+      operationId: getReferenceContent
+      description: 每次验证当前账户/项目归属；跨账户/项目404，URL/header项目冲突400。支持Range；HEAD不返回正文。
+      parameters:
+      - $ref: '#/components/parameters/ResourceID'
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 当前工作区项目；与X-Project-ID同时提供时必须一致。
+      responses:
+        '200':
+          description: 已鉴权私有图片；thumbnail为最长边512的PNG，content为原始有效字节。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: private,no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '206':
+          description: 已鉴权私有图片；thumbnail为最长边512的PNG，content为原始有效字节。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: private,no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            multipart/byteranges:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+        '304':
+          description: 缓存条件满足时返回，无响应正文。服务仍返回private, no-store。
+        '412':
+          description: 文件请求前置条件不满足，无响应正文。
+        '416':
+          description: 请求Range无效；由标准文件响应处理，GET返回text/plain，HEAD无正文。
+          content:
+            text/plain:
+              schema:
+                type: string
+    head:
+      operationId: headReferenceContent
+      description: 每次验证当前账户/项目归属；跨账户/项目404，URL/header项目冲突400。支持Range；HEAD不返回正文。
+      parameters:
+      - $ref: '#/components/parameters/ResourceID'
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 当前工作区项目；与X-Project-ID同时提供时必须一致。
+      responses:
+        '200':
+          description: 已鉴权私有图片；thumbnail为最长边512的PNG，content为原始有效字节。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: private,no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        '206':
+          description: 已鉴权私有图片；thumbnail为最长边512的PNG，content为原始有效字节。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: private,no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          description: 其他错误仅返回状态及X-Request-ID响应头，HEAD没有正文。
+        '304':
+          description: 缓存条件满足时返回，无响应正文。服务仍返回private, no-store。
+        '412':
+          description: 文件请求前置条件不满足，无响应正文。
+        '416':
+          description: 请求Range无效；由标准文件响应处理，GET返回text/plain，HEAD无正文。
+  /api/v1/references/{id}/thumbnail:
+    get:
+      operationId: getReferenceThumbnail
+      description: 每次验证当前账户/项目归属；跨账户/项目404，URL/header项目冲突400。支持Range；HEAD不返回正文。
+      parameters:
+      - $ref: '#/components/parameters/ResourceID'
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 当前工作区项目；与X-Project-ID同时提供时必须一致。
+      responses:
+        '200':
+          description: 已鉴权私有图片；thumbnail为最长边512的PNG，content为原始有效字节。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: private,no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '206':
+          description: 已鉴权私有图片；thumbnail为最长边512的PNG，content为原始有效字节。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: private,no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            multipart/byteranges:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+        '304':
+          description: 缓存条件满足时返回，无响应正文。服务仍返回private, no-store。
+        '412':
+          description: 文件请求前置条件不满足，无响应正文。
+        '416':
+          description: 请求Range无效；由标准文件响应处理，GET返回text/plain，HEAD无正文。
+          content:
+            text/plain:
+              schema:
+                type: string
+    head:
+      operationId: headReferenceThumbnail
+      description: 每次验证当前账户/项目归属；跨账户/项目404，URL/header项目冲突400。支持Range；HEAD不返回正文。
+      parameters:
+      - $ref: '#/components/parameters/ResourceID'
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 当前工作区项目；与X-Project-ID同时提供时必须一致。
+      responses:
+        '200':
+          description: 已鉴权私有图片；thumbnail为最长边512的PNG，content为原始有效字节。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: private,no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        '206':
+          description: 已鉴权私有图片；thumbnail为最长边512的PNG，content为原始有效字节。
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: private,no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        '404':
+          $ref: '#/components/responses/Error'
+        default:
+          description: 其他错误仅返回状态及X-Request-ID响应头，HEAD没有正文。
+        '304':
+          description: 缓存条件满足时返回，无响应正文。服务仍返回private, no-store。
+        '412':
+          description: 文件请求前置条件不满足，无响应正文。
+        '416':
+          description: 请求Range无效；由标准文件响应处理，GET返回text/plain，HEAD无正文。
+  /api/v1/library:
+    get:
+      operationId: listLibrary
+      description: 独立当前项目目录，created_at+id倒序keyset；游标绑定所有过滤条件与项目，q为名称/标签文本包含，tag规范化精确匹配，不解释SQL通配符。
+      parameters:
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 与项目头同时指定时必须一致。
+      - name: state
+        in: query
+        schema:
+          type: string
+          enum:
+          - active
+          - trashed
+          default: active
+      - name: source
+        in: query
+        schema:
+          type: string
+          enum:
+          - reference
+          - generated
+      - name: kind
+        in: query
+        schema:
+          type: string
+          enum:
+          - image
+          - video
+          - poster
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 128
+      - name: tag
+        in: query
+        schema:
+          type: string
+          maxLength: 32
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 30
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+      responses:
+        '200':
+          description: 资产目录
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                - next_cursor
+                - has_more
+                - limit
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LibraryEntry'
+                  next_cursor:
+                    type:
+                    - string
+                    - 'null'
+                  has_more:
+                    type: boolean
+                  limit:
+                    type: integer
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/library/{id}:
+    get:
+      operationId: getLibraryEntry
+      parameters:
+      - $ref: '#/components/parameters/ResourceID'
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 与项目头同时指定时必须一致。
+      description: 当前项目active或trash元数据。
+      responses:
+        '200':
+          description: 资产元数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryEntry'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      operationId: updateLibraryEntry
+      description: 先项目授权和结构校验，再原键重放，再CAS/状态校验；同键异body409 IDEMPOTENCY_CONFLICT，旧revision409 ASSET_REVISION_CONFLICT。trashed不得PATCH；状态冲突409
+        ASSET_STATE_CONFLICT。最多1000修订，trash提前保留一个恢复名额，容量不足429 ASSET_REVISION_LIMIT。原件不物理删除，原任务冻结正文不改变。
+      parameters:
+      - $ref: '#/components/parameters/ResourceID'
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 与项目头同时指定时必须一致。
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LibraryMutation'
+      responses:
+        '200':
+          description: 受理或返回原幂等响应；较旧重放不能覆盖客户端较新revision。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryEntry'
+          headers:
+            Idempotency-Replayed:
+              schema:
+                type: string
+                const: 'true'
+            X-Request-ID:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/library/{id}/trash:
+    post:
+      operationId: trashLibraryEntry
+      description: 先项目授权和结构校验，再原键重放，再CAS/状态校验；同键异body409 IDEMPOTENCY_CONFLICT，旧revision409 ASSET_REVISION_CONFLICT。trashed不得PATCH；状态冲突409
+        ASSET_STATE_CONFLICT。最多1000修订，trash提前保留一个恢复名额，容量不足429 ASSET_REVISION_LIMIT。原件不物理删除，原任务冻结正文不改变。
+      parameters:
+      - $ref: '#/components/parameters/ResourceID'
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 与项目头同时指定时必须一致。
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LibraryTransition'
+      responses:
+        '200':
+          description: 受理或返回原幂等响应；较旧重放不能覆盖客户端较新revision。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryEntry'
+          headers:
+            Idempotency-Replayed:
+              schema:
+                type: string
+                const: 'true'
+            X-Request-ID:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/library/{id}/restore:
+    post:
+      operationId: restoreLibraryEntry
+      description: 先项目授权和结构校验，再原键重放，再CAS/状态校验；同键异body409 IDEMPOTENCY_CONFLICT，旧revision409 ASSET_REVISION_CONFLICT。trashed不得PATCH；状态冲突409
+        ASSET_STATE_CONFLICT。最多1000修订，trash提前保留一个恢复名额，容量不足429 ASSET_REVISION_LIMIT。原件不物理删除，原任务冻结正文不改变。
+      parameters:
+      - $ref: '#/components/parameters/ResourceID'
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 与项目头同时指定时必须一致。
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LibraryTransition'
+      responses:
+        '200':
+          description: 受理或返回原幂等响应；较旧重放不能覆盖客户端较新revision。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryEntry'
+          headers:
+            Idempotency-Replayed:
+              schema:
+                type: string
+                const: 'true'
+            X-Request-ID:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/library/{id}/revisions:
+    get:
+      operationId: listLibraryRevisions
+      parameters:
+      - $ref: '#/components/parameters/ResourceID'
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 与项目头同时指定时必须一致。
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: before_revision
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1001
+          default: 1001
+      responses:
+        '200':
+          description: 不可变元数据修订倒序分页
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                - has_more
+                - next_before_revision
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LibraryRevision'
+                  has_more:
+                    type: boolean
+                  next_before_revision:
+                    type:
+                    - integer
+                    - 'null'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/library/{id}/content:
+    get:
+      operationId: getLibraryContent
+      description: 先library归属/active授权，再读取私有本地或S3内容。没有公共签名URL；所有存储身份只在服务端。S3请求范围由有界适配器处理。
+      parameters:
+      - $ref: '#/components/parameters/ResourceID'
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 与项目头同时指定时必须一致。
+      responses:
+        '200':
+          description: 当前项目active内容；私有no-store响应。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/gif:
+              schema:
+                type: string
+                format: binary
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+        '206':
+          description: Range；兼容单区间与多区间。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/gif:
+              schema:
+                type: string
+                format: binary
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+            multipart/byteranges:
+              schema:
+                type: string
+                format: binary
+        '304':
+          description: 未修改，无正文。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '412':
+          description: 前置条件失败，无正文。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '416':
+          description: Range无效。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: 不存在、无权限、回收站、无缩略图或远端缺失/过期；不自动重新生成。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '503':
+          description: 存储暂不可用；不回退到过期的本地副本。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        default:
+          description: 错误可能来自业务JSON或底层文件text/plain；HEAD无正文，X-Request-ID可用于核对。
+    head:
+      operationId: headLibraryContent
+      description: 先library归属/active授权，再读取私有本地或S3内容。没有公共签名URL；所有存储身份只在服务端。S3请求范围由有界适配器处理。
+      parameters:
+      - $ref: '#/components/parameters/ResourceID'
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 与项目头同时指定时必须一致。
+      responses:
+        '200':
+          description: 当前项目active内容；私有no-store响应。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '206':
+          description: Range；兼容单区间与多区间。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '304':
+          description: 未修改，无正文。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '412':
+          description: 前置条件失败，无正文。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '416':
+          description: Range无效。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '404':
+          description: 不存在、无权限、回收站、无缩略图或远端缺失/过期；不自动重新生成。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '503':
+          description: 存储暂不可用；不回退到过期的本地副本。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        default:
+          description: 错误可能来自业务JSON或底层文件text/plain；HEAD无正文，X-Request-ID可用于核对。
+  /api/v1/library/{id}/thumbnail:
+    get:
+      operationId: getLibraryThumbnail
+      description: 先library归属/active授权，再读取私有本地或S3内容。没有公共签名URL；所有存储身份只在服务端。S3请求范围由有界适配器处理。
+      parameters:
+      - $ref: '#/components/parameters/ResourceID'
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 与项目头同时指定时必须一致。
+      responses:
+        '200':
+          description: 当前项目active内容；私有no-store响应。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+        '206':
+          description: Range；兼容单区间与多区间。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+            multipart/byteranges:
+              schema:
+                type: string
+                format: binary
+        '304':
+          description: 未修改，无正文。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '412':
+          description: 前置条件失败，无正文。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '416':
+          description: Range无效。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: 不存在、无权限、回收站、无缩略图或远端缺失/过期；不自动重新生成。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '503':
+          description: 存储暂不可用；不回退到过期的本地副本。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        default:
+          description: 错误可能来自业务JSON或底层文件text/plain；HEAD无正文，X-Request-ID可用于核对。
+    head:
+      operationId: headLibraryThumbnail
+      description: 先library归属/active授权，再读取私有本地或S3内容。没有公共签名URL；所有存储身份只在服务端。S3请求范围由有界适配器处理。
+      parameters:
+      - $ref: '#/components/parameters/ResourceID'
+      - $ref: '#/components/parameters/ProjectHeader'
+      - name: project_id
+        in: query
+        schema:
+          type: string
+        description: 与项目头同时指定时必须一致。
+      responses:
+        '200':
+          description: 当前项目active内容；私有no-store响应。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '206':
+          description: Range；兼容单区间与多区间。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '304':
+          description: 未修改，无正文。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '412':
+          description: 前置条件失败，无正文。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '416':
+          description: Range无效。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '404':
+          description: 不存在、无权限、回收站、无缩略图或远端缺失/过期；不自动重新生成。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        '503':
+          description: 存储暂不可用；不回退到过期的本地副本。
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+        default:
+          description: 错误可能来自业务JSON或底层文件text/plain；HEAD无正文，X-Request-ID可用于核对。
+  /api/v1/conversations:
+    get:
+      operationId: listConversations
+      description: 按created_at,id倒序稳定keyset；cursor绑定账户、工作区和项目。
+      parameters:
+      - $ref: '#/components/parameters/ProjectHeader'
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          maxLength: 1024
+      responses:
+        '200':
+          description: 当前授权范围数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationPage'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createConversation
+      description: 同键同原请求优先于CAS/目录/忙/限额返回原资源；异参409。状态/节点/Run/冻结上下文/幂等/审计/Outbox同事务，确认不明保留原body/key，不自动重新生成。
+      parameters:
+      - $ref: '#/components/parameters/ProjectHeader'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationInput'
+      responses:
+        '201':
+          description: 已受理或原幂等请求重放
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+          headers:
+            Idempotency-Replayed:
+              description: 仅幂等重放时为 true
+              schema:
+                type: string
+                const: 'true'
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+  /api/v1/conversations/{id}:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    - $ref: '#/components/parameters/ProjectHeader'
+    get:
+      operationId: getConversation
+      responses:
+        '200':
+          description: 当前授权范围数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+  /api/v1/conversations/{id}/messages:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    - $ref: '#/components/parameters/ProjectHeader'
+    get:
+      operationId: listConversationMessages
+      parameters:
+      - in: query
+        name: leaf_id
+        schema:
+          type: string
+        description: 省略时使用当前head；显式旧叶子只读取旧分支。
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 40
+          default: 20
+      - in: query
+        name: before
+        schema:
+          type: string
+          maxLength: 1024
+        description: 账户/项目/会话/叶子绑定的祖先位置游标。
+      responses:
+        '200':
+          description: 当前授权范围数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationMessagePage'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+  /api/v1/conversations/{id}/branches:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    - $ref: '#/components/parameters/ProjectHeader'
+    get:
+      operationId: listConversationBranches
+      description: 叶子摘要，preview最多160字符，无完整回答正文。
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          maxLength: 1024
+      responses:
+        '200':
+          description: 当前授权范围数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationBranchPage'
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+  /api/v1/conversations/{id}/runs:
+    parameters:
+    - $ref: '#/components/parameters/ResourceID'
+    post:
+      operationId: createConversationRun
+      description: '同键同原请求优先于CAS/目录/忙/限额返回原资源；异参409。状态/节点/Run/冻结上下文/幂等/审计/Outbox同事务，确认不明保留原body/key，不自动重新生成。 409
+        CONVERSATION_VERSION_CONFLICT/CONVERSATION_BUSY，422父节点/编辑/继续/预算错误，429 CONVERSATION_LIMIT。继续生成固定新user指令并创建新Run，可能消耗额度，不续接原供应商连接。
+
+        审核开启时原键优先。新文本先审核实际完整上下文，锁外调用后重核摘要/CAS；确定拒绝不生成/冻结。MODERATION_INPUT_BLOCKED(422)、MODERATION_INPUT_REVIEW(409)、MODERATION_INPUT_INVALID(422)、MODERATION_UNAVAILABLE(503)、MODERATION_BUSY(429)均为前置未受理；先前受理不明的请求仍保留原body/key。新媒体返回MODERATION_MEDIA_UNSUPPORTED(422)。'
+      parameters:
+      - $ref: '#/components/parameters/ProjectHeader'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationRunInput'
+      responses:
+        '201':
+          description: 已受理或原幂等请求重放
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+          headers:
+            Idempotency-Replayed:
+              description: 仅幂等重放时为 true
+              schema:
+                type: string
+                const: 'true'
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+  /api/v1/auth/email/verification/request:
+    post:
+      operationId: requestEmailVerification
+      security:
+      - SessionCookie: []
+      description: 登录账户申请验证邮件。24小时单次令牌；同用途60秒冷却、最多3个有效令牌。MAIL_UNAVAILABLE=503；AUTH_DISABLED=409；AUTH_RATE_LIMIT=429。
+      responses:
+        '202':
+          description: 已安排，消息不证明实际送达
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountMailRequestResult'
+        default:
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+  /api/v1/auth/email/verification/confirm:
+    post:
+      operationId: confirmEmailVerification
+      security: []
+      description: 显式提交令牌验证邮箱，不自动登录。格式/用途/过期/已使用/凭据版本失效统一400 ACCOUNT_TOKEN_INVALID。
+      responses:
+        '200':
+          description: 成功
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountActionResult'
+        default:
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountTokenInput'
+  /api/v1/auth/password/reset/request:
+    post:
+      operationId: requestPasswordReset
+      security: []
+      description: 已知与未知邮箱返回相同202正文；SMTP异步，不承诺严格恒定响应时长。邮件未配置503，认证关闭409；IP限流429。30分钟令牌，同用途冷却及有效令牌上限。
+      responses:
+        '202':
+          description: 已安排，消息不证明实际送达
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountMailRequestResult'
+        default:
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountResetRequest'
+  /api/v1/auth/password/reset/confirm:
+    post:
+      operationId: confirmPasswordReset
+      security: []
+      description: 单次消费找回令牌，与密码/凭据版本/安全记录同事务。撤销全部会话及旧令牌，清Cookie，不自动登录。无效令牌统一400 ACCOUNT_TOKEN_INVALID。
+      responses:
+        '200':
+          description: 成功
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountReauthenticationResult'
+        default:
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountPasswordReset'
+  /api/v1/auth/password/change:
+    post:
+      operationId: changeAccountPassword
+      security:
+      - SessionCookie: []
+      description: 核对当前密码后原子变更凭据版本并撤销全部会话/旧令牌，清Cookie。密码不符合字节约束422；当前密码不符401 INVALID_CREDENTIALS（不撤销现有会话）。
+      responses:
+        '200':
+          description: 成功
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountReauthenticationResult'
+        default:
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountPasswordChange'
+  /api/v1/auth/sessions:
+    get:
+      operationId: listAccountSessions
+      security:
+      - SessionCookie: []
+      description: 仅当前账户未过期有效会话，最多10项；不返回token/hash/IP/设备或伪造last_seen。
+      responses:
+        '200':
+          description: 成功
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountSessionPage'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/auth/sessions/{id}/revoke:
+    post:
+      operationId: revokeAccountSession
+      security:
+      - SessionCookie: []
+      description: 仅可撤销自己的会话；其他账户/不存在会话404。当前会话被撤销则清Cookie且reauthenticate=true。
+      responses:
+        '200':
+          description: 成功
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountSessionRevokeResult'
+        default:
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^ses_[a-f0-9]{32}$
+  /api/v1/auth/sessions/revoke-all:
+    post:
+      operationId: revokeAllAccountSessions
+      security:
+      - SessionCookie: []
+      description: 撤销全部会话（含当前），与安全记录同事务，清Cookie并要求重新登录。
+      responses:
+        '200':
+          description: 成功
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountReauthenticationResult'
+        default:
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+  /api/v1/auth/security/events:
+    get:
+      operationId: listAccountSecurityEvents
+      security:
+      - SessionCookie: []
+      description: 账户范围成功安全活动，created_at/id倒序。游标绑定账户，非法/跨账户400。无邮箱/凭据/IP/提示词，不替代失败认证监控或业务账单。
+      responses:
+        '200':
+          description: 成功
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: ^req_[a-f0-9]{32}$
+              description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountSecurityEventPage'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 512
+  /api/v1/billing/wallet:
+    get:
+      operationId: billingWallet
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerWallet'
+        default:
+          $ref: '#/components/responses/Error'
+      description: 需要已认证工作区及credits模式；关闭返回409 BILLING_DISABLED。游标绑定账户/工作区/项目/类型/筛选；不接受其他工作区身份。资金变更只由受理/执行事务或离线工具触发。
+  /api/v1/billing/entries:
+    get:
+      operationId: billingEntries
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerEntryPage'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 1024
+      - name: project_id
+        in: query
+        schema:
+          type: string
+      - name: kind
+        in: query
+        schema:
+          type: string
+          enum:
+          - CREDIT
+          - RESERVE
+          - CHARGE
+          - RELEASE
+          - REFUND
+          - REFUND_RELEASE
+      description: 需要已认证工作区及credits模式；关闭返回409 BILLING_DISABLED。游标绑定账户/工作区/项目/类型/筛选；不接受其他工作区身份。资金变更只由受理/执行事务或离线工具触发。
+  /api/v1/billing/reservations:
+    get:
+      operationId: billingReservations
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerReservationPage'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 1024
+      - name: project_id
+        in: query
+        schema:
+          type: string
+      - name: state
+        in: query
+        schema:
+          type: string
+          enum:
+          - HELD
+          - REVIEW
+          - SETTLED
+          - RELEASED
+          - REFUNDED
+      description: 需要已认证工作区及credits模式；关闭返回409 BILLING_DISABLED。游标绑定账户/工作区/项目/类型/筛选；不接受其他工作区身份。资金变更只由受理/执行事务或离线工具触发。
+  /api/v1/billing/quotes:
+    post:
+      operationId: createBillingQuote
+      parameters:
+      - $ref: '#/components/parameters/ProjectHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillingQuoteInput'
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingQuote'
+        default:
+          $ref: '#/components/responses/Error'
+      description: 需要已认证工作区及credits模式；关闭返回409 BILLING_DISABLED。游标绑定账户/工作区/项目/类型/筛选；不接受其他工作区身份。资金变更只由受理/执行事务或离线工具触发。
+  /api/v1/operations/access:
+    get:
+      operationId: operationsAccess
+      security:
+      - SessionCookie: []
+      description: 仅OPERATIONS_ENABLED与PG账户模式；按目标工作区实时重核最小权限。普通账户无自动角色。默认409，越权404。禁止泄漏正文、邮箱或供应商handle。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsCapabilities'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/exceptions:
+    get:
+      operationId: operationsExceptions
+      security:
+      - SessionCookie: []
+      description: 仅OPERATIONS_ENABLED与PG账户模式；按目标工作区实时重核最小权限。普通账户无自动角色。默认409，越权404。禁止泄漏正文、邮箱或供应商handle。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsExceptionPage'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: workspace_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: kind
+        in: query
+        schema:
+          type: string
+          enum:
+          - all
+          - run
+          - task
+          default: all
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+  /api/v1/operations/cases:
+    get:
+      operationId: operationsCases
+      security:
+      - SessionCookie: []
+      description: 仅OPERATIONS_ENABLED与PG账户模式；按目标工作区实时重核最小权限。普通账户无自动角色。默认409，越权404。禁止泄漏正文、邮箱或供应商handle。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsCasePage'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: workspace_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: state
+        in: query
+        schema:
+          type: string
+          enum:
+          - all
+          - OPEN
+          - RESOLVED
+          default: all
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+    post:
+      operationId: operationsCreateCase
+      security:
+      - SessionCookie: []
+      description: 仅OPERATIONS_ENABLED与PG账户模式；按目标工作区实时重核最小权限。普通账户无自动角色。默认409，越权404。禁止泄漏正文、邮箱或供应商handle。 需要case_open。原键原输入恢复原工单，异参409；网络未知先核对列表，不换键自动重试。
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsCase'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[A-Za-z0-9._:-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationsCaseInput'
+  /api/v1/operations/cases/{id}:
+    get:
+      operationId: operationsCase
+      security:
+      - SessionCookie: []
+      description: 仅OPERATIONS_ENABLED与PG账户模式；按目标工作区实时重核最小权限。普通账户无自动角色。默认409，越权404。禁止泄漏正文、邮箱或供应商handle。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsCase'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: workspace_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^ocase_[a-f0-9]{32}$
+  /api/v1/operations/cases/{id}/events:
+    get:
+      operationId: operationsCaseEvents
+      security:
+      - SessionCookie: []
+      description: 仅OPERATIONS_ENABLED与PG账户模式；按目标工作区实时重核最小权限。普通账户无自动角色。默认409，越权404。禁止泄漏正文、邮箱或供应商handle。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsCaseEventPage'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: workspace_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^ocase_[a-f0-9]{32}$
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+  /api/v1/operations/cases/{id}/plans:
+    post:
+      operationId: operationsPreview
+      security:
+      - SessionCookie: []
+      description: 仅OPERATIONS_ENABLED与PG账户模式；按目标工作区实时重核最小权限。普通账户无自动角色。默认409，越权404。禁止泄漏正文、邮箱或供应商handle。 真事务SAVEPOINT预演后回滚业务，再保存5分钟计划和审计；effect是本次增量。reconcile/no_action需investigate，charge/release需finance。输入变化须重新预演。
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsPlan'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^ocase_[a-f0-9]{32}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationsPlanInput'
+  /api/v1/operations/cases/{id}/execute:
+    post:
+      operationId: operationsExecute
+      security:
+      - SessionCookie: []
+      description: 仅OPERATIONS_ENABLED与PG账户模式；按目标工作区实时重核最小权限。普通账户无自动角色。默认409，越权404。禁止泄漏正文、邮箱或供应商handle。 密码二次核验；同事务重核原散列、凭据/会话、grant、工单/资源/账本版本及摘要。处置、收据、审计、账本与业务Outbox同事务。重复/过期/失效计划409；响应不明只能GET原工单查收据，不自动重发。no_action只关闭工单。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsCase'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^ocase_[a-f0-9]{32}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationsExecuteInput'
+components:
+  parameters:
+    ResourceID:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      description: 按工作区和操作去重；PostgreSQL模式跨重启持久，memory模式限当前进程。网络重试必须保持原键与payload。
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+        pattern: ^[a-zA-Z0-9._:-]+$
+    ProjectHeader:
+      in: header
+      name: X-Project-ID
+      schema:
+        type: string
+      description: 可选当前项目；必须属于当前工作区，与project_id查询参数同时提供时应一致。
+  responses:
+    Error:
+      description: JSON业务错误附服务端request_id。429准入拒绝带Retry-After:3且本次未新受理；不能用一次重试拒绝清除以前受理未知的原请求。DB失联503停止执行，不回退memory。
+        PG通知积压满时变更返回503 EVENT_BACKLOG_FULL，业务与事件事务一起回滚，原幂等键可在恢复后重试；这不同于提交结果未知。事件游标无效400 INVALID_EVENT_CURSOR，未来游标409
+        EVENT_CURSOR_AHEAD。 账户安全：MAIL_UNAVAILABLE=503，AUTH_DISABLED=409，AUTH_REQUIRED=401，ACCOUNT_TOKEN_INVALID=400。安全操作缺失响应不代表未执行，核对账户/重新登录，不能盲目重投密码或令牌。
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - error
+            properties:
+              error:
+                $ref: '#/components/schemas/HTTPError'
+      headers:
+        X-Request-ID:
+          schema:
+            type: string
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 1
+          description: 认证限流900秒、bcrypt槽位或资源准入繁忙3秒；只对实际带此头的响应生效。
+  schemas:
+    ResourceError:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    RunInput:
+      type: object
+      additionalProperties: false
+      required:
+      - project_id
+      - model_id
+      - input
+      properties:
+        project_id:
+          type: string
+          description: 必须属于当前认证工作区
+        model_id:
+          type: string
+          description: 平台目录模型ID；历史记录可引用已停用或移除模型。
+        input:
+          type: string
+          minLength: 1
+          description: 非空白合法UTF-8，不超过模型max_prompt_bytes和平台16000字节上限；整个请求64KiB以内。
+        model_version:
+          type: string
+          description: Input可省略以兼容旧客户端；新请求携带已读版本，过期409 MODEL_VERSION_CHANGED。历史记录为受理时快照，旧记录可缺失。
+        quote_id:
+          type: string
+          maxLength: 128
+          description: credits模式新请求必须使用完整原输入对应的有效报价；旧键重放须保留原quote_id和正文，先于过期/余额检查。disabled模式不得提供。
+    TaskInput:
+      type: object
+      additionalProperties: false
+      required:
+      - project_id
+      - kind
+      - model_id
+      - inputs
+      properties:
+        project_id:
+          type: string
+          description: 必须属于当前认证工作区
+        kind:
+          type: string
+          enum:
+          - image
+          - video
+        model_id:
+          type: string
+          description: 平台目录模型ID；历史记录可引用已停用或移除模型。
+        inputs:
+          type: object
+          additionalProperties: false
+          required:
+          - prompt
+          properties:
+            prompt:
+              type: string
+              minLength: 1
+              description: 非空白合法UTF-8，不超过模型max_prompt_bytes和平台16000字节上限。
+            reference_asset_ids:
+              type: array
+              maxItems: 4
+              uniqueItems: true
+              items:
+                type: string
+              description: 有序私有参考ID，edit至少1项；generate不得含参考。原未知请求重试保留原顺序和全部字段。
+        parameters:
+          $ref: '#/components/schemas/TaskParameters'
+        model_version:
+          type: string
+          description: Input可省略以兼容旧客户端；新请求携带已读版本，过期409 MODEL_VERSION_CHANGED。历史记录为受理时快照，旧记录可缺失。
+        operation:
+          type: string
+          enum:
+          - generate
+          - edit
+          description: 省略按generate处理；edit只支持image，必须提供本项目1至4个有序且不重复的私有参考ID。
+        quote_id:
+          type: string
+          maxLength: 128
+          description: credits模式新请求必须使用完整原输入对应的有效报价；旧键重放须保留原quote_id和正文，先于过期/余额检查。disabled模式不得提供。
+    Artifact:
+      type: object
+      required:
+      - id
+      - url
+      - kind
+      - title
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+          description: 同源/demo-assets或受账户权限保护的/api/v1/assets路径，不返回网关外链
+        kind:
+          type: string
+          enum:
+          - image
+          - video
+          - poster
+        title:
+          type: string
+    Run:
+      type: object
+      required:
+      - id
+      - project_id
+      - model_id
+      - prompt
+      - status
+      - output
+      - seq
+      - created_at
+      - updated_at
+      - workspace_id
+      - provider_mode
+      properties:
+        id:
+          type: string
+        project_id:
+          type: string
+          description: 必须属于当前认证工作区
+        model_id:
+          type: string
+          description: 平台目录模型ID；历史记录可引用已停用或移除模型。
+        prompt:
+          type: string
+        status:
+          type: string
+          enum:
+          - QUEUED
+          - RUNNING
+          - COMPLETED
+          - CANCELLED
+          - FAILED
+          - INTERRUPTED
+        output:
+          type: string
+          description: 部分或完整输出，上限128KiB；失败时保留部分输出
+        seq:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        error:
+          $ref: '#/components/schemas/ResourceError'
+        workspace_id:
+          type: string
+        provider_mode:
+          type: string
+          enum:
+          - demo
+          - live
+        model_version:
+          type: string
+          description: Input可省略以兼容旧客户端；新请求携带已读版本，过期409 MODEL_VERSION_CHANGED。历史记录为受理时快照，旧记录可缺失。
+        model_name:
+          type: string
+          description: 受理时模型展示名称；旧记录可能缺失。
+        model_capabilities:
+          $ref: '#/components/schemas/ModelCapabilities'
+        conversation_id:
+          type: string
+        user_message_id:
+          type: string
+        assistant_message_id:
+          type: string
+        conversation_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        context_summary:
+          $ref: '#/components/schemas/ChatContextSummary'
+        billing:
+          $ref: '#/components/schemas/BillingSummary'
+        moderation:
+          $ref: '#/components/schemas/ModerationSummary'
+    Task:
+      type: object
+      required:
+      - id
+      - project_id
+      - kind
+      - model_id
+      - prompt
+      - status
+      - progress
+      - version
+      - created_at
+      - updated_at
+      - artifacts
+      - workspace_id
+      - provider_mode
+      - can_reconcile
+      properties:
+        id:
+          type: string
+        project_id:
+          type: string
+          description: 必须属于当前认证工作区
+        kind:
+          type: string
+          enum:
+          - image
+          - video
+        model_id:
+          type: string
+          description: 平台目录模型ID；历史记录可引用已停用或移除模型。
+        prompt:
+          type: string
+        status:
+          type: string
+          enum:
+          - QUEUED
+          - SUBMITTING
+          - RUNNING
+          - INGESTING
+          - SUCCEEDED
+          - CANCELLED
+          - FAILED
+          - PARTIAL
+          - SUBMIT_UNKNOWN
+          - RECONCILE_REQUIRED
+          - PROVIDER_STATE_UNKNOWN
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: demo为模拟进度，live来自上游报告；达到100仅表示平台产物导入完成，不承诺剩余时间。
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Artifact'
+        error:
+          $ref: '#/components/schemas/ResourceError'
+        workspace_id:
+          type: string
+        provider_mode:
+          type: string
+          enum:
+          - demo
+          - live
+        can_reconcile:
+          type: boolean
+          description: 服务器判断存在原handle、供应模式一致且处于可核对状态；不意味着可重新生成。
+        reconcile_after:
+          type: string
+          format: date-time
+          description: 15秒持久核对冷却截止时间
+        model_version:
+          type: string
+          description: Input可省略以兼容旧客户端；新请求携带已读版本，过期409 MODEL_VERSION_CHANGED。历史记录为受理时快照，旧记录可缺失。
+        model_name:
+          type: string
+          description: 受理时模型展示名称；旧记录可能缺失。
+        model_capabilities:
+          $ref: '#/components/schemas/ModelCapabilities'
+        parameters:
+          $ref: '#/components/schemas/TaskParameters'
+        operation:
+          type: string
+          enum:
+          - generate
+          - edit
+          description: 省略按generate处理；edit只支持image，必须提供本项目1至4个有序且不重复的私有参考ID。
+        reference_asset_ids:
+          type: array
+          maxItems: 4
+          uniqueItems: true
+          items:
+            type: string
+          description: 有序私有参考ID，edit至少1项；generate不得含参考。原未知请求重试保留原顺序和全部字段。
+        billing:
+          $ref: '#/components/schemas/BillingSummary'
+    User:
+      type: object
+      required:
+      - id
+      - email
+      - name
+      - email_verified
+      - email_verified_at
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        email_verified:
+          type: boolean
+        email_verified_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    Workspace:
+      type: object
+      required:
+      - id
+      - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    Project:
+      type: object
+      required:
+      - id
+      - workspace_id
+      - name
+      - created_at
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    Identity:
+      type: object
+      required:
+      - auth_enabled
+      - user
+      - account_security
+      properties:
+        auth_enabled:
+          type: boolean
+        user:
+          anyOf:
+          - $ref: '#/components/schemas/User'
+          - type: 'null'
+        workspace:
+          $ref: '#/components/schemas/Workspace'
+        project:
+          $ref: '#/components/schemas/Project'
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+        account_security:
+          $ref: '#/components/schemas/AccountSecurityCapabilities'
+        operations:
+          $ref: '#/components/schemas/OperationsCapabilities'
+    AuditDetails:
+      type: object
+      additionalProperties: false
+      properties:
+        from_status:
+          type: string
+        to_status:
+          type: string
+        model_id:
+          type: string
+        kind:
+          type: string
+        revision:
+          type: integer
+          minimum: 1
+        node_count:
+          type: integer
+          minimum: 0
+          maximum: 40
+    AuditEvent:
+      type: object
+      required:
+      - id
+      - workspace_id
+      - project_id
+      - actor_id
+      - actor_type
+      - action
+      - resource_type
+      - resource_id
+      - created_at
+      - details
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        project_id:
+          type: string
+        actor_id:
+          type: string
+          description: 账户ID；本地无认证操作为空字符串，不返回邮箱。
+        actor_type:
+          type: string
+          enum:
+          - user
+          - local
+        action:
+          type: string
+          enum:
+          - project.created
+          - run.accepted
+          - task.accepted
+          - run.cancelled
+          - task.cancelled
+          - task.reconcile_requested
+          - draft.saved
+          - reference.uploaded
+          - asset.updated
+          - asset.trashed
+          - asset.restored
+          - conversation.created
+          - conversation.turn_created
+        resource_type:
+          type: string
+          enum:
+          - project
+          - run
+          - task
+          - draft
+          - reference
+          - asset
+          - conversation
+        resource_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        details:
+          $ref: '#/components/schemas/AuditDetails'
+    AuditPage:
+      type: object
+      required:
+      - items
+      - storage
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEvent'
+        next_cursor:
+          type: string
+          description: 还有更早记录时提供，不透明复合游标；绑定当前工作区/项目范围。
+        storage:
+          type: string
+          enum:
+          - memory
+          - postgres
+    DraftNode:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      properties:
+        id:
+          type: string
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$
+        title:
+          type: string
+          maxLength: 80
+          default: ''
+        note:
+          type: string
+          maxLength: 5000
+          default: ''
+      description: 节点ID须唯一，字符串禁止NUL；省略title/note视为空字符串。
+    ProjectDraft:
+      type: object
+      required:
+      - project_id
+      - revision
+      - nodes
+      - updated_at
+      properties:
+        project_id:
+          type: string
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        nodes:
+          type: array
+          maxItems: 40
+          items:
+            $ref: '#/components/schemas/DraftNode'
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+    DraftSaveInput:
+      type: object
+      additionalProperties: false
+      required:
+      - expected_revision
+      - nodes
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        nodes:
+          type: array
+          maxItems: 40
+          items:
+            $ref: '#/components/schemas/DraftNode'
+      description: JSON体最多1MiB；CAS仅在expected_revision匹配当前版本时保存。
+    DraftRevisionSummary:
+      type: object
+      required:
+      - revision
+      - updated_at
+      - node_count
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        updated_at:
+          type: string
+          format: date-time
+        node_count:
+          type: integer
+          minimum: 0
+          maximum: 40
+    DraftRevisionPage:
+      type: object
+      required:
+      - items
+      - has_more
+      - next_before_revision
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DraftRevisionSummary'
+        has_more:
+          type: boolean
+        next_before_revision:
+          anyOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+    HTTPError:
+      type: object
+      required:
+      - code
+      - message
+      - request_id
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+          pattern: ^req_[a-f0-9]{32}$
+    Readiness:
+      type: object
+      required:
+      - ready
+      - state
+      properties:
+        ready:
+          type: boolean
+        state:
+          type: string
+          enum:
+          - ready
+          - stopping
+          - database_unavailable
+    AdmissionModel:
+      type: object
+      required:
+      - model_id
+      - kind
+      - active
+      - limit
+      - queued
+      - oldest_queued_seconds
+      properties:
+        model_id:
+          type: string
+          enum:
+          - studio-chat
+          - studio-image
+          - studio-video
+        kind:
+          type: string
+          enum:
+          - chat
+          - image
+          - video
+        active:
+          type: integer
+          minimum: 0
+          description: 全部非终态，包括排队、执行、未知和待核实。
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 4096
+        queued:
+          type: integer
+          minimum: 0
+          description: 仅当前QUEUED，可能含供应商排队任务。
+        oldest_queued_seconds:
+          type: number
+          minimum: 0
+          description: 当前QUEUED记录最早created_at至今；不是精确排队停留或完成时间预测。
+    AdmissionResource:
+      type: object
+      required:
+      - active
+      - limit
+      - queued
+      - oldest_queued_seconds
+      - models
+      properties:
+        active:
+          type: integer
+          minimum: 0
+          description: 全部非终态，包括排队、执行、未知和待核实。
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 4096
+        queued:
+          type: integer
+          minimum: 0
+          description: 仅当前QUEUED，可能含供应商排队任务。
+        oldest_queued_seconds:
+          type: number
+          minimum: 0
+          description: 当前QUEUED记录最早created_at至今；不是精确排队停留或完成时间预测。
+        models:
+          type: array
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/AdmissionModel'
+          description: runs含chat；tasks含image和video；数组，不是键值对象。
+    WorkspaceRuntime:
+      type: object
+      required:
+      - scope
+      - ready
+      - state
+      - runs
+      - tasks
+      - streams
+      properties:
+        scope:
+          type: string
+          const: workspace
+        ready:
+          type: boolean
+          const: true
+        state:
+          type: string
+          const: ready
+        runs:
+          $ref: '#/components/schemas/AdmissionResource'
+        tasks:
+          $ref: '#/components/schemas/AdmissionResource'
+        streams:
+          type: object
+          required:
+          - active
+          - limit
+          properties:
+            active:
+              type: integer
+              minimum: 0
+              maximum: 128
+            limit:
+              type: integer
+              minimum: 1
+              maximum: 128
+    ParameterPreset:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - aspect_ratio
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        aspect_ratio:
+          type: string
+        size:
+          type: string
+        resolution:
+          type: string
+        seconds:
+          type: integer
+          minimum: 1
+          maximum: 600
+      description: 完整可支持的参数组合。不可把不同预设的尺寸/比例/时长拼接；id和name仅供界面选择，不写入任务parameters。
+    ModelCapabilities:
+      type: object
+      required:
+      - cancel_supported
+      - max_count
+      - max_prompt_bytes
+      - parameter_presets
+      properties:
+        cancel_supported:
+          type: boolean
+          description: 由实际执行模式生成，不由目录文件声明真实媒体已支持取消。
+        max_count:
+          type: integer
+          minimum: 1
+          maximum: 4
+        max_prompt_bytes:
+          type: integer
+          maximum: 16000
+          minimum: 1
+        parameter_presets:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterPreset'
+          maxItems: 32
+        image_edit_supported:
+          type: boolean
+          description: 仅image可声明支持编辑；旧live配置未声明则关闭。
+        max_reference_images:
+          type: integer
+          minimum: 0
+          maximum: 4
+          description: 关闭为0；启用编辑时1至4。历史快照可能缺少此字段。
+        context_window_tokens:
+          type: integer
+          minimum: 0
+          maximum: 1048576
+          description: chat默认32768，非chat为0；历史快照可缺失。窗口与输出必须满足服务端预算规则，配置不代表供应商自动探测。
+        max_output_tokens:
+          type: integer
+          minimum: 0
+          maximum: 32768
+          description: chat默认4096，非chat为0；历史快照可缺失。窗口与输出必须满足服务端预算规则，配置不代表供应商自动探测。
+      description: chat预设为空；媒体按精确组合验证，video数量固定1。
+    Model:
+      type: object
+      required:
+      - id
+      - name
+      - kind
+      - description
+      - enabled
+      - version
+      - capabilities
+      properties:
+        id:
+          type: string
+          maxLength: 64
+        name:
+          type: string
+        kind:
+          type: string
+          enum:
+          - chat
+          - image
+          - video
+        description:
+          type: string
+        enabled:
+          type: boolean
+        reason:
+          type: string
+        version:
+          type: string
+          description: 不透明能力版本；私有上游映射或能力变更均改变版本，不包含原始映射。
+        capabilities:
+          $ref: '#/components/schemas/ModelCapabilities'
+    ModelCatalog:
+      type: object
+      required:
+      - version
+      - models
+      properties:
+        version:
+          type: string
+        models:
+          type: array
+          maxItems: 32
+          items:
+            $ref: '#/components/schemas/Model'
+          minItems: 1
+    TaskParameters:
+      type: object
+      additionalProperties: false
+      properties:
+        aspect_ratio:
+          type: string
+        size:
+          type: string
+        resolution:
+          type: string
+        seconds:
+          type: integer
+          minimum: 0
+          maximum: 600
+          description: 0或省略从匹配预设填充，video有效结果为1..600。
+        count:
+          type: integer
+          minimum: 0
+          maximum: 4
+          description: 0或省略使用1；有效结果不超过所选模型max_count，视频固定1。
+      description: 有效规格必须匹配所选模型的一个parameter_presets。缺省按服务端目录规则填充；新客户端应提交完整所选组合。
+    ReferenceLimits:
+      type: object
+      required:
+      - max_file_bytes
+      - max_pixels
+      - max_dimension
+      - max_reference_images
+      - allowed_content_types
+      - workspace_max_bytes
+      - workspace_max_files
+      properties:
+        max_file_bytes:
+          type: integer
+          const: 8388608
+        max_pixels:
+          type: integer
+          const: 16000000
+        max_dimension:
+          type: integer
+          const: 8192
+        max_reference_images:
+          type: integer
+          const: 4
+        allowed_content_types:
+          type: array
+          items:
+            type: string
+            enum:
+            - image/png
+            - image/jpeg
+            - image/webp
+        workspace_max_bytes:
+          type: integer
+          const: 134217728
+          description: 原件和缩略图逻辑字节计入工作区限额。
+        workspace_max_files:
+          type: integer
+          const: 100
+      description: 平台本地限制，不是供应商通用限制。全目录额外限制2GiB/4096文件，含原件、预览、提交文件和孤立文件。
+    ReferenceAsset:
+      type: object
+      required:
+      - id
+      - project_id
+      - name
+      - content_type
+      - byte_size
+      - width
+      - height
+      - created_at
+      - url
+      - thumbnail_url
+      properties:
+        id:
+          type: string
+        project_id:
+          type: string
+        name:
+          type: string
+          maxLength: 120
+          description: 移除目录段/控制字符后的展示名，不用于私有文件路径。
+        content_type:
+          type: string
+          enum:
+          - image/png
+          - image/jpeg
+          - image/webp
+        byte_size:
+          type: integer
+          minimum: 1
+          maximum: 8388608
+        width:
+          type: integer
+          minimum: 1
+          maximum: 8192
+        height:
+          type: integer
+          minimum: 1
+          maximum: 8192
+        created_at:
+          type: string
+          format: date-time
+        url:
+          type: string
+          description: 同源受鉴权原件URL，含项目参数；不是供应商可访问的公开地址。
+        thumbnail_url:
+          type: string
+          description: 同源受鉴权PNG预览，最长边512像素。
+      description: 不返回存储路径、内容摘要、blob ID或供应商信息。移出本次选择不删除服务器记录。
+    LibraryEntry:
+      type: object
+      required:
+      - id
+      - project_id
+      - source
+      - kind
+      - name
+      - tags
+      - state
+      - revision
+      - created_at
+      - updated_at
+      - deleted_at
+      - content_url
+      - thumbnail_url
+      properties:
+        id:
+          type: string
+          pattern: ^lib_[a-f0-9]{64}$
+        project_id:
+          type: string
+        source:
+          type: string
+          enum:
+          - reference
+          - generated
+        reference_id:
+          type: string
+        task_id:
+          type: string
+        artifact_id:
+          type: string
+        provider_mode:
+          type: string
+          enum:
+          - demo
+          - live
+          description: 生成产物必有；参考上传省略。
+        kind:
+          type: string
+          enum:
+          - image
+          - video
+          - poster
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        tags:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            minLength: 1
+            maxLength: 32
+        state:
+          type: string
+          enum:
+          - active
+          - trashed
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        content_url:
+          type:
+          - string
+          - 'null'
+          description: 同源项目鉴权地址；trashed为null，不是S3直链。
+        thumbnail_url:
+          type:
+          - string
+          - 'null'
+          description: 最长边512px的同源私有预览；无缩略图或trashed时null。Demo可为明确标示的SVG插画。
+        content_type:
+          type: string
+        byte_size:
+          type: integer
+          minimum: 1
+      description: 独立资产目录；原内容及来源不可变。修订历史是元数据历史，非二进制内容版本。不暴露bucket/key/hash/path/storage_info。旧已导入产物可能缺MIME/大小/缩略图，字段不伪造。
+    LibraryRevision:
+      type: object
+      required:
+      - revision
+      - name
+      - tags
+      - state
+      - updated_at
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        tags:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            minLength: 1
+            maxLength: 32
+        state:
+          type: string
+          enum:
+          - active
+          - trashed
+        updated_at:
+          type: string
+          format: date-time
+      description: 不可变元数据快照，无下载URL；选择旧name/tags可用当前expected_revision另存新版本。
+    LibraryMutation:
+      type: object
+      additionalProperties: false
+      required:
+      - expected_revision
+      - name
+      - tags
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        tags:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            minLength: 1
+            maxLength: 32
+      description: 名称trim，标签trim+转小写去重；拒绝控制字符。
+    LibraryTransition:
+      type: object
+      additionalProperties: false
+      required:
+      - expected_revision
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          maximum: 1000
+    DurableResourceChanged:
+      type: object
+      additionalProperties: false
+      required:
+      - event_id
+      - seq
+      - kind
+      - resource_type
+      - resource_id
+      - resource_version
+      - status
+      - action
+      properties:
+        event_id:
+          type: string
+          pattern: ^evt_[a-f0-9]{32}$
+        seq:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        kind:
+          type: string
+          enum:
+          - task.updated
+          - run.updated
+          - audit.created
+        resource_type:
+          type: string
+          enum:
+          - task
+          - run
+          - project
+          - draft
+          - reference
+          - asset
+          - conversation
+        resource_id:
+          type: string
+        resource_version:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          description: 可为空字符串；不能代替读取最新资源。
+        action:
+          type: string
+          description: audit.created时为既有闭集审计动作，其余为空字符串。
+    DurableStreamReset:
+      type: object
+      additionalProperties: false
+      required:
+      - reason
+      - cursor
+      properties:
+        reason:
+          type: string
+          enum:
+          - initial
+          - cursor_expired
+        cursor:
+          type: string
+          minLength: 1
+          maxLength: 1024
+      description: 要求重新同步当前状态；不重新受理生成，不清除本地编辑。
+    Conversation:
+      type: object
+      required:
+      - id
+      - project_id
+      - title
+      - version
+      - head_message_id
+      - active_run_id
+      - node_count
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        project_id:
+          type: string
+        title:
+          type: string
+          maxLength: 80
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        head_message_id:
+          type:
+          - string
+          - 'null'
+        active_run_id:
+          type:
+          - string
+          - 'null'
+        node_count:
+          type: integer
+          minimum: 0
+          maximum: 256
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      description: 项目私有会话；初始version=1，只有受理新轮改变树头和版本。active_run_id为读取时快照，服务端仍保证同会话含全部分支最多一个活跃Run。
+    ConversationInput:
+      type: object
+      required:
+      - project_id
+      properties:
+        project_id:
+          type: string
+        title:
+          type: string
+          maxLength: 80
+          description: 省略/空白使用新对话；不自动使用消息正文改名。
+      additionalProperties: false
+    ConversationRunInput:
+      type: object
+      required:
+      - expected_version
+      - model_id
+      - operation
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        model_id:
+          type: string
+        model_version:
+          type: string
+        operation:
+          type: string
+          enum:
+          - reply
+          - continue
+        parent_message_id:
+          type:
+          - string
+          - 'null'
+        edited_message_id:
+          type:
+          - string
+          - 'null'
+        input:
+          type: string
+          description: reply为非空且符合模型max_prompt_bytes的原文；continue必须省略或空，服务端固定继续指令。
+        quote_id:
+          type: string
+          maxLength: 128
+          description: credits模式新请求必须使用完整原输入对应的有效报价；旧键重放须保留原quote_id和正文，先于过期/余额检查。disabled模式不得提供。
+      additionalProperties: false
+      description: reply的parent是本会话终止assistant或空根；edited_message_id只允许同会话user且parent等于其原父节点，创建兄弟分支。continue必须指向有输出的终止assistant，不能包含edited_message_id。节点/路径分别最多256/128，客户端不能提交任意历史或角色。
+    ChatContextSummary:
+      type: object
+      required:
+      - input_tokens_estimate
+      - output_tokens_reserved
+      - context_window_tokens
+      - included_messages
+      - omitted_messages
+      - estimator
+      properties:
+        input_tokens_estimate:
+          type: integer
+          minimum: 0
+        output_tokens_reserved:
+          type: integer
+          minimum: 128
+          maximum: 32768
+        context_window_tokens:
+          type: integer
+          minimum: 2048
+          maximum: 1048576
+        included_messages:
+          type: integer
+          minimum: 1
+          maximum: 129
+        omitted_messages:
+          type: integer
+          minimum: 0
+        estimator:
+          type: string
+          const: utf8_bytes_v1
+      description: 受理时冻结的上下文摘要；UTF-8字节+每条16+256余量的保守估算，不是实际token/账单。按完整旧轮裁剪；最新输入必留，continue还须保留来源轮，无法容纳422。
+    ConversationMessage:
+      type: object
+      required:
+      - id
+      - conversation_id
+      - parent_id
+      - role
+      - content
+      - run_id
+      - status
+      - seq
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        conversation_id:
+          type: string
+        parent_id:
+          type:
+          - string
+          - 'null'
+        role:
+          type: string
+          enum:
+          - user
+          - assistant
+        content:
+          type: string
+        run_id:
+          type:
+          - string
+          - 'null'
+        status:
+          type: string
+          enum:
+          - QUEUED
+          - RUNNING
+          - COMPLETED
+          - CANCELLED
+          - FAILED
+          - INTERRUPTED
+        seq:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        model_id:
+          type: string
+        model_name:
+          type: string
+        error:
+          $ref: '#/components/schemas/ResourceError'
+        moderation:
+          $ref: '#/components/schemas/ModerationSummary'
+      description: user原文/父节点不可变；assistant引用Run，其内容/状态/seq由Run读取。user固定COMPLETED/seq0。部分输出可能在重启后回到最后检查点。
+    ConversationBranch:
+      type: object
+      required:
+      - leaf_message_id
+      - parent_message_id
+      - run_id
+      - status
+      - preview
+      - created_at
+      properties:
+        leaf_message_id:
+          type: string
+        parent_message_id:
+          type:
+          - string
+          - 'null'
+        run_id:
+          type:
+          - string
+          - 'null'
+        status:
+          type: string
+          enum:
+          - QUEUED
+          - RUNNING
+          - COMPLETED
+          - CANCELLED
+          - FAILED
+          - INTERRUPTED
+        preview:
+          type: string
+          maxLength: 160
+        created_at:
+          type: string
+          format: date-time
+        moderation:
+          $ref: '#/components/schemas/ModerationSummary'
+    ConversationPage:
+      type: object
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/Conversation'
+        next_cursor:
+          type: string
+          maxLength: 1024
+    ConversationMessagePage:
+      type: object
+      required:
+      - items
+      - leaf_message_id
+      - has_more
+      - conversation_version
+      properties:
+        items:
+          type: array
+          maxItems: 40
+          items:
+            $ref: '#/components/schemas/ConversationMessage'
+        leaf_message_id:
+          type:
+          - string
+          - 'null'
+        next_cursor:
+          type: string
+          maxLength: 1024
+        has_more:
+          type: boolean
+        conversation_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+      description: 从叶子向旧祖先分页，每页items按祖先到后代排序；响应正文预算1MiB，可能少于limit；cursor绑定当前leaf，不能跨分支复用。
+    ConversationBranchPage:
+      type: object
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ConversationBranch'
+        next_cursor:
+          type: string
+          maxLength: 1024
+    AccountSecurityCapabilities:
+      type: object
+      required:
+      - enabled
+      - mail_configured
+      - verification_enabled
+      - password_reset_enabled
+      properties:
+        enabled:
+          type: boolean
+        mail_configured:
+          type: boolean
+        verification_enabled:
+          type: boolean
+        password_reset_enabled:
+          type: boolean
+        reason:
+          type: string
+          description: 认证或邮件不可用的用户可读说明。mail_configured表示配置可用，不证明真实投递成功。
+    AccountActionResult:
+      type: object
+      required:
+      - ok
+      properties:
+        ok:
+          type: boolean
+          const: true
+    AccountReauthenticationResult:
+      type: object
+      required:
+      - ok
+      - reauthenticate
+      properties:
+        ok:
+          type: boolean
+          const: true
+        reauthenticate:
+          type: boolean
+          const: true
+    AccountSessionRevokeResult:
+      type: object
+      required:
+      - ok
+      - reauthenticate
+      properties:
+        ok:
+          type: boolean
+          const: true
+        reauthenticate:
+          type: boolean
+    AccountMailRequestResult:
+      type: object
+      required:
+      - ok
+      - message
+      properties:
+        ok:
+          type: boolean
+          const: true
+        message:
+          type: string
+          const: 如果账户符合条件，系统将安排发送邮件；请稍后检查邮箱
+    AccountTokenInput:
+      type: object
+      required:
+      - token
+      properties:
+        token:
+          type: string
+          minLength: 43
+          maxLength: 43
+          pattern: ^[A-Za-z0-9_-]{43}$
+          writeOnly: true
+          description: 32随机字节的规范base64url编码；只从邮件fragment取得，不放查询字符串、日志或本地存储。
+      additionalProperties: false
+    AccountResetRequest:
+      type: object
+      required:
+      - email
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+      additionalProperties: false
+    AccountPasswordReset:
+      type: object
+      required:
+      - token
+      - new_password
+      properties:
+        token:
+          type: string
+          minLength: 43
+          maxLength: 43
+          pattern: ^[A-Za-z0-9_-]{43}$
+          writeOnly: true
+          description: 32随机字节的规范base64url编码；只从邮件fragment取得，不放查询字符串、日志或本地存储。
+        new_password:
+          type: string
+          writeOnly: true
+          description: 10—72 UTF-8字节，拒绝NUL与无效UTF-8；浏览器完成一次提交后清除。
+      additionalProperties: false
+    AccountPasswordChange:
+      type: object
+      required:
+      - current_password
+      - new_password
+      properties:
+        current_password:
+          type: string
+          writeOnly: true
+          description: 当前密码，最大72 UTF-8字节。
+        new_password:
+          type: string
+          writeOnly: true
+          description: 10—72 UTF-8字节，拒绝NUL与无效UTF-8；浏览器完成一次提交后清除。
+      additionalProperties: false
+    AccountSession:
+      type: object
+      required:
+      - id
+      - current
+      - created_at
+      - expires_at
+      properties:
+        id:
+          type: string
+          pattern: ^ses_[a-f0-9]{32}$
+        current:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+    AccountSessionPage:
+      type: object
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/AccountSession'
+    AccountSecurityEvent:
+      type: object
+      required:
+      - id
+      - action
+      - created_at
+      properties:
+        id:
+          type: string
+          pattern: ^sec_[a-f0-9]{32}$
+        action:
+          type: string
+          enum:
+          - account.registered
+          - account.login
+          - account.logout
+          - email.verification_requested
+          - email.verified
+          - password.reset_requested
+          - password.reset
+          - password.changed
+          - session.revoked
+          - sessions.revoked_all
+        created_at:
+          type: string
+          format: date-time
+    AccountSecurityEventPage:
+      type: object
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/AccountSecurityEvent'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 512
+    BillingCapabilities:
+      type: object
+      required:
+      - enabled
+      - mode
+      - unit
+      - scale
+      properties:
+        enabled:
+          type: boolean
+        mode:
+          type: string
+          enum:
+          - disabled
+          - credits
+        unit:
+          type: string
+          const: CREDIT
+        scale:
+          type: integer
+          const: 6
+        pricing_version:
+          type: string
+        reason:
+          type: string
+    BillingSummary:
+      type: object
+      required:
+      - quote_id
+      - reservation_id
+      - price_version
+      - state
+      - reserved_micros
+      - charged_micros
+      - released_micros
+      - refunded_micros
+      - unit
+      - scale
+      - version
+      properties:
+        quote_id:
+          type: string
+        reservation_id:
+          type: string
+        price_version:
+          type: string
+        state:
+          type: string
+          enum:
+          - HELD
+          - REVIEW
+          - SETTLED
+          - RELEASED
+          - REFUNDED
+        reserved_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        charged_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        released_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        refunded_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        unit:
+          type: string
+          const: CREDIT
+        scale:
+          type: integer
+          const: 6
+        version:
+          type: integer
+          minimum: 1
+        review_reason:
+          type: string
+      description: 业务状态与结算状态独立。REVIEW保留剩余冻结；旧未计费资源无billing，不追扣。累计charged不减退款，refunded单列。
+    LedgerWallet:
+      type: object
+      required:
+      - workspace_id
+      - unit
+      - scale
+      - available_micros
+      - reserved_micros
+      - review_micros
+      - charged_micros
+      - refunded_micros
+      - version
+      - updated_at
+      properties:
+        workspace_id:
+          type: string
+        unit:
+          type: string
+          const: CREDIT
+        scale:
+          type: integer
+          const: 6
+        available_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        reserved_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        review_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        charged_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        refunded_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        version:
+          type: integer
+          minimum: 0
+        updated_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+      description: 整个当前工作区的权益。review_micros是reserved_micros的子集，不能相加。空钱包读零值，不创建或赠送额度。
+    LedgerEntry:
+      type: object
+      required:
+      - id
+      - kind
+      - amount_micros
+      - available_delta_micros
+      - reserved_delta_micros
+      - unit
+      - scale
+      - created_at
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+          - CREDIT
+          - RESERVE
+          - CHARGE
+          - RELEASE
+          - REFUND
+          - REFUND_RELEASE
+        project_id:
+          type: string
+        resource_type:
+          type: string
+        resource_id:
+          type: string
+        reservation_id:
+          type: string
+        quote_id:
+          type: string
+        reversal_of:
+          type: string
+        amount_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        available_delta_micros:
+          type: string
+          pattern: ^-?(0|[1-9][0-9]{0,15})$
+        reserved_delta_micros:
+          type: string
+          pattern: ^-?(0|[1-9][0-9]{0,15})$
+        unit:
+          type: string
+          const: CREDIT
+        scale:
+          type: integer
+          const: 6
+        created_at:
+          type: string
+          format: date-time
+    LedgerReservation:
+      type: object
+      required:
+      - quote_id
+      - reservation_id
+      - price_version
+      - state
+      - reserved_micros
+      - charged_micros
+      - released_micros
+      - refunded_micros
+      - unit
+      - scale
+      - version
+      - project_id
+      - resource_type
+      - resource_id
+      - model_id
+      - created_at
+      - updated_at
+      properties:
+        quote_id:
+          type: string
+        reservation_id:
+          type: string
+        price_version:
+          type: string
+        state:
+          type: string
+          enum:
+          - HELD
+          - REVIEW
+          - SETTLED
+          - RELEASED
+          - REFUNDED
+        reserved_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        charged_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        released_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        refunded_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        unit:
+          type: string
+          const: CREDIT
+        scale:
+          type: integer
+          const: 6
+        version:
+          type: integer
+          minimum: 1
+        review_reason:
+          type: string
+        project_id:
+          type: string
+        resource_type:
+          type: string
+        resource_id:
+          type: string
+        model_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    BillingQuote:
+      type: object
+      required:
+      - id
+      - workspace_id
+      - project_id
+      - resource_type
+      - model_id
+      - model_version
+      - price_version
+      - policy_version
+      - basis
+      - provider_mode
+      - unit
+      - scale
+      - reserve_micros
+      - input_per_million_micros
+      - output_per_million_micros
+      - artifact_micros
+      - max_input_tokens
+      - max_output_tokens
+      - requested_units
+      - expires_at
+      - created_at
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        project_id:
+          type: string
+        resource_type:
+          type: string
+        model_id:
+          type: string
+        model_version:
+          type: string
+        price_version:
+          type: string
+        policy_version:
+          type: string
+        conversation_id:
+          type: string
+        basis:
+          type: string
+          enum:
+          - chat_tokens
+          - delivered_artifact
+        provider_mode:
+          type: string
+          enum:
+          - demo
+          - live
+        unit:
+          type: string
+          const: CREDIT
+        scale:
+          type: integer
+          const: 6
+        reserve_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        input_per_million_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        output_per_million_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        artifact_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: CREDIT最小单位，1创作点=1000000 micros；最大9000000000000000。用整数运算，不转换成人民币或网关quota。
+        max_input_tokens:
+          type: integer
+          minimum: 0
+          maximum: 1000000000
+        max_output_tokens:
+          type: integer
+          minimum: 0
+          maximum: 1000000000
+        requested_units:
+          type: integer
+          minimum: 0
+          maximum: 1000000000
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+      description: 报价10分钟有效，保存不可变价格/完整输入hash/scope/模型版本；未消费每工作区64、全局10000上限。价格变更不使已发未过期报价失效，但当前模型校验仍生效。冻结为最大额度，实际消费取可信usage或已注册交付产物，剩余释放。
+    BillingQuoteInput:
+      oneOf:
+      - type: object
+        required:
+        - resource_type
+        - run_input
+        properties:
+          resource_type:
+            type: string
+            const: run
+          run_input:
+            allOf:
+            - $ref: '#/components/schemas/RunInput'
+            - not:
+                required:
+                - quote_id
+        additionalProperties: false
+      - type: object
+        required:
+        - resource_type
+        - task_input
+        properties:
+          resource_type:
+            type: string
+            const: task
+          task_input:
+            allOf:
+            - $ref: '#/components/schemas/TaskInput'
+            - not:
+                required:
+                - quote_id
+        additionalProperties: false
+      - type: object
+        required:
+        - resource_type
+        - conversation_input
+        - conversation_id
+        properties:
+          resource_type:
+            type: string
+            const: conversation_run
+          conversation_input:
+            allOf:
+            - $ref: '#/components/schemas/ConversationRunInput'
+            - not:
+                required:
+                - quote_id
+          conversation_id:
+            type: string
+        additionalProperties: false
+      description: 三种变体必须恰好一种；仅报价不发起生成或冻结，输入不得包含quote_id（包括空字符串）。先创建空会话，再为其完整请求报价。
+    LedgerEntryPage:
+      type: object
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LedgerEntry'
+          maxItems: 50
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 1024
+    LedgerReservationPage:
+      type: object
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LedgerReservation'
+          maxItems: 50
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 1024
+    OperationsAccess:
+      type: object
+      additionalProperties: false
+      required:
+      - workspace_id
+      - role
+      - permissions
+      - version
+      properties:
+        workspace_id:
+          type: string
+        role:
+          type: string
+          enum:
+          - observer
+          - operator
+          - finance
+        permissions:
+          type: array
+          items:
+            type: string
+            enum:
+            - read
+            - case_open
+            - investigate
+            - finance
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+    OperationsCapabilities:
+      type: object
+      additionalProperties: false
+      required:
+      - enabled
+      properties:
+        enabled:
+          type: boolean
+        access:
+          type: array
+          maxItems: 128
+          items:
+            $ref: '#/components/schemas/OperationsAccess'
+        reason:
+          type: string
+    OperationsException:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - resource_type
+      - workspace_id
+      - project_id
+      - model_id
+      - provider_mode
+      - status
+      - resource_version
+      - can_reconcile
+      - updated_at
+      properties:
+        id:
+          type: string
+        resource_type:
+          type: string
+          enum:
+          - run
+          - task
+        workspace_id:
+          type: string
+        project_id:
+          type: string
+        model_id:
+          type: string
+        provider_mode:
+          type: string
+          enum:
+          - demo
+          - live
+        status:
+          type: string
+        resource_version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        billing:
+          $ref: '#/components/schemas/BillingSummary'
+        can_reconcile:
+          type: boolean
+        open_case_id:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+    OperationsReceipt:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - plan_id
+      - action
+      - case_version
+      - resource_version
+      - billing_version
+      - executed_at
+      properties:
+        id:
+          type: string
+        plan_id:
+          type: string
+        action:
+          type: string
+          enum:
+          - reconcile
+          - release
+          - charge
+          - no_action
+        case_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        resource_version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        billing_version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        executed_at:
+          type: string
+          format: date-time
+    OperationsCase:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - workspace_id
+      - project_id
+      - resource_type
+      - resource_id
+      - resource_version
+      - state
+      - version
+      - reason
+      - evidence_ref
+      - created_at
+      - updated_at
+      - receipt
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        project_id:
+          type: string
+        resource_type:
+          type: string
+          enum:
+          - run
+          - task
+        resource_id:
+          type: string
+        resource_version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        state:
+          type: string
+          enum:
+          - OPEN
+          - RESOLVED
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        reason:
+          type: string
+          enum:
+          - provider_unknown
+          - delivery_issue
+          - usage_missing
+          - billing_review
+          - manual_review
+        evidence_ref:
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$
+          description: 安全短标识；禁止:// URL、凭据及正文。
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        resource:
+          $ref: '#/components/schemas/OperationsException'
+        receipt:
+          oneOf:
+          - $ref: '#/components/schemas/OperationsReceipt'
+          - type: 'null'
+    OperationsCaseInput:
+      type: object
+      additionalProperties: false
+      required:
+      - workspace_id
+      - resource_type
+      - resource_id
+      - resource_version
+      - reason
+      - evidence_ref
+      properties:
+        workspace_id:
+          type: string
+        resource_type:
+          type: string
+          enum:
+          - run
+          - task
+        resource_id:
+          type: string
+        resource_version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        reason:
+          type: string
+          enum:
+          - provider_unknown
+          - delivery_issue
+          - usage_missing
+          - billing_review
+          - manual_review
+        evidence_ref:
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$
+          description: 安全短标识；禁止:// URL、凭据及正文。
+    OperationsUsage:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - source
+      - complete
+      - prompt_tokens
+      - completion_tokens
+      - total_tokens
+      properties:
+        status:
+          type: string
+          enum:
+          - reported
+          - demo
+        source:
+          type: string
+          enum:
+          - gateway
+          - demo
+        complete:
+          type: boolean
+          const: true
+        prompt_tokens:
+          type: integer
+          minimum: 0
+          maximum: 1000000000
+        completion_tokens:
+          type: integer
+          minimum: 0
+          maximum: 1000000000
+        total_tokens:
+          type: integer
+          minimum: 0
+          maximum: 1000000000
+      description: 人工已核实计量证据，必须完整、计数一致、来源符合原冻结模式且不超过原预算；不能按文字长度推算。
+    OperationsPlanInput:
+      type: object
+      additionalProperties: false
+      required:
+      - workspace_id
+      - expected_version
+      - action
+      - reason
+      - evidence_ref
+      properties:
+        workspace_id:
+          type: string
+        expected_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        action:
+          type: string
+          enum:
+          - reconcile
+          - release
+          - charge
+          - no_action
+        reason:
+          type: string
+          enum:
+          - provider_unknown
+          - delivery_issue
+          - usage_missing
+          - billing_review
+          - manual_review
+        evidence_ref:
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$
+          description: 安全短标识；禁止:// URL、凭据及正文。
+        usage:
+          $ref: '#/components/schemas/OperationsUsage'
+        delivered_units:
+          type: integer
+          minimum: 1
+          maximum: 4
+    OperationsEffect:
+      type: object
+      additionalProperties: false
+      required:
+      - charged_micros
+      - released_micros
+      - unit
+      - scale
+      properties:
+        charged_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: 以micro为单位的CREDIT十进制整数字符串，1000000 micros=1点；不代表人民币。
+        released_micros:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})$
+          description: 以micro为单位的CREDIT十进制整数字符串，1000000 micros=1点；不代表人民币。
+        unit:
+          type: string
+          const: CREDIT
+        scale:
+          type: integer
+          const: 6
+      description: 本次新增结算/释放，不是钱包累计数或操作后余额。
+    OperationsPlan:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - case_id
+      - case_version
+      - resource_version
+      - billing_version
+      - action
+      - plan_digest
+      - expires_at
+      - effect
+      properties:
+        id:
+          type: string
+        case_id:
+          type: string
+        case_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        resource_version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        billing_version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        action:
+          type: string
+          enum:
+          - reconcile
+          - release
+          - charge
+          - no_action
+        plan_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        expires_at:
+          type: string
+          format: date-time
+        effect:
+          $ref: '#/components/schemas/OperationsEffect'
+    OperationsExecuteInput:
+      type: object
+      additionalProperties: false
+      required:
+      - workspace_id
+      - expected_version
+      - plan_id
+      - plan_digest
+      - password
+      properties:
+        workspace_id:
+          type: string
+        expected_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        plan_id:
+          type: string
+        plan_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          minLength: 10
+          maxLength: 72
+          description: 当前密码，实际校验10—72 UTF-8字节，只在本次请求内；不得持久化。
+    OperationsCaseEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - action
+      - resource_type
+      - resource_id
+      - operation_id
+      - reason_code
+      - evidence_ref
+      - version
+      - created_at
+      properties:
+        id:
+          type: string
+        action:
+          type: string
+          enum:
+          - case.created
+          - case.updated
+          - case.previewed
+          - case.executed
+          - case.reconciled
+          - case.resolved
+          - case.refunded
+        resource_type:
+          type: string
+        resource_id:
+          type: string
+        operation_id:
+          type: string
+        reason_code:
+          type: string
+        evidence_ref:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        created_at:
+          type: string
+          format: date-time
+    OperationsExceptionPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/OperationsException'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 2048
+    OperationsCasePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/OperationsCase'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 2048
+    OperationsCaseEventPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/OperationsCaseEvent'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 2048
+    ModerationSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - policy_id
+      - policy_version
+      - phase
+      - state
+      - version
+      properties:
+        policy_id:
+          type: string
+          maxLength: 64
+        policy_version:
+          type: string
+          maxLength: 64
+        phase:
+          type: string
+          enum:
+          - output
+        state:
+          type: string
+          enum:
+          - PENDING
+          - ALLOWED
+          - BLOCKED
+          - REVIEW
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        reason_code:
+          type: string
+          enum:
+          - allowed
+          - policy_block
+          - policy_review
+          - check_unavailable
+          - check_protocol
+          - check_timeout
+          - check_busy
+          - invalid_content
+          - content_too_large
+          - policy_unavailable
+          - generation_incomplete
+          - execution_incomplete
+          - process_restarted
+          - cancelled
+      description: 仅安全摘要，无规则/候选正文/endpoint/凭据。只有ALLOWED且运行COMPLETED开放正文；nil或缺失为历史/未启用，并非审核通过。审核version与资源seq分别比较。
+    ModerationCapability:
+      type: object
+      additionalProperties: false
+      required:
+      - enabled
+      - mode
+      - text_delivery
+      - media_supported
+      properties:
+        enabled:
+          type: boolean
+        mode:
+          type: string
+          enum:
+          - disabled
+          - rules
+          - http
+        policy_id:
+          type: string
+        policy_version:
+          type: string
+        text_delivery:
+          type: string
+          enum:
+          - stream
+          - after_review
+        media_supported:
+          type: boolean
+      description: 当前新请求能力。rules仅demo有限规则；http为私有text-v1适配，真实渠道另验收。enabled时本轮媒体新请求不支持，已受理请求仍原幂等优先。
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: studio_session
+      description: 仅AUTH_MODE=required时必需。HttpOnly/SameSite=Strict，7天过期；TLS下Secure。
+    MetricsBearer:
+      type: http
+      scheme: bearer
+      description: 独立METRICS_TOKEN，32至256可见ASCII字符，不得复用AI密钥；普通账户cookie不能访问，未配置404。
+security:
+- SessionCookie: []

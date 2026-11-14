@@ -1,0 +1,50 @@
+{
+  "version": "0.8.0",
+  "date": "2026-11-13",
+  "mode": "demo",
+  "database": "PostgreSQL 18.7",
+  "schema_versions": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "checks": {
+    "old_session_project_tasks_preserved": true,
+    "old_library_revision_8_preserved": true,
+    "peer_task_without_refresh": true,
+    "unsaved_prompt_preserved": true,
+    "unsaved_asset_name_preserved_on_peer_update": true,
+    "peer_revision_9_and_restore_10": true,
+    "visible_library_updated_revision_10": true,
+    "reload_restores_new_task": true,
+    "no_resubmission_on_refresh": true,
+    "mobile_no_horizontal_overflow": true,
+    "temporary_viewport_reset": true
+  },
+  "new_task": {
+    "id": "task_b644e573a23d8a45e78e9c9fdde2f75b",
+    "status": "SUCCEEDED",
+    "version": 15
+  },
+  "assets_after": 6,
+  "mobile": {
+    "viewport": 390,
+    "height": 844,
+    "document": 390,
+    "main": 380,
+    "mainClient": 380
+  },
+  "final_console_since": "2026-11-13T12:37:34.622Z",
+  "final_warning_error_count": 0,
+  "limitations": [
+    "Demo provider only; no paid AI calls",
+    "Process kill/restart and cursor recovery verified separately by real process Go integration test",
+    "No mobile physical device or production load validation"
+  ]
+}

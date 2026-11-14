@@ -1,0 +1,47 @@
+{
+  "version": "0.10.0",
+  "verified_on": "2026-11-13",
+  "mode": "Local Vite + built Go, PostgreSQL auth, demo AI provider, mail disabled",
+  "checks": [
+    "Existing pre-011 browser session remains authenticated after migration",
+    "Account menu and sidebar open account security; unconfigured mail is explicitly disabled",
+    "Created one owned QA peer through local API, then confirmed revoke in UI: session count 3 -> 2; current browser and old other session retained",
+    "Revoked peer cookie receives 401 from sessions API; user security activity shows login and revoke",
+    "Revoke-all confirmation explains reauthentication; cancellation preserves current session; corrected current-credentials wording verified",
+    "Malformed fragment is removed and shows invalid-link page",
+    "Syntactically valid nonexistent fixture verification token is removed from URL, waits for explicit confirm, returns invalid-link then disables repeat submit",
+    "Reset-link page clears fragment and explains all-session invalidation; no new password entered or submitted in browser",
+    "Anonymous localhost login opens forgot-password page; input and send disabled with accurate mail-not-configured explanation",
+    "390x844 account security, sessions and recovery layouts have no horizontal overflow; controls remain reachable",
+    "Temporary recovery tab closed and viewport overrides reset; main preview kept open"
+  ],
+  "desktop": {
+    "width": 1440,
+    "height": 1000
+  },
+  "mobile_security": {
+    "width": 390,
+    "height": 844,
+    "documentWidth": 390,
+    "mainWidth": 380,
+    "mainScrollWidth": 380
+  },
+  "mobile_recovery": {
+    "width": 390,
+    "height": 844,
+    "documentWidth": 390
+  },
+  "final_viewport": {
+    "width": 571,
+    "height": 618,
+    "documentWidth": 571
+  },
+  "console_warnings_errors_since_final_restart": 0,
+  "limitations": [
+    "Viewport simulation, not physical mobile device",
+    "No real mail sent; no main QA password changed",
+    "Password change/reset, valid token consumption and TLS SMTP delivery covered by separate Go HTTP + PostgreSQL fixtures",
+    "Local browser recovery protects page-memory only; no cross-close credential or draft storage"
+  ],
+  "status": "passed"
+}

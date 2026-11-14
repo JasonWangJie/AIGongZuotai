@@ -1,0 +1,42 @@
+{
+  "version": "0.7.0",
+  "verified_on": "2026-11-13",
+  "environment": {
+    "frontend": "http://127.0.0.1:5173",
+    "backend": "Go local demo",
+    "database": "PostgreSQL 18.7 local persistent",
+    "migrations": "001-007",
+    "paid_provider_calls": false
+  },
+  "checks": [
+    "007 migration backfilled 5 existing assets (2 references, 3 demo results) in selected project; existing session/project/task records retained.",
+    "Saved PNG name and normalized tags at revision 2; loaded revision 1 metadata and explicitly saved as revision 3 without altering file.",
+    "Closed unsaved detail and reopened local recovery entry; original edited name and tags retained; saved revision 4.",
+    "Trashed revision 5 removes preview and download links; restored revision 6; searched Chinese substring and found exactly matching asset.",
+    "Restarted actual Go/Vite development service and reloaded browser; session/project, 5 entries, persisted metadata revision 6 retained.",
+    "After frontend fixes, trashed revision 7 disables name/tags/save while keeping restore available; trash filter has 1 item; restore returns active revision 8.",
+    "Active listing restores source to its original created-at position; unit tests separately cover page-tail reinsertion guard.",
+    "Desktop1280x900 and mobile390x844 checked; mobile document scroll width390, main380/client380 and dialog335/client335; loaded thumbnail512x341.",
+    "Final clean reload warning/error console entries:0. Earlier expected service restart disconnect and transient development JSX edit errors excluded; final TS/build verified separately.",
+    "Temporary viewport reset and existing preview tab retained."
+  ],
+  "limitations": [
+    "No mobile physical-device test.",
+    "No public hosting, actual AI provider call or cloud S3 tenancy validation.",
+    "Version history is metadata, not image/video binary content.",
+    "Unknown mutation and cross-project/session recovery chiefly verified by automated tests; browser did not inject network uncertainty."
+  ],
+  "screenshots": [
+    "library-phase7.png",
+    "library-detail-phase7.png",
+    "mobile-library-phase7.png",
+    "mobile-library-grid-phase7.png"
+  ],
+  "upgrade_backup": {
+    "path": ".runtime/backups/pre-v0.7-1794569010398",
+    "database_bytes": 45254,
+    "database_dump": "Pre-007 stopped-app custom dump; pg_restore --list parsed successfully.",
+    "private_files": "Payload copies taken immediately after upgrade before UI mutations; no payload changed; post-007 owner markers excluded from pre-007 backup.",
+    "full_restore_drill": false
+  }
+}

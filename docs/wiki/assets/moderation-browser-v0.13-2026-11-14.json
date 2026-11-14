@@ -1,0 +1,63 @@
+{
+  "date": "2026-11-14",
+  "version": "0.13.0",
+  "batch": "V14-B1",
+  "tool": "CUA in-app browser",
+  "environment": "Loopback Go + PostgreSQL + React; demo Provider; local rules; demo CREDIT; real mail disabled",
+  "results": [
+    {
+      "case": "Input blocked before admission",
+      "status": "passed",
+      "observed": "Definite input rejection; draft retained; empty conversation still 0 nodes. No new generation or freeze is additionally verified by PG tests."
+    },
+    {
+      "case": "Output blocked",
+      "status": "passed",
+      "observed": "2 nodes; no assistant body/copy/continue; refresh status available; 0.045056 CREDIT frozen in REVIEW; no automatic new request."
+    },
+    {
+      "case": "Ordinary question after isolated turn",
+      "status": "passed",
+      "observed": "New input allowed; completed ALLOWED answer visible; context includes 1 and omits 2 messages; settled 0.000384 CREDIT, released 0.044672; blocked predecessor remains isolated."
+    },
+    {
+      "case": "Reload persistence",
+      "status": "passed",
+      "observed": "Reload returns to default image studio; selecting chat restores chosen conversation with 4 nodes and both persisted moderation summaries; only approved assistant content visible."
+    },
+    {
+      "case": "Enabled moderation media capability",
+      "status": "passed",
+      "observed": "Image studio states text-only moderation; new generation quote disabled; old demo asset remains historical and is not described as reviewed."
+    },
+    {
+      "case": "Responsive layout",
+      "status": "passed",
+      "desktop": {
+        "width": 1440,
+        "height": 1000,
+        "document_width": 1440
+      },
+      "mobile": {
+        "width": 390,
+        "height": 844,
+        "document_width": 390
+      },
+      "observed": "Delivery notice, restricted reply, context summary and composer inspected; temporary viewport reset."
+    }
+  ],
+  "console_warning_error_count": 0,
+  "screenshots": [
+    "moderation-phase13.jpg",
+    "moderation-input-phase13.jpg",
+    "moderation-blocked-phase13.jpg",
+    "mobile-moderation-phase13.jpg",
+    "mobile-moderation-blocked-phase13.jpg"
+  ],
+  "limitations": [
+    "No real moderation supplier, AI charge, external SMTP or payment",
+    "No browser verification of output REVIEW variant; Go/PG/frontend tests cover REVIEW",
+    "No image/video content moderation or manual release workflow in B1",
+    "Browser observation verifies UI behavior; no early body leakage is additionally asserted by API/SSE/PG tests"
+  ]
+}

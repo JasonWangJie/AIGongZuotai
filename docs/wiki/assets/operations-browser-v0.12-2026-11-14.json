@@ -1,0 +1,57 @@
+{
+  "version": "0.12.0",
+  "date": "2026-11-14",
+  "scope": "Local CUA browser against real Go API and PostgreSQL, demo provider, synthetic operator account; no real funds",
+  "checks": {
+    "ordinary_account_ops_entry_hidden": true,
+    "operator_finance_scope_visible": true,
+    "observer_scope_read_only_and_empty": true,
+    "creator_project_independent_from_ops_scope": true,
+    "open_case_v1": true,
+    "evidence_change_invalidates_plan": true,
+    "wrong_password_denied_without_logout": true,
+    "password_cleared_after_submit": true,
+    "explicit_confirmation_and_current_password_required": true,
+    "case_reloaded_from_server_after_scope_switch": true,
+    "consumed_case_has_no_execute_button": true,
+    "audit_items_read_after_explicit_refresh": 5
+  },
+  "result": {
+    "action": "release",
+    "case_state": "RESOLVED",
+    "billing_state": "RELEASED",
+    "released_credits": "0.045056",
+    "charged_credits": "0",
+    "case_version": 2,
+    "resource_version": 4,
+    "billing_version": 4,
+    "receipt_id": "orec_e1a2c70fd4999d5af408f4118a83d04f",
+    "plan_id": "oplan_b47d6f2ad4798745db0c6ea078a66a33"
+  },
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 1000,
+      "document_scroll_width": 1440
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "document_scroll_width": 390
+    }
+  ],
+  "screenshots": [
+    "operations-phase12.jpg",
+    "operations-plan-phase12.jpg",
+    "mobile-operations-phase12.jpg",
+    "mobile-operations-plan-phase12.jpg"
+  ],
+  "final_captured_console_warnings_errors": 0,
+  "viewport_override_reset": true,
+  "limitations": [
+    "Wrong-password rejection was deliberate",
+    "Screenshots are browser-captured compressed images",
+    "Unknown COMMIT response recovery covered by PostgreSQL fault-injection test, not this browser session",
+    "No claim of production delivery or financial refund"
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "checked_at": "2026-11-13T15:54:31.970Z",
+  "version": "0.11.0",
+  "backup": ".runtime/backups/pre-v0.11-20261113T152159947Z",
+  "dump_sha256": "0faff5abecf7214ee685c5361a60fddf48aeb41c8d6a359575cc9c19c126414a",
+  "before": {
+    "schema_versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "asset_count": 8,
+    "asset_max_revision": 10,
+    "draft_max_revision": 5,
+    "conversation_node_counts": [
+      12
+    ],
+    "mail_outbox_count": 0,
+    "account_tokens_count": 0,
+    "run_count": 8
+  },
+  "after": {
+    "schema_versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "asset_count": 8,
+    "asset_max_revision": 10,
+    "draft_max_revision": 5,
+    "conversation_node_counts": [
+      12
+    ],
+    "mail_outbox_count": 0,
+    "account_tokens_count": 0,
+    "run_count": 8
+  },
+  "unchanged_business_data": true,
+  "new_wallets": 0,
+  "new_reservations": 0,
+  "new_journals": 0
+}

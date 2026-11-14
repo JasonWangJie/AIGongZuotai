@@ -1,0 +1,51 @@
+{
+  "version": "0.6.0",
+  "verified_on": "2026-11-13",
+  "binary_sha256": "fe4b95681a95da5a5533d837776261aa6abfc1ecfda266042971a18d8440fc76",
+  "scope": "Local PostgreSQL + demo Provider, desktop browser automation; no real paid AI call.",
+  "desktop_viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "mobile_viewport": {
+    "width": 390,
+    "height": 844,
+    "document_scroll_width": 390
+  },
+  "checks": [
+    "PNG and WebP upload via native file chooser, real progress then verified 512x341 thumbnails from 960x640 originals",
+    "Reference order reversed to WebP then PNG; accepted demo edit completed with exactly two ordered references persisted in PostgreSQL",
+    "Remove from selection retains project library; reuse succeeds; another project lists zero references; returning restores page selection",
+    "Text disguised as PNG rejected with format explanation and request ID; original-file retry retained, explicitly forgotten afterwards",
+    "001..006 migration confirmed; old projects, tasks and cloud draft v5 retained",
+    "Actual server restart plus page reload preserved two private references and completed edit; selection can be rebuilt from library",
+    "Final tab console warnings/errors empty; temporary viewport override reset"
+  ],
+  "database": {
+    "migrations": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "reference_count": 2,
+    "reference_logical_bytes": 40058,
+    "edit_reference_order": [
+      "source.webp",
+      "source.png"
+    ],
+    "old_draft_version": 5
+  },
+  "screenshots": [
+    "references-phase6.jpg",
+    "mobile-references-phase6.jpg"
+  ],
+  "limitations": [
+    "Demo output is an SVG illustration, not actual image editing quality.",
+    "No mobile physical device, object storage, file deletion or paid provider acceptance."
+  ],
+  "status": "passed",
+  "build_reference": "binary_sha256 identifies the production build from the same frozen source; browser QA used the dev build, not the identical executable."
+}

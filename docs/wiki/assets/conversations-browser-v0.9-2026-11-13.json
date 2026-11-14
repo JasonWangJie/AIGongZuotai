@@ -1,0 +1,35 @@
+{
+  "version": "0.9.0",
+  "verified_at": "2026-11-13T14:02:30.496Z",
+  "mode": "Local Vite + built Go, PostgreSQL auth, demo Provider; no paid supplier calls",
+  "checks": [
+    "create persistent conversation and first stream",
+    "second turn reports three context messages",
+    "editing first user creates brother branch; original two turns remain readable",
+    "stop retains partial output; explicit confirmation starts a new continuation with seven context messages",
+    "peer tab new turn updates node count while local draft and parent remain unchanged; version confirmation required",
+    "switching branches retains draft target and blocks accidental send; clear requires confirmation",
+    "reload restores selected conversation/branch IDs through authenticated reads; 12 nodes remain",
+    "legacy single-run output remains accessible",
+    "390x844 mobile conversation list opens/closes and composer is reachable without horizontal overflow"
+  ],
+  "desktop": {
+    "width": 1440,
+    "height": 960,
+    "documentWidth": 1440
+  },
+  "mobile": {
+    "width": 390,
+    "height": 844,
+    "documentWidth": 390,
+    "mainClientWidth": 380,
+    "mainScrollWidth": 380
+  },
+  "console_warnings_errors": 0,
+  "limitations": [
+    "Viewport simulation, not a physical mobile-device test",
+    "Draft text and unknown-request body/key remain page-memory only; not cross-close recovery",
+    "Real structured upstream messages, DB rollback and actual process crash are covered by separate integration tests"
+  ],
+  "status": "passed"
+}

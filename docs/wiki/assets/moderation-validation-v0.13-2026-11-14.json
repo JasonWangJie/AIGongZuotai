@@ -1,0 +1,121 @@
+{
+  "date": "2026-11-14",
+  "version": "0.13.0",
+  "batch": "V14-B1 local",
+  "full_v14_status": "in_progress",
+  "go_check": {
+    "command": "npm run check",
+    "status": "passed",
+    "go_vet": true,
+    "go_tests": true,
+    "go_build": true,
+    "task_tests": 8,
+    "frontend_tests": 237,
+    "frontend_files": 24,
+    "frontend_seconds": 1.54,
+    "vite_seconds": 1.57
+  },
+  "postgres": {
+    "command": "npm run test:db",
+    "status": "passed",
+    "studio_seconds": 170.241,
+    "isolated_schema": true
+  },
+  "moderation_postgres": {
+    "command": "go test ./internal/studio -run '^TestPostgresModerat' -count=1 -v (isolated TEST_DATABASE_URL)",
+    "status": "passed",
+    "test_functions": 5,
+    "seconds": 8.853
+  },
+  "commit_ack_loss": {
+    "test": "TestPostgresModerationUnknownCommitRecoversOnlyCommittedDecision",
+    "status": "passed",
+    "package_seconds": 2.418,
+    "subcases": [
+      "ALLOWED",
+      "BLOCKED"
+    ],
+    "scope": "Real PostgreSQL COMMIT acknowledgement dropped by TCP proxy; cache/SSE stay private before recovery; App restart reads only committed decision; original-key replay does not call Provider; not OS process Kill"
+  },
+  "openapi": {
+    "version": "0.13.0",
+    "paths": 61,
+    "operations": 73,
+    "schemas": 84,
+    "refs": 344,
+    "valid": true
+  },
+  "smokes": {
+    "passed_commands": [
+      "smoke",
+      "smoke:runtime",
+      "smoke:catalog",
+      "smoke:references",
+      "smoke:library",
+      "smoke:conversations"
+    ],
+    "five_json_reports": [
+      {
+        "name": "runtime",
+        "binary_sha256": "609e55e226b187081c4b1f369a373fcbb38c8670f07acb7ea533f3fa80405f9a",
+        "status": "passed"
+      },
+      {
+        "name": "catalog",
+        "binary_sha256": "609e55e226b187081c4b1f369a373fcbb38c8670f07acb7ea533f3fa80405f9a",
+        "status": "passed"
+      },
+      {
+        "name": "reference",
+        "binary_sha256": "609e55e226b187081c4b1f369a373fcbb38c8670f07acb7ea533f3fa80405f9a",
+        "status": "passed"
+      },
+      {
+        "name": "library",
+        "binary_sha256": "609e55e226b187081c4b1f369a373fcbb38c8670f07acb7ea533f3fa80405f9a",
+        "status": "passed"
+      },
+      {
+        "name": "conversation",
+        "binary_sha256": "609e55e226b187081c4b1f369a373fcbb38c8670f07acb7ea533f3fa80405f9a",
+        "status": "passed"
+      }
+    ],
+    "hostile_parent_environment_overridden": [
+      "MODERATION_MODE=http with invalid policy/endpoint and fixture credential",
+      "OPERATIONS_ENABLED=true",
+      "BILLING_MODE=credits with invalid price file",
+      "AUTH_MAIL_ENABLED=true with invalid host"
+    ]
+  },
+  "binary_sha256": "609e55e226b187081c4b1f369a373fcbb38c8670f07acb7ea533f3fa80405f9a",
+  "performance_artifact": "performance-local-v0.13-2026-11-14.json",
+  "browser_artifact": "moderation-browser-v0.13-2026-11-14.json",
+  "upgrade_artifact": "moderation-upgrade-v0.13-2026-11-14.json",
+  "real_provider_requests": 0,
+  "real_external_mail": false,
+  "real_payments": false,
+  "limitations": [
+    "Single control writer retained",
+    "No real text moderation supplier selected by user",
+    "B2 image/video moderation and V14-C pending",
+    "No candidate-text persistence, manual recheck or release",
+    "Rules fixture does not measure semantic accuracy",
+    "Performance baseline disables moderation and PG; not moderation throughput or production capacity"
+  ],
+  "governance": {
+    "status": "passed",
+    "commands": [
+      "todo:sync",
+      "check:todo",
+      "check:docs",
+      "check:changes"
+    ],
+    "modules": 10,
+    "batches": 23,
+    "done_batches": 11,
+    "documents": 113,
+    "ledgers": 54,
+    "changed_paths": 472
+  }
+}

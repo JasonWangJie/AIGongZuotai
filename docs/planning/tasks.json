@@ -1,0 +1,1517 @@
+{
+  "schema_version": 1,
+  "updated_on": "2026-11-14",
+  "modules": [
+    {
+      "id": "H01",
+      "title": "身份与权限",
+      "scope": "账户、会话、组织权限、身份恢复"
+    },
+    {
+      "id": "H02",
+      "title": "项目与创作数据",
+      "scope": "项目、草稿、版本、协作数据"
+    },
+    {
+      "id": "H03",
+      "title": "模型与执行",
+      "scope": "LLM、图片/视频协议、参数能力"
+    },
+    {
+      "id": "H04",
+      "title": "资产与交付",
+      "scope": "上传、私有存储、下载、生命周期"
+    },
+    {
+      "id": "H05",
+      "title": "账务与支付",
+      "scope": "报价、权益账本、冻结结算、订单退款"
+    },
+    {
+      "id": "H06",
+      "title": "审核与运营",
+      "scope": "审计、治理、风控、运营控制台"
+    },
+    {
+      "id": "H07",
+      "title": "可靠性与性能",
+      "scope": "Outbox、租约、配额、可观测、容量与灾备"
+    },
+    {
+      "id": "H08",
+      "title": "前端体验",
+      "scope": "工作台、移动布局、可访问性、性能"
+    },
+    {
+      "id": "H09",
+      "title": "工程与交付治理",
+      "scope": "TODO、文档、测试、版本、部署"
+    },
+    {
+      "id": "H10",
+      "title": "工作流与专项创作",
+      "scope": "DAG、模板、分镜、漫剧、演示文稿"
+    }
+  ],
+  "batches": [
+    {
+      "id": "V00",
+      "title": "工程与演示工作台基线",
+      "status": "done",
+      "modules": [
+        "H03",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [],
+      "scope": "可运行的 Go/React 演示链路与文档治理。",
+      "acceptance": [
+        "可运行工作台与SSE/媒体任务演示",
+        "提交幂等、取消和来源保护验证",
+        "README/Wiki/台账及治理检查"
+      ],
+      "checks": [
+        {
+          "label": "v0.1历史验收",
+          "status": "passed",
+          "command": "npm run check; npm run smoke",
+          "note": "完成记录保留在001—003，不以本轮改写替代历史。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/changes/2026-11-13-001-foundation.md",
+          "note": "首批验收证据"
+        },
+        {
+          "path": "docs/wiki/assets/workbench-phase1.jpg",
+          "note": "工作台截图"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-13-001-foundation.md",
+        "docs/changes/2026-11-13-002-go-core.md",
+        "docs/changes/2026-11-13-003-workbench.md"
+      ],
+      "completed_on": "2026-11-13",
+      "blocker": null
+    },
+    {
+      "id": "V01",
+      "title": "账户、持久任务与实际媒体协议",
+      "status": "done",
+      "modules": [
+        "H01",
+        "H02",
+        "H03",
+        "H04",
+        "H07",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V00"
+      ],
+      "scope": "v0.2单写者本地验收；供应商付费实测单列V15。",
+      "acceptance": [
+        "PG账户与项目资源隔离",
+        "持久幂等、检查点、已知任务续查和未知受理不重提",
+        "私有资产导入/鉴权与恢复测试、桌面和手机尺寸验收"
+      ],
+      "checks": [
+        {
+          "label": "v0.2历史验收",
+          "status": "passed",
+          "command": "npm run check; npm run test:db; npm run smoke",
+          "note": "Go31函数及子用例、前端36项、真实PG与浏览器重启验收。真实网关调用未验收，单列V15。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/changes/2026-11-13-007-integration-database.md",
+          "note": "集成验收证据"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-2026-11-13.json",
+          "note": "仅本地demo性能基线"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-13-004-persistence-auth.md",
+        "docs/changes/2026-11-13-005-media-gateway.md",
+        "docs/changes/2026-11-13-006-accounts-projects.md",
+        "docs/changes/2026-11-13-007-integration-database.md",
+        "docs/changes/2026-11-13-008-performance-baseline.md"
+      ],
+      "completed_on": "2026-11-13",
+      "blocker": null
+    },
+    {
+      "id": "V02",
+      "title": "横向模块与纵向批次治理",
+      "status": "done",
+      "modules": [
+        "H09"
+      ],
+      "depends_on": [
+        "V01"
+      ],
+      "scope": "生成唯一任务数据源和可勾选TODO，之后逐批验收并同步完成标记。",
+      "acceptance": [
+        "所有剩余范围映射到模块与可验收批次",
+        "完成批次必须有测试证据、台账和完成日期",
+        "依赖、编号、证据路径和生成文档漂移自动检查"
+      ],
+      "checks": [
+        {
+          "label": "治理校验",
+          "status": "passed",
+          "command": "npm run test:todo; npm run check:todo; npm run check:changes",
+          "note": "8项治理单测、生成一致性与27份文档/9份台账同步检查通过。完成标记后重新生成并校验。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "scripts/tasks.test.mjs",
+          "note": "8项治理边界测试"
+        },
+        {
+          "path": "docs/planning/README.md",
+          "note": "批次维护规则"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-13-009-batch-tracking.md"
+      ],
+      "completed_on": "2026-11-13",
+      "blocker": null
+    },
+    {
+      "id": "V03",
+      "title": "项目云端草稿与版本恢复",
+      "status": "done",
+      "modules": [
+        "H01",
+        "H02",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V01",
+        "V02",
+        "V04"
+      ],
+      "scope": "把PG模式的本地草稿升级为项目私有持久草稿；不承诺DAG执行。",
+      "acceptance": [
+        "保存/读取/历史/恢复全链路通过",
+        "乐观并发冲突保留编辑内容，网络不明保留原幂等键",
+        "跨项目/账户隔离，重启恢复，memory模式明确本地边界"
+      ],
+      "checks": [
+        {
+          "label": "草稿保存、恢复与保护联合验收",
+          "status": "passed",
+          "command": "npm run test:db; npm run check; npm run smoke",
+          "note": "真实PG双连接CAS/幂等/权限/重启/历史防改删/审计失败回滚通过；57项前端测试及双窗口冲突、恢复为新版、401重登保留编辑、离开保护与390x844手机页面实测通过。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/wiki/drafts.md",
+          "note": "草稿契约与边界"
+        },
+        {
+          "path": "internal/studio/drafts_test.go",
+          "note": "真实PG并发、幂等、权限验证"
+        },
+        {
+          "path": "apps/workbench/src/draftState.test.ts",
+          "note": "草稿状态与恢复仓测试"
+        },
+        {
+          "path": "docs/wiki/assets/drafts-phase3.jpg",
+          "note": "保存后的云端草稿"
+        },
+        {
+          "path": "docs/changes/2026-11-13-013-batch-integration.md",
+          "note": "联合验收证据"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-13-010-project-drafts.md",
+        "docs/changes/2026-11-13-011-drafts-activity-workbench.md",
+        "docs/changes/2026-11-13-013-batch-integration.md"
+      ],
+      "completed_on": "2026-11-13",
+      "blocker": null
+    },
+    {
+      "id": "V04",
+      "title": "关键业务审计与活动记录",
+      "status": "done",
+      "modules": [
+        "H01",
+        "H02",
+        "H06",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V01",
+        "V02"
+      ],
+      "scope": "记录项目、运行/任务受理、取消/核对等明确业务动作，提供归属隔离的只读活动记录。",
+      "acceptance": [
+        "关键业务状态与审计同事务提交",
+        "幂等重放不重复受理记录，审计不包含提示词、输出或凭据",
+        "游标分页、跨账户拒绝与UI活动记录验证；覆盖范围明确"
+      ],
+      "checks": [
+        {
+          "label": "审计事务与活动页联合验收",
+          "status": "passed",
+          "command": "npm run test:db; npm run check; npm run smoke",
+          "note": "真实PG全量11.130秒通过，故障事务/候选缓存/无广播、复合游标/权限/去重通过；桌面及390x844手机活动页与服务重启留存实测通过。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/wiki/audit.md",
+          "note": "审计覆盖与脱敏边界"
+        },
+        {
+          "path": "internal/studio/audit_test.go",
+          "note": "权限、分页和事务故障验证"
+        },
+        {
+          "path": "docs/wiki/assets/activity-phase3.jpg",
+          "note": "真实活动页面"
+        },
+        {
+          "path": "docs/changes/2026-11-13-013-batch-integration.md",
+          "note": "联合验收证据"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-13-011-drafts-activity-workbench.md",
+        "docs/changes/2026-11-13-012-transactional-audit.md",
+        "docs/changes/2026-11-13-013-batch-integration.md"
+      ],
+      "completed_on": "2026-11-13",
+      "blocker": null
+    },
+    {
+      "id": "V05",
+      "title": "可观测与资源准入",
+      "status": "done",
+      "modules": [
+        "H01",
+        "H03",
+        "H07",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V04"
+      ],
+      "scope": "单实例可观测、请求关联、工作区/模型/SSE资源准入及用户可见容量/冷却反馈；分布式配额仍由V16验收。",
+      "acceptance": [
+        "存活与就绪分离，数据库失效不假健康，探针不请求真实模型",
+        "指标路由/错误标签固定有界，不泄正文/凭据/租户；指标需独立运维令牌",
+        "工作区及模型限额、终态释放、未知状态占用、幂等重放和重启恢复正确",
+        "流订阅限额、慢消费者、满载拒绝/恢复及PG隔离负例通过",
+        "前端真实容量、低频/隐藏暂停刷新、冷却和请求编号，不自动重发收费请求"
+      ],
+      "checks": [
+        {
+          "label": "准入、观测与前端源码/构建",
+          "status": "passed",
+          "command": "npm run check; npm run test:db",
+          "note": "最终check通过，Go65函数及子例/前端70/治理8、vet/TS/构建；真实PG全量studio14.012秒，含工作区隔离、未知占用/重启与health200/ready503。"
+        },
+        {
+          "label": "独立进程与性能回归",
+          "status": "passed",
+          "command": "npm run smoke; npm run smoke:runtime; npm run perf:local",
+          "note": "两套冒烟通过，runtime5组报告含二进制摘要；本地bootstrap P95 21.39ms。非真实网关/生产容量成绩。"
+        },
+        {
+          "label": "数据库升级与浏览器验收",
+          "status": "passed",
+          "command": "pg_dump + psql只读迁移核对；CUA桌面/390x844及独立小限额UI",
+          "note": "升级前备份，版本004与2索引确认。容量/429/冷却/输入保留/无自动重发/手动恢复通过；侧栏关闭23秒无runtime请求；截图保留。复制反馈成功，跨工具剪贴板读回未记通过。"
+        },
+        {
+          "label": "契约与交付治理",
+          "status": "passed",
+          "command": "OpenAPI严格YAML/引用核对; npm run check:docs; npm run check:changes; npm run check:todo",
+          "note": "OpenAPI25路径/29操作/94引用；README/Wiki/014-017台账与任务源统一，V06-V22仍未完成。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/wiki/admission.md",
+          "note": "持久准入与幂等规则"
+        },
+        {
+          "path": "docs/wiki/observability.md",
+          "note": "探针、指标及缓存边界"
+        },
+        {
+          "path": "docs/wiki/assets/runtime-smoke-v0.4-2026-11-13.json",
+          "note": "独立运行冒烟实测"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.4-2026-11-13.json",
+          "note": "v0.4本地性能基线"
+        },
+        {
+          "path": "docs/wiki/assets/runtime-phase4.jpg",
+          "note": "真实PG容量界面"
+        },
+        {
+          "path": "docs/wiki/assets/admission-phase4.jpg",
+          "note": "满载拒绝与冷却界面"
+        },
+        {
+          "path": "docs/wiki/assets/mobile-runtime-phase4.jpg",
+          "note": "390x844容量布局"
+        },
+        {
+          "path": "docs/changes/2026-11-13-017-runtime-integration.md",
+          "note": "联合验收与实际限制"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-13-014-resource-admission.md",
+        "docs/changes/2026-11-13-015-observability.md",
+        "docs/changes/2026-11-13-016-runtime-workbench.md",
+        "docs/changes/2026-11-13-017-runtime-integration.md"
+      ],
+      "completed_on": "2026-11-13",
+      "blocker": null
+    },
+    {
+      "id": "V06",
+      "title": "模型目录与参数能力",
+      "status": "done",
+      "modules": [
+        "H03",
+        "H07",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V01"
+      ],
+      "scope": "有限服务端模型配置、版本化能力与精确预设、原幂等和历史执行快照，完整模型/规格工作台；真实供应商联调另由V15验收。",
+      "acceptance": [
+        "真实模型配置映射与能力版本",
+        "尺寸/时长/数量在前后端一致校验",
+        "停用模型保留旧任务身份与读取能力，缓存更新验证"
+      ],
+      "checks": [
+        {
+          "label": "目录、快照、Provider与前端源码/真实PG",
+          "status": "passed",
+          "command": "npm run check; npm run test:db; npm run build",
+          "note": "Go81函数及子例、前端85、治理8、vet/TS/构建；最终真实PG全量studio14.699秒，包含005格式栅栏、原请求重放与停用恢复。"
+        },
+        {
+          "label": "独立进程、接口结构与回归基线",
+          "status": "passed",
+          "command": "npm run smoke; npm run smoke:runtime; npm run smoke:catalog; npm run perf:local; OpenAPI结构核对",
+          "note": "三套冒烟通过；目录3组/运行5组。26路径30操作109引用。bootstrap32并发1000次P95 20.80ms；非生产容量成绩。"
+        },
+        {
+          "label": "升级与桌面/窄屏联合验收",
+          "status": "passed",
+          "command": "本地PG备份/005升级；CUA桌面与390x844；PG快照只读核对",
+          "note": "旧项目任务/草稿v5保留，新任务身份/参数持久；多模型/数量/中文字节/10秒1080p/停用刷新通过，截图及浏览器报告留存。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/wiki/models.md",
+          "note": "配置、能力、历史快照与兼容边界"
+        },
+        {
+          "path": "internal/studio/catalog_test.go",
+          "note": "目录、精确参数与真实PG升级/恢复"
+        },
+        {
+          "path": "internal/studio/migrations/005_model_snapshots.sql",
+          "note": "阻止旧二进制写丢快照的格式版本"
+        },
+        {
+          "path": "scripts/catalog-smoke.mjs",
+          "note": "独立目录进程验收"
+        },
+        {
+          "path": "docs/wiki/assets/catalog-smoke-v0.5-2026-11-13.json",
+          "note": "最终二进制目录冒烟证据"
+        },
+        {
+          "path": "docs/wiki/assets/browser-models-v0.5-2026-11-13.json",
+          "note": "真实浏览器和PG联合核对"
+        },
+        {
+          "path": "docs/wiki/assets/models-phase5.jpg",
+          "note": "模型规格桌面界面"
+        },
+        {
+          "path": "docs/wiki/assets/mobile-models-phase5.jpg",
+          "note": "390x844模型设置"
+        },
+        {
+          "path": "docs/changes/2026-11-13-021-model-integration.md",
+          "note": "全部验证结果与边界"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-13-018-model-catalog.md",
+        "docs/changes/2026-11-13-019-model-provider.md",
+        "docs/changes/2026-11-13-020-model-workbench.md",
+        "docs/changes/2026-11-13-021-model-integration.md"
+      ],
+      "completed_on": "2026-11-13",
+      "blocker": null
+    },
+    {
+      "id": "V07",
+      "title": "参考素材上传与图片编辑",
+      "status": "blocked",
+      "modules": [
+        "H01",
+        "H03",
+        "H04",
+        "H07",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V06"
+      ],
+      "scope": "上传私有参考素材，完整贯通文档中的图片编辑路径。",
+      "acceptance": [
+        "限额、真实格式、文件大小、归属与引用校验",
+        "编辑提交原始请求持久化与幂等正确",
+        "上传→编辑→查询→导入→下载端到端fixture和真实验收"
+      ],
+      "checks": [
+        {
+          "label": "私有参考素材与权限边界",
+          "status": "passed",
+          "command": "npm run check; npm run test:db",
+          "note": "106个Go测试函数及子例、真实PG25.156秒、前端100项、治理8项、vet/TS/生产构建通过；格式、限额、权限、事务和006升级已验收。"
+        },
+        {
+          "label": "编辑协议、重启与结果交付",
+          "status": "passed",
+          "command": "npm run smoke; npm run smoke:runtime; npm run smoke:catalog; npm run smoke:references; npm run perf:local; 浏览器验收",
+          "note": "四套隔离冒烟、实际multipart HTTP fixture与PG重启通过；修复停机Query误写FAILED。桌面/390x844验证上传、排序编辑、复用、项目隔离和旧数据保留；demo不能替代真实效果。"
+        },
+        {
+          "label": "真实供应商端到端验收",
+          "status": "blocked",
+          "command": "配置服务端真实模型/凭据后执行受控上传→编辑→查询→导入→下载",
+          "note": "当前没有真实服务端凭据及真实生成验收记录；本地fixture不能替代此条。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/wiki/assets/reference-smoke-v0.6-2026-11-13.json",
+          "note": "参考素材隔离冒烟"
+        },
+        {
+          "path": "docs/wiki/assets/references-browser-v0.6-2026-11-13.json",
+          "note": "桌面手机与数据库验收"
+        },
+        {
+          "path": "docs/wiki/assets/references-phase6.jpg",
+          "note": "图片编辑工作台"
+        },
+        {
+          "path": "docs/wiki/assets/mobile-references-phase6.jpg",
+          "note": "390x844参考素材"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.6-2026-11-13.json",
+          "note": "同版本本地性能基线"
+        },
+        {
+          "path": "docs/changes/2026-11-13-025-reference-integration.md",
+          "note": "联合验证与真实待条件"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-13-022-reference-assets.md",
+        "docs/changes/2026-11-13-023-media-edit-provider.md",
+        "docs/changes/2026-11-13-024-reference-workbench.md",
+        "docs/changes/2026-11-13-025-reference-integration.md"
+      ],
+      "completed_on": null,
+      "blocker": "V07本地实现、真实PG、协议fixture与浏览器已通过；尚缺服务端已开通的真实图片编辑模型/凭据及受控调用验收条件。按references与media-gateway Wiki配置私有环境及结果域名，确认实际模型支持参考图后执行受控上传→编辑→查询→导入→下载，记录证据后才能完成本批；密钥不需发送到对话或提交仓库。"
+    },
+    {
+      "id": "V08",
+      "title": "资产库与对象存储",
+      "status": "done",
+      "modules": [
+        "H01",
+        "H02",
+        "H04",
+        "H06",
+        "H07",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V01"
+      ],
+      "scope": "可检索、管理、备份的独立资产元数据与存储接口。",
+      "acceptance": [
+        "搜索/标签/版本/软删除及恢复",
+        "S3兼容私有对象导入、受鉴权下载和过期处理",
+        "本地到对象存储迁移、孤立文件回收与权限验收"
+      ],
+      "checks": [
+        {
+          "label": "独立资产目录与版本权限",
+          "status": "passed",
+          "command": "npm run check; npm run test:db",
+          "note": "129个Go函数及子例、真实PG studio42.534秒、前端118项、治理8项、vet/TS/构建。覆盖目录/来源与审计原子性、CAS并发、原键、不可变修订、回收恢复和007回填/格式栅栏。"
+        },
+        {
+          "label": "私有对象存储与迁移",
+          "status": "passed",
+          "command": "加载隔离TEST_S3环境后 go test ./internal/studio -run TestS3Real -count=1 -v；go run ./cmd/storage 计划及两次apply",
+          "note": "根独立真实SeaweedFS两项测试通过0.273秒；私有导入、完整读回、缩略图、Range/HEAD、对象缺失、回收恢复、原键不重复生成；CLI复制校验与重入保留原件。不是云生产/真实AI验收。"
+        },
+        {
+          "label": "孤立文件维护与工程验收",
+          "status": "passed",
+          "command": "npm run smoke; npm run smoke:runtime; npm run smoke:catalog; npm run smoke:references; npm run smoke:library; npm run perf:local; OpenAPI严格校验",
+          "note": "五套冒烟通过。PG维护保护所有引用、默认dry-run、错误owner/数据库/计划拒绝，apply仅测试临时孤立文件。OpenAPI36路径46操作194引用。32并发1000次bootstrap P95 21.80ms，非生产容量。"
+        },
+        {
+          "label": "旧库升级、浏览器与文档",
+          "status": "passed",
+          "command": "本地PG备份/007升级；CUA桌面与390x844；npm run check:todo; npm run check:changes",
+          "note": "旧5项素材回填，会话/项目/任务保留；元数据历史另存、未保存恢复、回收恢复、检索、实际应用重启通过。手机无横溢、缩略图512x341；修复trash输入与恢复排序。61份文档/30台账同步，详细事实见030。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/wiki/assets.md",
+          "note": "目录、版本、权限及恢复契约"
+        },
+        {
+          "path": "docs/wiki/object-storage.md",
+          "note": "真实S3兼容配置、迁移与限制"
+        },
+        {
+          "path": "docs/wiki/storage-maintenance.md",
+          "note": "双锁、数据库归属、可达性与计划复核"
+        },
+        {
+          "path": "internal/studio/asset_library_test.go",
+          "note": "HTTP与真实PG并发/回填/事务测试"
+        },
+        {
+          "path": "internal/studio/storage_maintenance_test.go",
+          "note": "跨进程锁、错库、计划与临时目录apply"
+        },
+        {
+          "path": "docs/wiki/assets/object-storage-v0.7-2026-11-13.json",
+          "note": "真实SeaweedFS及迁移CLI证据"
+        },
+        {
+          "path": "docs/wiki/assets/library-smoke-v0.7-2026-11-13.json",
+          "note": "独立资产库二进制冒烟"
+        },
+        {
+          "path": "docs/wiki/assets/library-browser-v0.7-2026-11-13.json",
+          "note": "升级/重启与真实页面验证"
+        },
+        {
+          "path": "docs/wiki/assets/library-detail-phase7.png",
+          "note": "已持久保存的素材详情"
+        },
+        {
+          "path": "docs/wiki/assets/mobile-library-phase7.png",
+          "note": "390x844手机素材详情"
+        },
+        {
+          "path": "docs/changes/2026-11-13-030-asset-library-integration.md",
+          "note": "根独立集成、问题修复及下一步"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-13-026-asset-library.md",
+        "docs/changes/2026-11-13-027-object-storage.md",
+        "docs/changes/2026-11-13-028-library-workbench.md",
+        "docs/changes/2026-11-13-029-storage-maintenance.md",
+        "docs/changes/2026-11-13-030-asset-library-integration.md"
+      ],
+      "completed_on": "2026-11-13",
+      "blocker": null
+    },
+    {
+      "id": "V09",
+      "title": "持久事件与任务租约隔离",
+      "status": "done",
+      "modules": [
+        "H01",
+        "H03",
+        "H06",
+        "H07",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V04",
+        "V05",
+        "V08"
+      ],
+      "scope": "业务/审计同事务Outbox、持久feed与范围回放、数据库任务领取/续约/旧执行者隔离及前端有界补齐；保持单控制写者和私有目录锁，全站多实例由V16验收。",
+      "acceptance": [
+        "状态与Outbox同事务，消费去重和断点恢复",
+        "租约/epoch fencing与超时回收，旧执行者拒绝写入",
+        "重复投递、宕机、失锁和不明受理故障注入"
+      ],
+      "checks": [
+        {
+          "label": "同事务持久事件与恢复",
+          "status": "passed",
+          "command": "npm run test:db; Go实际COMMIT确认丢失/并发序号/背压与SSE专项",
+          "note": "根最终真实PG全量studio66.419秒；producer/consumer回滚和确认丢失、10000pending、2048窗口、重启去重、scope与reset未投影水位通过。"
+        },
+        {
+          "label": "租约领取与旧执行者隔离",
+          "status": "passed",
+          "command": "真实PostgreSQL租约13函数专项；npm run test:db；实际子进程Kill/重启",
+          "note": "13函数专项10.457秒，最终全量包含；8连接竞争、续租/失锁、generation及版本、claim后取消/核对缓存保护、步骤超时、媒体/LLM背压通过。实际Kill后一次POST、SUBMIT_UNKNOWN、原键和游标恢复。"
+        },
+        {
+          "label": "前端、升级与联合验收",
+          "status": "passed",
+          "command": "npm run check; 五套smoke; npm run perf:local; OpenAPI核对; CUA桌面/390x844; npm run check:changes",
+          "note": "135前端/8治理、vet/TS/构建；300/400资源有界收敛。停机联备并升级001—009，双窗口更新与dirty编辑保留、重载恢复、窄屏/控制台通过。五份报告匹配最终二进制；无生产容量或多实例声明。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "internal/studio/outbox_test.go",
+          "note": "事务、提交顺序、确认丢失与回放水位"
+        },
+        {
+          "path": "internal/studio/task_leases_test.go",
+          "note": "真实连接租约/失效隔离和背压"
+        },
+        {
+          "path": "internal/studio/durable_process_test.go",
+          "note": "真实进程Kill、一次上游POST、原键与SSE恢复"
+        },
+        {
+          "path": "apps/workbench/src/durableEvents.test.ts",
+          "note": "有界恢复、尾部可达、重试及静默收敛"
+        },
+        {
+          "path": "docs/wiki/events.md",
+          "note": "持久通知协议与耐久边界"
+        },
+        {
+          "path": "docs/wiki/scheduler.md",
+          "note": "实际worker与租约配置"
+        },
+        {
+          "path": "docs/wiki/decisions/0006-durable-events-and-task-leases.md",
+          "note": "事务顺序与单控制写者决策"
+        },
+        {
+          "path": "docs/wiki/assets/events-browser-v0.8-2026-11-13.json",
+          "note": "真实页面与升级记录"
+        },
+        {
+          "path": "docs/wiki/assets/events-phase8.png",
+          "note": "跨窗口更新保留创作输入"
+        },
+        {
+          "path": "docs/wiki/assets/events-dirty-phase8.png",
+          "note": "未保存素材编辑保护"
+        },
+        {
+          "path": "docs/wiki/assets/mobile-events-phase8.png",
+          "note": "390x844布局"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.8-2026-11-13.json",
+          "note": "最终二进制本机回归口径"
+        },
+        {
+          "path": "docs/wiki/assets/runtime-smoke-v0.8-2026-11-13.json",
+          "note": "隔离限额/可观测回归"
+        },
+        {
+          "path": "docs/wiki/assets/catalog-smoke-v0.8-2026-11-13.json",
+          "note": "模型目录回归"
+        },
+        {
+          "path": "docs/wiki/assets/reference-smoke-v0.8-2026-11-13.json",
+          "note": "参考素材编辑回归"
+        },
+        {
+          "path": "docs/wiki/assets/library-smoke-v0.8-2026-11-13.json",
+          "note": "资产生命周期回归"
+        },
+        {
+          "path": "docs/changes/2026-11-13-034-durable-execution-integration.md",
+          "note": "根独立验收与实际限制"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-13-031-durable-events.md",
+        "docs/changes/2026-11-13-032-task-leases.md",
+        "docs/changes/2026-11-13-033-durable-events-client.md",
+        "docs/changes/2026-11-13-034-durable-execution-integration.md"
+      ],
+      "completed_on": "2026-11-13",
+      "blocker": null
+    },
+    {
+      "id": "V10",
+      "title": "多轮对话与上下文管理",
+      "status": "done",
+      "modules": [
+        "H01",
+        "H02",
+        "H03",
+        "H06",
+        "H07",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V01",
+        "V06",
+        "V09"
+      ],
+      "scope": "持久对话、上下文裁剪、消息分支与继续生成。",
+      "acceptance": [
+        "会话/消息归属和多轮上下文真实传递",
+        "上下文预算与模型窗口校验",
+        "编辑分支、停止/继续、刷新与中断恢复，不重发旧请求"
+      ],
+      "checks": [
+        {
+          "label": "持久对话、消息树及故障恢复",
+          "status": "passed",
+          "command": "npm run test:db; go test ./internal/studio -run TestPostgresConversationActualCrash -count=1",
+          "note": "根真实PG全量studio82.959秒；CAS/作用域/不可变/事务回滚/COMMIT不明和实际Kill保留部分输出、原键不重发通过。"
+        },
+        {
+          "label": "上下文预算与真实上游请求结构",
+          "status": "passed",
+          "command": "npm run smoke:conversations; Go conversation/provider/catalog tests",
+          "note": "独立Go+HTTP fixture五组通过，7个预期POST；真实messages、分支隔离、整轮裁剪、超限前置拒绝与显式继续核对。未发真实付费请求。"
+        },
+        {
+          "label": "工作台及联合验收",
+          "status": "passed",
+          "command": "npm run check; 六套隔离smoke; npm run perf:local; CUA桌面/双窗口/390x844; OpenAPI与文档检查",
+          "note": "154项前端/8项治理/Go vet/TS/构建通过；双窗口输入和父节点保护、分支/停止继续/刷新/旧历史及无横溢通过；性能仅本地memory/demo。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "internal/studio/conversation_test.go",
+          "note": "会话/分支/上下文与PG事务回归"
+        },
+        {
+          "path": "internal/studio/durable_process_test.go",
+          "note": "实际进程Kill及部分回答恢复"
+        },
+        {
+          "path": "scripts/conversation-smoke.mjs",
+          "note": "独立真实HTTP上下文验收脚本"
+        },
+        {
+          "path": "docs/planning/v10-contract.md",
+          "note": "冻结接口与实施边界"
+        },
+        {
+          "path": "docs/wiki/conversation.md",
+          "note": "会话领域与010迁移说明"
+        },
+        {
+          "path": "docs/wiki/chat-provider.md",
+          "note": "结构化Provider与预算配置"
+        },
+        {
+          "path": "docs/api/openapi.yaml",
+          "note": "0.9.0 OpenAPI契约"
+        },
+        {
+          "path": "docs/wiki/assets/conversation-smoke-v0.9-2026-11-13.json",
+          "note": "五组上下文与分支fixture报告"
+        },
+        {
+          "path": "docs/wiki/assets/conversations-browser-v0.9-2026-11-13.json",
+          "note": "桌面/双窗口/手机浏览器验收"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.9-2026-11-13.json",
+          "note": "本地基线与容量限制"
+        },
+        {
+          "path": "docs/wiki/assets/conversations-phase9.jpg",
+          "note": "桌面聊天工作台截图"
+        },
+        {
+          "path": "docs/wiki/assets/mobile-conversations-phase9.jpg",
+          "note": "390x844手机会话截图"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-13-035-conversation-core.md",
+        "docs/changes/2026-11-13-036-chat-provider.md",
+        "docs/changes/2026-11-13-037-conversations-workbench.md",
+        "docs/changes/2026-11-13-038-conversation-integration.md"
+      ],
+      "completed_on": "2026-11-13",
+      "blocker": null
+    },
+    {
+      "id": "V11",
+      "title": "账户安全与自助恢复",
+      "status": "blocked",
+      "modules": [
+        "H01",
+        "H06",
+        "H07",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V04"
+      ],
+      "scope": "账户验证/恢复、改密、会话撤销、安全活动及TLS加密邮件队列；本地验收通过，实际邮件按用户安排后续配置。",
+      "acceptance": [
+        "邮箱验证、找回密码的一次性令牌与防枚举",
+        "会话管理/撤销、密码变更后失效策略",
+        "认证限流、邮件fixture、实际渠道和权限回归"
+      ],
+      "checks": [
+        {
+          "label": "安全领域与会话撤销",
+          "status": "passed",
+          "command": "Go及真实PostgreSQL令牌/会话/密码并发/事务专项",
+          "note": "根真实PG全量115.317秒通过；用途/过期/并发单次消费、双连接login/改密竞争、原子撤销/审计、跨账户、旧session升级和旧writer拒绝。"
+        },
+        {
+          "label": "加密邮件队列与SMTP模拟器",
+          "status": "passed",
+          "command": "SMTP TLS fixture、加密/重试/确认不明/重启与独立API链路",
+          "note": "8普通+4PG邮件函数和根TLS HTTP全链通过；真实DATA后杀子进程，恢复UNKNOWN且无再次投递；密文/容量/有限重试/过期清理通过，无实际外发。"
+        },
+        {
+          "label": "账户安全工作台与联合验收",
+          "status": "passed",
+          "command": "npm run check; npm run test:db; 隔离smoke; 浏览器; 文档/TODO检查",
+          "note": "173项前端、8项治理、vet/TS/构建、六套冒烟、OpenAPI50路径61操作293引用通过；桌面/390手机、真实撤销测试session/401、链接清理/禁用找回、011联备升级比对及文档通过。"
+        },
+        {
+          "label": "真实邮件渠道验收",
+          "status": "blocked",
+          "command": "配置实际SMTP渠道后受控验证邮件收取、验证与找回",
+          "note": "用户确认先完成本地链路，真实邮件渠道后续配置；不能以fixture替代实际投递。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/wiki/account-security.md",
+          "note": "账户安全与011迁移边界"
+        },
+        {
+          "path": "docs/wiki/mail-delivery.md",
+          "note": "TLS加密投递与真实渠道恢复条件"
+        },
+        {
+          "path": "docs/api/openapi.yaml",
+          "note": "0.10.0 API契约"
+        },
+        {
+          "path": "docs/wiki/assets/account-security-browser-v0.10-2026-11-13.json",
+          "note": "桌面与手机浏览器验收"
+        },
+        {
+          "path": "docs/wiki/assets/account-security-upgrade-v0.10-2026-11-13.json",
+          "note": "升级前dump与011后只读数据比对"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.10-2026-11-13.json",
+          "note": "隔离memory/demo性能口径"
+        },
+        {
+          "path": "docs/changes/2026-11-13-042-account-security-integration.md",
+          "note": "根全量与本地TLS HTTP验收"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-13-039-account-security.md",
+        "docs/changes/2026-11-13-040-security-mail.md",
+        "docs/changes/2026-11-13-041-account-security-workbench.md",
+        "docs/changes/2026-11-13-042-account-security-integration.md"
+      ],
+      "completed_on": null,
+      "blocker": "用户确认先完成本地链路，真实邮件渠道后续配置。恢复条件：实际SMTP/TLS与发件域名、可信回站origin、服务端凭据及独立队列密钥、指定测试邮箱；受控验实际到达/验证/找回后补证据。fixture不能代替该项。"
+    },
+    {
+      "id": "V12",
+      "title": "权益账本与任务结算",
+      "status": "done",
+      "modules": [
+        "H01",
+        "H02",
+        "H03",
+        "H05",
+        "H06",
+        "H07",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V04",
+        "V06"
+      ],
+      "scope": "六位整数精度、不可变权益账本、生成前报价确认及工作区钱包/流水；可信usage或注册交付产物结算，未知保留待核实。含停机核账/赠额/全额权益冲正，不含真实支付或供应商成本核对。",
+      "acceptance": [
+        "报价版本、冻结/释放/结算/冲正事务与幂等",
+        "上游usage缺失进入待核实，失败/部分输出政策明确",
+        "并发超扣、重复结算、退款冲正和对账不平衡测试",
+        "钱包/流水/冻结单与聊天及媒体报价确认完整可用，输入变化失效和未知原请求保护"
+      ],
+      "checks": [
+        {
+          "label": "报价与不可变权益账本",
+          "status": "passed",
+          "command": "npm run test:db; Go PostgreSQL ledger/admin targeted tests",
+          "note": "最终真实PG全量studio148.283秒；并发冻结/防超扣、不可变双分录、原幂等、Outbox回滚、COMMIT确认不明、离线预演/摘要/原收据/核账通过。累计结算容量修正后8项PG专项6.956秒。"
+        },
+        {
+          "label": "任务与可信计量闭环",
+          "status": "passed",
+          "command": "npm run test:db; Go TestPostgresBillingGatewayUsageEndToEnd/TestPostgresBillingActualCrashHoldsAndReplay",
+          "note": "实际HTTP usage到PG涵盖有效、缺失、非法、超预算及不完整流；真正Kill后INTERRUPTED/REVIEW、原键不重复POST、人工证据核实释放。媒体按注册产物结算；本地fixture不等于真实供应商验收。"
+        },
+        {
+          "label": "工作区权益界面与联合验收",
+          "status": "passed",
+          "command": "npm run check; npm run test:db; 六套smoke; npm run perf:local; CUA桌面/390x844; OpenAPI解析; npm run check:todo; npm run check:changes",
+          "note": "202项前端/22文件、8项治理、vet/TS/构建、六套隔离smoke通过。浏览器PG/demo完成聊天/图像/视频海报三单结算，输入变化撤销报价，390x844无横溢，console无警告错误；012升级保留旧数据。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "internal/studio/ledger_test.go",
+          "note": "整数、双分录、并发与提交确认丢失测试"
+        },
+        {
+          "path": "internal/studio/billing_http_test.go",
+          "note": "报价预检、作用域权限与分页测试"
+        },
+        {
+          "path": "internal/studio/billing_admin_test.go",
+          "note": "离线预演、计划摘要、writer锁与收据重放"
+        },
+        {
+          "path": "internal/studio/billing_gateway_test.go",
+          "note": "实际HTTP usage到PG结算与REVIEW"
+        },
+        {
+          "path": "internal/studio/billing_process_test.go",
+          "note": "实际进程Kill恢复及原键不重发"
+        },
+        {
+          "path": "internal/studio/billing_security_test.go",
+          "note": "非法参考ID不触发PG熔断"
+        },
+        {
+          "path": "apps/workbench/src/billing.test.tsx",
+          "note": "金额、报价作用域、原请求及结算版本保护"
+        },
+        {
+          "path": "docs/planning/v12-contract.md",
+          "note": "冻结接口与计量契约"
+        },
+        {
+          "path": "docs/wiki/ledger.md",
+          "note": "账本领域与事务约束"
+        },
+        {
+          "path": "docs/wiki/billing-operations.md",
+          "note": "配置、012升级与离线处置"
+        },
+        {
+          "path": "docs/wiki/billing-workbench.md",
+          "note": "钱包和报价交互规则"
+        },
+        {
+          "path": "docs/api/openapi.yaml",
+          "note": "0.11.0 API契约"
+        },
+        {
+          "path": "docs/wiki/assets/billing-upgrade-v0.11-2026-11-13.json",
+          "note": "011至012联备及旧数据比对"
+        },
+        {
+          "path": "docs/wiki/assets/billing-browser-v0.11-2026-11-14.json",
+          "note": "PG/demo桌面手机报价结算验收"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.11-2026-11-14.json",
+          "note": "关闭权益的memory/demo基线及容量边界"
+        },
+        {
+          "path": "docs/wiki/assets/billing-phase11.jpg",
+          "note": "桌面钱包与三单结算截图"
+        },
+        {
+          "path": "docs/wiki/assets/mobile-billing-quote-phase11.jpg",
+          "note": "390x844报价确认截图"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-13-043-credit-ledger.md",
+        "docs/changes/2026-11-13-044-provider-usage.md",
+        "docs/changes/2026-11-13-045-billing-workbench.md",
+        "docs/changes/2026-11-13-046-billing-integration.md"
+      ],
+      "completed_on": "2026-11-14",
+      "blocker": null
+    },
+    {
+      "id": "V13",
+      "title": "订单、支付与退款",
+      "status": "todo",
+      "modules": [
+        "H01",
+        "H05",
+        "H06",
+        "H08"
+      ],
+      "depends_on": [
+        "V11",
+        "V12"
+      ],
+      "scope": "支付与权益解耦；真实商户接入需要配置，fixture通过不等于真实收款完成。",
+      "acceptance": [
+        "订单状态机、签名回调、防重放与重复支付处理",
+        "退款回调/超时核实、权益原子入账与审计",
+        "商户沙箱及真实受控支付退款验收，用户可见订单记录"
+      ],
+      "checks": [],
+      "evidence": [],
+      "ledgers": [],
+      "completed_on": null,
+      "blocker": null
+    },
+    {
+      "id": "V14",
+      "title": "审核、风控与运营控制台",
+      "status": "in_progress",
+      "modules": [
+        "H01",
+        "H03",
+        "H04",
+        "H05",
+        "H06",
+        "H07",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V04",
+        "V11",
+        "V12"
+      ],
+      "scope": "运营角色、最小权限、内容审核和异常核实工作流。先交付V14-A工作区运营RBAC/异常工单/预演处置闭环，再推进V14-B生成前后审核、V14-C申诉/封禁及风控；V11真实渠道依赖未放行前不得标整批完成。",
+      "acceptance": [
+        "管理员RBAC与关键操作审计/二次确认",
+        "生成前/后审核、申诉、封禁与额度风控",
+        "受理不明的证据核实、原任务恢复与权限负例"
+      ],
+      "checks": [
+        {
+          "label": "V14-A 运营权限与离线角色治理",
+          "status": "passed",
+          "command": "npm run test:db（含TestPostgresOperations*）；npm run check",
+          "note": "2026-11-14通过：真实PG全量169.657s覆盖scope/multi-role/revoke、密码/凭据重核、审计回滚、停机CLI精确预演及原回执；活动版本为撤权预留容量。"
+        },
+        {
+          "label": "V14-A 异常核实工单及事务处置",
+          "status": "passed",
+          "command": "npm run test:db（含TestPostgresOperationsUnknownCommitRecoversOneReceipt）",
+          "note": "2026-11-14通过：CAS/幂等/预演过期、原handle查询不POST、旧lease拒写、账务/工单/审计/Outbox回滚；真实PG COMMIT确认丢失后App重启只读唯一收据，重复execute不二次释放。"
+        },
+        {
+          "label": "V14-A 工作台及本地联合验收",
+          "status": "passed",
+          "command": "npm run check; npm run test:db; 六套smoke; perf:local; CUA桌面/手机; OpenAPI引用校验; check:todo/docs/changes",
+          "note": "2026-11-14通过：217项前端/23文件、8项治理、Go vet/构建及PG全量；六套隔离冒烟；CUA桌面/390手机开单→预演→密码→收据/审计、scope隔离；OpenAPI61路径73操作340引用及文档治理。完整V14仍未验收。"
+        },
+        {
+          "label": "V14-B1 文本审核本地闭环",
+          "status": "passed",
+          "command": "npm run check; npm run test:db; Go审核PG专项; 六套smoke; perf:local; CUA桌面/手机; OpenAPI引用校验; check:todo/docs/changes",
+          "note": "2026-11-14本地通过：237项前端/24文件、8治理、PG全量170.241s和审核5组8.853s；输入无副作用、冻结策略、全文事务放行/回滚、COMMIT确认丢失后App恢复与原键；浏览器拒绝/隔离/正常新提问纳入1省略2及刷新/响应式；真实审核商未选，B2/C仍待办。"
+        },
+        {
+          "label": "V14-B1 真实文本审核渠道",
+          "status": "blocked",
+          "command": "选定真实服务后完成text-v1适配、真实响应与故障边界受控验收",
+          "note": "2026-11-14用户确认审核商暂未选型，先本地闭环；需要接口文档、服务端配置与受控测试内容，fixture不代替真实验收。"
+        },
+        {
+          "label": "V14-B2 图片与视频审核",
+          "status": "pending",
+          "command": "参考图/产物私有隔离、所有下载门禁、租约恢复与真实多模态审核",
+          "note": "B1仅文本；新媒体在审核开启时拒绝，原已受理任务不重发。候选资产必须纳入存储可达性，待审不能注册已交付或自动结算。"
+        },
+        {
+          "label": "V14-C 申诉、封禁与风控",
+          "status": "pending",
+          "command": "申诉状态机、封禁/额度策略、原请求重放边界与浏览器验收",
+          "note": "本子批次后续推进。"
+        },
+        {
+          "label": "完整V14依赖放行",
+          "status": "blocked",
+          "command": "V11真实邮件渠道受控验收与完整V14复核",
+          "note": "用户安排真实邮件后续配置；保留V11依赖，不能用本地fixture勾选整批。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/planning/v14a-contract.md",
+          "note": "已实施接口与子批次边界"
+        },
+        {
+          "path": "internal/studio/operations_access_test.go",
+          "note": "scoped权限、密码与审计回滚"
+        },
+        {
+          "path": "internal/studio/operations_admin_test.go",
+          "note": "停机授权、预演、稳定键、撤销与版本容量"
+        },
+        {
+          "path": "internal/studio/operations_cases_test.go",
+          "note": "工单、CAS/计划、事务处置与租约隔离"
+        },
+        {
+          "path": "internal/studio/operations_http_test.go",
+          "note": "权限负例、严格正文、游标/Scope及恢复"
+        },
+        {
+          "path": "internal/studio/operations_integration_test.go",
+          "note": "真实PG提交确认丢失、App重启及唯一收据"
+        },
+        {
+          "path": "apps/workbench/src/operations.test.tsx",
+          "note": "15项前端协议/隔离/未知恢复与密码验证"
+        },
+        {
+          "path": "docs/wiki/assets/operations-validation-v0.12-2026-11-14.json",
+          "note": "联合命令/版本摘要/OpenAPI与测试汇总"
+        },
+        {
+          "path": "docs/wiki/assets/operations-browser-v0.12-2026-11-14.json",
+          "note": "真实Go+PG demo桌面/手机交互验收"
+        },
+        {
+          "path": "docs/wiki/assets/operations-upgrade-v0.12-2026-11-14.json",
+          "note": "012到014前联备及旧业务比对"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.12-2026-11-14.json",
+          "note": "隔离demo回归，非生产容量"
+        },
+        {
+          "path": "docs/planning/v14b1-contract.md",
+          "note": "文本本地闭环已验收；真实渠道、多模态及后续批次分开"
+        },
+        {
+          "path": "internal/studio/moderation_test.go",
+          "note": "规则策略冻结、严格配置与PG不可变决策"
+        },
+        {
+          "path": "internal/studio/moderation_http_test.go",
+          "note": "私有HTTP契约、异常响应/跳转/超时与并发边界"
+        },
+        {
+          "path": "internal/studio/moderation_execution_test.go",
+          "note": "输入锁外、无副作用、候选隔离、上下文与取消"
+        },
+        {
+          "path": "internal/studio/moderation_integration_test.go",
+          "note": "PG准入、权益、回滚及关闭策略后的隔离恢复"
+        },
+        {
+          "path": "internal/studio/moderation_commit_test.go",
+          "note": "真实PG COMMIT确认丢失：ALLOW/BLOCK恢复原决策，原键不重发"
+        },
+        {
+          "path": "apps/workbench/src/moderation.test.tsx",
+          "note": "20项前端审核语义、乱序门禁与受限轮后普通提问"
+        },
+        {
+          "path": "docs/wiki/assets/moderation-validation-v0.13-2026-11-14.json",
+          "note": "联合命令与最终二进制摘要"
+        },
+        {
+          "path": "docs/wiki/assets/moderation-browser-v0.13-2026-11-14.json",
+          "note": "桌面/手机输入拒绝、输出隔离、正常新问题与刷新"
+        },
+        {
+          "path": "docs/wiki/assets/moderation-upgrade-v0.13-2026-11-14.json",
+          "note": "014到015前联备及旧业务保持，无自动批准"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.13-2026-11-14.json",
+          "note": "隔离memory/demo回归，不是审核或PG容量"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-14-047-operations-access.md",
+        "docs/changes/2026-11-14-048-operations-cases.md",
+        "docs/changes/2026-11-14-049-operations-workbench.md",
+        "docs/changes/2026-11-14-050-operations-integration.md",
+        "docs/changes/2026-11-14-051-text-moderation-engine.md",
+        "docs/changes/2026-11-14-052-moderation-execution.md",
+        "docs/changes/2026-11-14-053-moderation-workbench.md",
+        "docs/changes/2026-11-14-054-text-review-integration.md"
+      ],
+      "completed_on": null,
+      "blocker": null
+    },
+    {
+      "id": "V15",
+      "title": "真实网关与产物交付验收",
+      "status": "blocked",
+      "modules": [
+        "H03",
+        "H04",
+        "H07"
+      ],
+      "depends_on": [
+        "V01",
+        "V06"
+      ],
+      "scope": "使用用户实际已开通模型和服务端配置验收，自动测试不得发付费请求。",
+      "acceptance": [
+        "真实LLM、图片及视频生成/下载/播放",
+        "原凭据查询、429、超时与结果失效行为核对",
+        "记录模型参数、配额和证据，不保存密钥"
+      ],
+      "checks": [],
+      "evidence": [],
+      "ledgers": [],
+      "completed_on": null,
+      "blocker": "未提供本地服务端密钥、已开通模型参数和受控真实调用条件；按media-gateway Wiki配置后再做真实验收，不需要把密钥发到对话或提交仓库。"
+    },
+    {
+      "id": "V16",
+      "title": "分布式流与配额公平调度",
+      "status": "todo",
+      "modules": [
+        "H03",
+        "H07"
+      ],
+      "depends_on": [
+        "V05",
+        "V09"
+      ],
+      "scope": "流、提交、轮询、导入按负载拆分，持久流日志与容量保护。",
+      "acceptance": [
+        "连接池/worker和凭据/模型配额有界",
+        "流日志、快照、回放与fencing在故障下正确",
+        "任务公平性、供应限流、背压与降级实测"
+      ],
+      "checks": [],
+      "evidence": [],
+      "ledgers": [],
+      "completed_on": null,
+      "blocker": null
+    },
+    {
+      "id": "V17",
+      "title": "性能与长稳态放行",
+      "status": "todo",
+      "modules": [
+        "H03",
+        "H07",
+        "H08"
+      ],
+      "depends_on": [
+        "V15",
+        "V16"
+      ],
+      "scope": "按原方案固定环境验收，不把当前回环demo报告当生产成绩。",
+      "acceptance": [
+        "万级活跃流和目标媒体在途量，P95/P99分层",
+        "CPU/RSS/FD/GC/数据库等待/慢订阅者与前端基准",
+        "24小时稳态、突发/故障注入及瓶颈报告"
+      ],
+      "checks": [],
+      "evidence": [],
+      "ledgers": [],
+      "completed_on": null,
+      "blocker": null
+    },
+    {
+      "id": "V18",
+      "title": "部署、备份与灾备演练",
+      "status": "todo",
+      "modules": [
+        "H01",
+        "H04",
+        "H07",
+        "H09"
+      ],
+      "depends_on": [
+        "V09",
+        "V11"
+      ],
+      "scope": "可重复部署、TLS/密钥管理、备份恢复及迁移治理。",
+      "acceptance": [
+        "分环境配置、版本化迁移、灰度与回滚脚本",
+        "PG/PITR与对象存储备份实际恢复",
+        "多可用区切换与RPO/RTO证据、监控值班手册"
+      ],
+      "checks": [],
+      "evidence": [],
+      "ledgers": [],
+      "completed_on": null,
+      "blocker": null
+    },
+    {
+      "id": "V19",
+      "title": "可执行工作流与模板",
+      "status": "todo",
+      "modules": [
+        "H02",
+        "H03",
+        "H10",
+        "H08"
+      ],
+      "depends_on": [
+        "V03",
+        "V06",
+        "V09"
+      ],
+      "scope": "将版本草稿升级为显式执行DAG和可复用模板。",
+      "acceptance": [
+        "节点/边、环与输入类型校验、固定流程版本",
+        "人工确认、节点重跑、取消和恢复不重复执行收费步骤",
+        "文本→图像→视频模板完整交付及资产归属"
+      ],
+      "checks": [],
+      "evidence": [],
+      "ledgers": [],
+      "completed_on": null,
+      "blocker": null
+    },
+    {
+      "id": "V20",
+      "title": "视频编辑与分镜创作",
+      "status": "todo",
+      "modules": [
+        "H02",
+        "H03",
+        "H04",
+        "H08",
+        "H10"
+      ],
+      "depends_on": [
+        "V07",
+        "V08",
+        "V19"
+      ],
+      "scope": "参考素材、分镜、编辑与延长按模型能力开放。",
+      "acceptance": [
+        "参考片段和角色素材归属与参数约束",
+        "视频编辑/延长API、版本比较与局部重做",
+        "真实视频解码/播放/转码、导出成片验收"
+      ],
+      "checks": [],
+      "evidence": [],
+      "ledgers": [],
+      "completed_on": null,
+      "blocker": null
+    },
+    {
+      "id": "V21",
+      "title": "协作与专项创作扩展",
+      "status": "todo",
+      "modules": [
+        "H01",
+        "H02",
+        "H08",
+        "H10"
+      ],
+      "depends_on": [
+        "V08",
+        "V11",
+        "V19"
+      ],
+      "scope": "团队协作、漫剧流程、PPT可交付文件；分别子批次验收后再开放。",
+      "acceptance": [
+        "成员/邀请/项目角色和协作冲突处理",
+        "漫剧角色/场景/分镜复用链路",
+        "PPT导出实际可编辑文件与渲染验收；不以入口代替功能"
+      ],
+      "checks": [],
+      "evidence": [],
+      "ledgers": [],
+      "completed_on": null,
+      "blocker": null
+    },
+    {
+      "id": "V22",
+      "title": "公开收费发布验收",
+      "status": "todo",
+      "modules": [
+        "H01",
+        "H03",
+        "H04",
+        "H05",
+        "H06",
+        "H07",
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V07",
+        "V08",
+        "V10",
+        "V13",
+        "V14",
+        "V15",
+        "V17",
+        "V18"
+      ],
+      "scope": "商业核心发布闸门，专项V20/V21可后续独立发布。",
+      "acceptance": [
+        "支付退款/审核/隐私规则/客服与数据导出真实闭环",
+        "安全测试、容量/灾备和供应升级回归全部留证",
+        "部署灰度、回滚演练与运营移交完成再开放公众"
+      ],
+      "checks": [],
+      "evidence": [],
+      "ledgers": [],
+      "completed_on": null,
+      "blocker": null
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "version": "0.9.0",
+  "binary_sha256": "b7a95a1149528950aad362b4b8fd7088d5f6c9c5cffa791f3bf4ed832d277abb",
+  "verified_at": "2026-11-13T13:53:35.489Z",
+  "duration_ms": 399,
+  "scope": "Isolated loopback memory/demo executable with tiny admission limits; no database, real AI or production capacity test.",
+  "checks": [
+    "separate liveness/readiness and protected metrics",
+    "workspace run limit, replay under full capacity, conflict, cancellation release, SSE flush",
+    "model and workspace media limits, exact replay and terminal release",
+    "bounded workspace subscriptions and disconnect recovery",
+    "bounded metric labels and redacted logs, server-owned request correlation"
+  ],
+  "status": "passed"
+}

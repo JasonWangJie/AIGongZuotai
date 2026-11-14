@@ -1,0 +1,70 @@
+{
+  "checked_at": "2026-11-14T03:44:13.405Z",
+  "version": "0.12.0",
+  "backup": ".runtime/backups/pre-v0.12-20261114T032825194Z",
+  "dump_sha256": "90797d0f6c872d04a5119835d3373bc2b38a5a772820283a929f3759768efff4",
+  "before": {
+    "schema_versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "asset_count": 10,
+    "asset_max_revision": 10,
+    "draft_max_revision": 5,
+    "conversation_node_counts": [
+      2,
+      12
+    ],
+    "run_count": 9,
+    "mail_outbox_count": 0,
+    "account_tokens_count": 0,
+    "journal_count": 8,
+    "reservation_count": 3,
+    "wallet_count": 1
+  },
+  "after": {
+    "schema_versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "asset_count": 10,
+    "asset_max_revision": 10,
+    "draft_max_revision": 5,
+    "conversation_node_counts": [
+      2,
+      12
+    ],
+    "run_count": 9,
+    "mail_outbox_count": 0,
+    "account_tokens_count": 0,
+    "journal_count": 8,
+    "reservation_count": 3
+  },
+  "unchanged_business_data": true,
+  "grants_after_upgrade": 0,
+  "cases_after_upgrade": 0,
+  "real_mail": false,
+  "real_provider_requests": 0
+}

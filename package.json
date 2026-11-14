@@ -1,0 +1,34 @@
+{
+  "name": "aigongzuotai",
+  "version": "0.13.0",
+  "private": true,
+  "description": "Go + React AI creation workbench",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "setup": "node scripts/run.mjs setup",
+    "dev": "node scripts/dev.mjs",
+    "dev:db": "node scripts/dev.mjs --database",
+    "db:setup": "powershell -NoProfile -File scripts/postgres-dev.ps1 setup",
+    "db:start": "powershell -NoProfile -File scripts/postgres-dev.ps1 start",
+    "db:stop": "powershell -NoProfile -File scripts/postgres-dev.ps1 stop",
+    "db:status": "powershell -NoProfile -File scripts/postgres-dev.ps1 status",
+    "build": "node scripts/run.mjs build",
+    "test": "node scripts/run.mjs test",
+    "test:db": "node scripts/run.mjs test:db",
+    "check": "node scripts/run.mjs check",
+    "check:docs": "node scripts/check-docs.mjs",
+    "check:changes": "node scripts/check-docs.mjs --changed",
+    "todo:sync": "node scripts/tasks.mjs --write",
+    "check:todo": "node scripts/tasks.mjs --check",
+    "test:todo": "node --test scripts/tasks.test.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:runtime": "node scripts/runtime-smoke.mjs",
+    "smoke:catalog": "node scripts/catalog-smoke.mjs",
+    "smoke:references": "node scripts/reference-smoke.mjs",
+    "perf:local": "node scripts/load.mjs",
+    "smoke:library": "node scripts/library-smoke.mjs",
+    "smoke:conversations": "node scripts/conversation-smoke.mjs"
+  }
+}

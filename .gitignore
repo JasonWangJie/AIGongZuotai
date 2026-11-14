@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+*.exe
+*.test
+.env
+.env.*
+!.env.example
+.runtime/
+.analysis-work/
+playwright-report/
+test-results/
+*.log
+*.tsbuildinfo
+.DS_Store

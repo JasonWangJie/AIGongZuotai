@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="description" content="AI创作平台建设落地方案：参考站点拆解、产品规划、技术实现、商业经营、成本测算与执行路线。">
+<title>AI创作平台建设落地方案 · 2026.11</title>
+<style>
+:root{--paper:#f7f4ed;--white:#fffdf8;--ink:#222c28;--muted:#66716b;--green:#214f42;--green-soft:#e8efe8;--line:#d9ddd2;--ochre:#9d6a31;--negative:#9a3f2e;--serif:"Source Han Serif SC","Noto Serif CJK SC","Songti SC","SimSun",serif;--sans:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",sans-serif;--mono:"Cascadia Mono","Consolas",monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:30px}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.95;-webkit-font-smoothing:antialiased}body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.13;background-image:repeating-linear-gradient(0deg,transparent,transparent 3px,#c4ba9e 4px);z-index:-1}a{color:var(--green);text-decoration-thickness:1px;text-underline-offset:4px}a:hover{color:#112f26}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--ochre);outline-offset:4px}button,input{font:inherit}button{cursor:pointer}button:disabled{cursor:default}::selection{background:#d3e3d3;color:#132e25}.skip-link{position:fixed;top:8px;left:12px;z-index:99;padding:8px 18px;background:var(--green);color:#fff;transform:translateY(-150%)}.skip-link:focus{transform:translateY(0)}
+.layout{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:250px minmax(0,1fr);gap:52px;padding:42px 40px 72px}.sidebar{align-self:start;position:sticky;top:30px;max-height:calc(100vh - 60px);display:flex;flex-direction:column;font-size:12px}.brand{margin:0 0 28px;display:flex;align-items:center;gap:12px;color:var(--green)}.brand-mark{font-family:var(--serif);font-size:22px;line-height:1;border:1px solid var(--green);width:38px;height:43px;display:grid;place-items:center}.brand-name{letter-spacing:.12em;font-weight:700;line-height:1.7}.brand-name small{display:block;font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.08em;color:var(--muted)}.toc-group{min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#abb6a8 transparent}.toc-group summary{list-style:none;color:var(--muted);letter-spacing:.16em;font-size:11px;padding:0 0 12px;cursor:pointer}.toc-group summary::-webkit-details-marker{display:none}.toc-group summary::after{content:" −";float:right}.toc-group:not([open]) summary::after{content:" +"}.toc a{display:grid;grid-template-columns:24px 1fr;gap:7px;padding:8px 10px 8px 4px;border-left:2px solid transparent;text-decoration:none;line-height:1.6;color:#68716a;transition:background-color .15s,color .15s}.toc a:hover,.toc a.active{background:#e7ece3;border-left-color:var(--green);color:var(--green)}.toc-no{font-family:var(--mono);font-size:10px;padding-top:3px;opacity:.68}.sidebar-footer{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);line-height:1.8}.print-button{border:1px solid #aebcad;background:transparent;color:var(--green);padding:7px 13px;font-size:12px;text-align:left;margin-top:12px;transition:background .15s}.print-button:hover{background:var(--green-soft)}
+main{min-width:0;max-width:1000px}.cover{position:relative;padding:18px 0 54px}.cover-topline{display:flex;justify-content:space-between;gap:20px;color:var(--green);font-family:var(--mono);font-size:11px;letter-spacing:.14em;margin-bottom:56px}.eyebrow{font-size:11px;font-weight:700;color:var(--green);letter-spacing:.16em;margin:0 0 18px}.cover h1{font-family:var(--serif);font-size:clamp(36px,4.2vw,60px);line-height:1.3;font-weight:700;letter-spacing:-.025em;margin:0;max-width:850px}.cover h1 span{display:block;color:var(--green)}.cover-intro{font-size:17px;color:var(--muted);line-height:1.95;max-width:680px;margin:26px 0 32px}.cover-meta{display:grid;grid-template-columns:1fr 1fr;gap:17px 30px;margin:0;padding:25px 0 0;border-top:1px solid var(--line)}.cover-meta div{min-width:0}.cover-meta dt{font-size:10px;letter-spacing:.14em;color:var(--muted);margin-bottom:5px}.cover-meta dd{font-size:13px;margin:0;overflow-wrap:anywhere}.cover-note{margin:28px 0 0;color:var(--muted);font-size:11px}.report-content{border-top:3px solid var(--green);padding-top:8px}.report-content h2{font-family:var(--serif);font-size:28px;line-height:1.45;letter-spacing:-.025em;margin:60px 0 24px;scroll-margin-top:30px;break-after:avoid}.report-content h3{font-size:18px;font-weight:700;line-height:1.65;margin:32px 0 13px;break-after:avoid}.report-content h4{font-size:15px;margin:24px 0 10px;break-after:avoid}.report-content p{margin:0 0 17px}.report-content p:empty{display:none}.report-content strong{font-weight:700;color:#1e4438}.report-content ul,.report-content ol{margin:14px 0 24px;padding-left:1.5em}.report-content li{padding-left:.2em;margin:7px 0}.report-content li::marker{color:var(--green)}.report-content li>p{margin:8px 0}.report-content section{min-width:0}.report-content code{font-family:var(--mono);font-size:.88em;background:#eaece3;padding:2px 5px;border-radius:2px;overflow-wrap:anywhere}.report-content pre{white-space:pre-wrap;background:#edf0e8;padding:20px;overflow-wrap:anywhere}.report-content pre code{padding:0;background:none}.report-content blockquote{border-left:3px solid var(--green);margin:25px 0;padding:19px 24px;background:#eaf0e8;font-size:16px}.report-content blockquote p:last-child{margin-bottom:0}.report-content .callout{padding:22px 25px;border:1px solid #ccd7c8;background:#f0f3e9;margin:25px 0}.report-content .callout p:last-child{margin-bottom:0}.report-content .callout.warn{border-color:#dfcfb5;background:#f6f0e3}.report-content .flow{margin:26px 0;padding:25px;background:var(--green);color:var(--white);font-weight:600;font-size:14px;line-height:2.2;overflow-wrap:anywhere}.report-content .flow strong,.report-content .flow a{color:#fff}.report-content .flow code{background:#315f51;color:#fff}.report-content .flow p:last-child{margin-bottom:0}.report-content hr{border:0;border-top:1px solid var(--line);margin:40px 0}.table-scroll{width:100%;max-width:100%;overflow-x:auto;margin:20px 0 28px;scrollbar-width:thin;scrollbar-color:#a5b3a0 #ecefe6}.table-scroll .table-scroll{margin:0}table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.8;min-width:560px;table-layout:auto;background:rgba(255,253,248,.65)}th,td{text-align:left;vertical-align:top;padding:14px 15px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}th{background:#e8ede3;color:#234c3d;font-size:12px;font-weight:700;letter-spacing:.02em;border-top:1px solid #bccbb5;border-bottom:1px solid #bccbb5}tbody tr:nth-child(even){background:rgba(238,241,231,.55)}td:first-child{font-weight:600}table p:last-child{margin-bottom:0}.source-list a,.report-content .sources a{overflow-wrap:anywhere}.fine-print{color:var(--muted);font-size:12px;line-height:1.8}.document-footer{display:flex;justify-content:space-between;gap:20px;border-top:1px solid #bbc6b5;padding-top:25px;margin-top:60px;color:var(--muted);font-size:11px}.document-footer a{text-decoration:none}
+.calc-panel{border:1px solid #becdb9;background:var(--white);margin:24px 0 30px}.calc-heading{padding:26px 28px 21px;background:#edf1e6}.calc-heading h3{font-family:var(--serif);font-size:22px;margin:0 0 8px}.calc-heading p{font-size:12px;line-height:1.85;margin:0;color:var(--muted)}.calc-form{padding:26px 28px 0}.calc-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 24px}.calc-field{display:flex;flex-direction:column;gap:7px}.calc-field label{font-size:12px;font-weight:700;color:#385246}.calc-field input{width:100%;min-width:0;padding:11px 12px;border:1px solid #bfc9b9;background:#fffefa;border-radius:0;color:var(--ink);font-family:var(--mono);font-size:19px;line-height:1.5}.calc-field input:focus{border-color:var(--green)}.calc-field input[aria-invalid="true"]{border-color:var(--negative)}.calc-field small{font-size:10px;color:var(--muted);line-height:1.65}.calc-actions{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:17px}.reset-button{border:0;border-bottom:1px solid #9eac98;color:var(--green);background:none;padding:2px 0;font-size:12px}.calc-feedback{color:var(--negative);font-size:11px;margin:0!important;min-height:22px}.calc-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;margin:23px 28px 24px;border-top:1px solid #ced8c6;border-left:1px solid #ced8c6}.calc-result{padding:20px 22px;border-right:1px solid #ced8c6;border-bottom:1px solid #ced8c6;min-width:0}.calc-result label{display:block;color:var(--muted);font-size:11px;margin-bottom:8px}.calc-result output{display:block;color:var(--green);font-family:var(--mono);font-size:clamp(21px,2.1vw,29px);font-weight:600;line-height:1.4;overflow-wrap:anywhere}.calc-result output.negative{color:var(--negative)}.calc-result small{font-size:10px;color:var(--muted)}.calc-explanation{padding:0 28px 24px}.calc-explanation p{margin-bottom:8px;font-size:11px;color:var(--muted);line-height:1.9}.calc-explanation p:last-child{margin-bottom:0}.calc-formula{font-family:var(--mono);letter-spacing:-.02em}.calc-fallback{border:1px solid var(--line);padding:25px;background:var(--white)}.calc-fallback .table-scroll{margin:16px 0}.calc-fallback table{min-width:0}
+@media(min-width:1500px){.layout{gap:70px;padding-left:48px;padding-right:48px}.sidebar{font-size:13px}}
+@media(max-width:1100px){.layout{grid-template-columns:210px minmax(0,1fr);gap:30px;padding:30px}.cover h1{font-size:44px}.cover-topline{margin-bottom:40px}th,td{padding:12px}}
+@media(max-width:800px){html{scroll-padding-top:15px}.layout{display:block;padding:24px 22px 45px}.sidebar{position:static;max-height:none;margin-bottom:28px}.brand{margin-bottom:18px}.brand-mark{height:36px;width:32px;font-size:19px}.brand-name{font-size:12px}.toc-group{padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.toc-group summary{padding-bottom:0}.toc-group[open] summary{padding-bottom:12px}.toc{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;max-height:245px;overflow:auto}.toc a{font-size:11px}.sidebar-footer{display:flex;align-items:center;justify-content:space-between;gap:15px;border-top:0;padding-top:0;margin-top:13px;font-size:10px}.print-button{margin:0;font-size:11px;padding:5px 10px}.cover{padding-top:6px;padding-bottom:34px}.cover-topline{font-size:9px;margin-bottom:25px}.cover h1{font-size:clamp(32px,6.2vw,44px)}.cover-intro{font-size:15px;margin-top:20px}.cover-meta{gap:17px}.cover-meta dd{font-size:12px}.cover-meta dt{font-size:9px}.report-content h2{font-size:25px;margin-top:43px}.report-content h3{font-size:17px}body{font-size:14px}.report-content blockquote{font-size:14px;padding:17px 19px}.report-content .callout{padding:18px}.report-content .flow{padding:20px;font-size:12px}.document-footer{font-size:10px}}
+@media(max-width:440px){.layout{padding:20px 17px 38px}.toc{grid-template-columns:1fr}.cover-topline{font-size:8px;letter-spacing:.08em}.cover-meta{grid-template-columns:1fr}.cover-meta div:first-child{grid-column:auto}.cover h1{font-size:34px}.cover-intro{font-size:14px}.report-content h2{font-size:23px}.calc-heading,.calc-form{padding:21px 18px}.calc-form{padding-bottom:0}.calc-fields{grid-template-columns:1fr;gap:17px}.calc-results{margin:20px 18px}.calc-result{padding:16px 12px}.calc-result output{font-size:21px}.calc-explanation{padding:0 18px 22px}.calc-actions{align-items:flex-start}.document-footer{flex-direction:column;gap:5px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+@page{size:A4;margin:18mm 17mm 20mm}
+@media print{html{scroll-behavior:auto}body{background:#fff;color:#111;font-size:10pt;line-height:1.7}body::before,.sidebar,.skip-link,.print-button,.reset-button,.calc-feedback{display:none!important}.layout{display:block;max-width:none;margin:0;padding:0}main{max-width:none}.cover{padding:0 0 25px}.cover-topline{margin-bottom:35px;font-size:9pt}.cover h1{font-size:32pt}.cover-intro{font-size:12pt;margin:20px 0}.cover-meta{font-size:9pt}.cover-meta dt{font-size:8pt}.cover-meta dd{font-size:9pt}.cover-note{font-size:8pt}.report-content{padding-top:0;border-top:2px solid #214f42}.report-content h2{font-size:19pt;margin:30px 0 15px}.report-content h3{font-size:12pt;margin-top:21px}.report-content h4{font-size:10.5pt}.report-content p{margin-bottom:10px;orphans:3;widows:3}.report-content li{margin:5px 0;orphans:2;widows:2}.report-content blockquote,.report-content .callout{padding:12px 15px;font-size:10pt;break-inside:avoid}.report-content .flow{background:#e7eee7;color:#111;padding:12px;font-size:9pt;break-inside:avoid}.report-content .flow strong,.report-content .flow a{color:#111}.table-scroll{overflow:visible;margin:14px 0 20px}table{min-width:0!important;width:100%;font-size:8pt;line-height:1.6}th,td{padding:7px 8px}th{font-size:8pt}thead{display:table-header-group}tr{break-inside:avoid}a{color:#214f42;text-decoration:underline;text-decoration-thickness:.5px}.calc-panel{break-inside:avoid}.calc-heading{padding:18px}.calc-heading h3{font-size:14pt}.calc-heading p,.calc-explanation p{font-size:8pt}.calc-form{padding:15px 18px 0}.calc-fields{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.calc-field label{font-size:8pt}.calc-field input{font-size:11pt;padding:6px;border:1px solid #ccc}.calc-field small{font-size:7pt}.calc-actions{display:none}.calc-results{margin:18px}.calc-result{padding:13px}.calc-result label{font-size:8pt}.calc-result output{font-size:18pt}.calc-explanation{padding:0 18px 16px}.fine-print{font-size:8pt}.document-footer{margin-top:25px;padding-top:16px;font-size:8pt}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.flow{display:flex;flex-wrap:wrap;gap:8px 0}.flow span{display:inline-flex;align-items:center}.flow span:not(:last-child)::after{content:'→';padding:0 13px;opacity:.65}.architecture{display:grid;gap:0;margin:24px 0;text-align:center}.architecture>div{padding:14px 20px;background:#e8efe8;border:1px solid #c3d2c2;font-size:14px;font-weight:600}.architecture>div:not(:last-child)::after{content:'↓';display:block;line-height:1.3;margin:8px 0 -8px;color:#466654}.lead{font-size:17px;line-height:2}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#report-start">跳到报告正文</a>
+<div class="layout">
+<aside class="sidebar" aria-label="报告导航">
+  <div class="brand"><span class="brand-mark" aria-hidden="true">策</span><div class="brand-name">产品建设研究<small>PRODUCT &amp; OPERATIONS / 2026</small></div></div>
+  <details class="toc-group" open><summary>阅读目录</summary><nav class="toc" aria-label="章节目录"><a href="#s1"><span class="toc-no">01</span><span>项目结论与投入决策</span></a>
+<a href="#s2"><span class="toc-no">02</span><span>参考站点拆解与证据边界</span></a>
+<a href="#s3"><span class="toc-no">03</span><span>产品定位与竞争切口</span></a>
+<a href="#s4"><span class="toc-no">04</span><span>白标 源码与独立建设的选择</span></a>
+<a href="#s5"><span class="toc-no">05</span><span>分期功能清单</span></a>
+<a href="#s6"><span class="toc-no">06</span><span>核心用户流程与异常处理</span></a>
+<a href="#s7"><span class="toc-no">07</span><span>技术架构与关键实现</span></a>
+<a href="#s8"><span class="toc-no">08</span><span>数据对象与接口交付范围</span></a>
+<a href="#s9"><span class="toc-no">09</span><span>模型供应采购与评测方案</span></a>
+<a href="#s10"><span class="toc-no">10</span><span>收费设计与单任务经济模型</span></a>
+<a href="#s11"><span class="toc-no">11</span><span>经营测算与资金储备</span></a>
+<a href="#s12"><span class="toc-no">12</span><span>团队配置与十六周排期</span></a>
+<a href="#s13"><span class="toc-no">13</span><span>上线后九十天运营与增长</span></a>
+<a href="#s14"><span class="toc-no">14</span><span>合规与商业服务上线条件</span></a>
+<a href="#s15"><span class="toc-no">15</span><span>交付验收与风险预案</span></a>
+<a href="#s16"><span class="toc-no">16</span><span>发散方向与长期壁垒</span></a>
+<a href="#s17"><span class="toc-no">17</span><span>立项后十四天行动清单</span></a>
+<a href="#s18"><span class="toc-no">18</span><span>资料口径与交付使用说明</span></a></nav></details>
+  <div class="sidebar-footer"><span>研究日期 · 2026.11.13<br>离线文档 / 本地计算</span><button type="button" class="print-button" id="print-report">打印 / 保存 PDF ↗</button></div>
+</aside>
+<main id="report-start">
+  <header class="cover" id="cover">
+    <div class="cover-topline"><span>RESEARCH → BUILD → OPERATE</span><span>2026 / 11</span></div>
+    <p class="eyebrow">项目决策与执行方案</p>
+    <h1>AI 创作平台<span>建设落地方案</span></h1>
+    <p class="cover-intro">从参考站点的产品体验出发，明确值得建设的能力、投入顺序，以及长期经营需要建立的基础。</p>
+    <dl class="cover-meta">
+      <div><dt>参考站点</dt><dd><a href="https://qhml.token6688.com/" target="_blank" rel="noopener noreferrer">qhml.token6688.com ↗</a></dd></div>
+      <div><dt>研究日期</dt><dd>2026 年 11 月 13 日</dd></div>
+      <div><dt>产品方向</dt><dd>面向普通消费者 · 对外收费 · 长期运营</dd></div>
+      <div><dt>投入前提</dt><dd>第一阶段开发预算 30 万元以上</dd></div>
+    </dl>
+    <p class="cover-note">页面观察、建设建议与测算假设在正文中分别说明。财务测算可在文内调整，所有计算仅在本地完成。</p>
+  </header>
+  <article class="report-content"><section id="decision"><h2 id="s1">01 项目结论与投入决策</h2>
+<p class="lead">建议建设一个面向个人创作者的 AI 创作工作台：先把商品图、内容配图和短视频素材做成稳定的收费业务，再逐步扩展画布、漫剧和生态。首期要证明用户愿意为可用作品持续付费。</p>
+<div class="callout"><strong>推荐立项方式</strong><p>总计按 12—16 周建设商业 V1，其中前 2 周完成场景访谈、供应商评测和可点击原型，再按验证结果投入后续研发。建议完整 V1 研发资金按 50万—60万元准备，经营储备另算。若首期总资金只有 30万—50万元，就收缩为图片＋固定模板＋轻视频，延后自由画布。</p></div>
+<p>已确认的决策条件：面向普通用户对外收费，预算 30 万元以上，长期经营。地域暂按中国大陆主体、主要服务境内用户规划；主体所在地、现有团队、供应商合同、是否面向海外仍需立项时确定。</p>
+<p>真正需要建立的资产有四类：经评测的模型供应体系、能复用的行业模板、用户项目和素材资产、可追溯的计费与运营数据。品牌页面可以较快实现，稳定交付和可持续毛利需要持续迭代。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>优先决策</th><th>本方案建议</th><th>下一步验证</th></tr></thead><tbody>
+<tr><td>第一类用户</td><td>个人电商经营者、接单设计师；自媒体创作者作为相邻人群</td><td>各访谈10人，比较需求频率、支付意愿与现有渠道</td></tr>
+<tr><td>第一种结果</td><td>上传商品图，产出一套可通过提示词或参考图继续修改的主图、场景图、卖点图与配文</td><td>用真实素材做20个任务，记录可用率和修改次数</td></tr>
+<tr><td>产品形态</td><td>PC创作为主，手机端查看、简单生成和下载</td><td>先实现响应式Web，App与小程序后置</td></tr>
+<tr><td>技术路线</td><td>自有业务底座＋商业授权清晰的模型API</td><td>关键能力至少两家可替代供应商</td></tr>
+<tr><td>扩张原则</td><td>达到留存和贡献利润门槛后，再增加产品线</td><td>每四周一次阶段审查，未达标优先修主流程</td></tr></tbody></table></div></section>
+
+<section><h2 id="s2">02 参考站点拆解与证据边界</h2>
+<p>2026年11月13日，实际读取了启航聚合AIGC的已登录工作台、模型列表、画布首页、漫剧首页、PPT首页、充值弹窗、API控制台、价格查询及代理页面。浏览器中已有对应账号会话，因此沿用该会话查看。本次没有充值、申请代理、创建密钥或提交付费生成任务。</p>
+<p><strong>以下“已见”指页面和控件存在。</strong>生成效果、导出质量、真实退款到账、后台实现、供应商身份、商业授权及营收均未验证。模型名字、“官方直连”、成功率及能力文案属于站方展示，不能直接视为厂商事实或服务承诺。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>已观察模块</th><th>具体表现</th><th>建设含义</th></tr></thead><tbody>
+<tr><td>统一工作台</td><td>聊天、图片、视频、音频分类，厂商筛选、搜索、收藏</td><td>统一账户、模型目录、能力与参数体系</td></tr>
+<tr><td>多线路供应</td><td>官方/特价等标签，近24小时请求成功率；价格页含渠道耗时和单价</td><td>需要路由、成本、质量评测、熔断与对账</td></tr>
+<tr><td>无限画布</td><td>自然语言入口、附件、Skill、联网、思考强度、项目、模板复刻</td><td>画布背后是有状态工作流，涉及依赖、预算与恢复</td></tr>
+<tr><td>场景模板</td><td>电商图、角色定妆、儿童绘本、分镜、三镜短剧等案例</td><td>降低提示词门槛，让用户从目标出发</td></tr>
+<tr><td>漫剧</td><td>逐步确认、风格、比例、地区、制作规格；输入到大纲、小说、剧本、资产、分镜、视频的阶段</td><td>相当于独立制作系统，需角色一致性、镜头管理与分步计费</td></tr>
+<tr><td>PPT</td><td>主题输入、附件、风格选择、案例与导出步骤说明</td><td>另需内容结构、可编辑排版、字体授权与导出兼容测试</td></tr>
+<tr><td>额度预警</td><td>PPT页提示完成通常需要⚡6.00以上，余额不足可能中止</td><td>推荐升级为执行前预算上限和可恢复的阶段交付</td></tr>
+<tr><td>充值</td><td>10至1000等积分档位、自定义金额、支付宝、微信、卡密兑换</td><td>订单、额度账、回调、退款、发票与客服均需配套</td></tr>
+<tr><td>存储与团队</td><td>用户菜单展示存储月卡、未开通作品保留15天、团队共享积分等入口</td><td>存储可形成增值权益；过期提醒及团队成本边界必须明确</td></tr>
+<tr><td>开放平台</td><td>API文档、密钥入口、用量分析、调用示例和模型状态</td><td>这是一条面向开发者的额外业务线，首期可后置</td></tr>
+<tr><td>代理白标</td><td>自定价、客户、服务费、提现、卡密、Logo/域名/配色；标准签约展示⚡1599.00</td><td>涉及多租户、结算和授权；展示价格不证明源码归属或终身服务</td></tr>
+<tr><td>其他入口</td><td>AI应用超市、Skill市场、灵感广场、CLI、本地安装、邀请好友、教程</td><td>入口存在不等于底层能力和成熟度已验证，不能据此全量估工</td></tr>
+</tbody></table></div>
+<p>价格查询中，一个视频模型的不同渠道展示了如⚡1.09/秒、⚡1.23/秒等单价，并提示实际费用随时长、分辨率及参考视频变化。这是<strong>积分标价快照，不是人民币官方报价</strong>。本方案的预算不按该站零售价倒推模型成本。</p>
+<p>参考来源：<a href="https://qhml.token6688.com/zh-CN/agents/canvas-v2">画布工作台</a>、<a href="https://qhml.token6688.com/zh-CN/agents/comic">漫剧</a>、<a href="https://qhml.token6688.com/zh-CN/agents/ppt">PPT</a>、<a href="https://qhml.token6688.com/zh-CN/console">API控制台</a>、<a href="https://qhml.token6688.com/zh-CN/reseller/overview">代理概览</a>、<a href="https://qhml.token6688.com/zh-CN/reseller/partner">签约页</a>。部分页面需要登录，内容会变化。</p></section>
+
+<section><h2 id="s3">03 产品定位与竞争切口</h2>
+<p>“聚合很多模型”能吸引尝鲜用户，但用户容易因价格换站。长期付费理由应是：熟悉自己的商品或角色、复用成功模板、修改方便、预算明确、交付可靠。对普通用户，首页最好先展示“我要做什么”，高级模式再展示模型和渠道。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>人群</th><th>高频付费任务</th><th>优势与难点</th><th>优先级</th></tr></thead><tbody>
+<tr><td>个人电商经营者</td><td>主图、白底图、场景图、活动图、短广告</td><td>结果可衡量、可批量复用；需保证商品结构和文案准确</td><td>首选假设</td></tr>
+<tr><td>接单设计师</td><td>多个风格提案、局部修改、客户交付包</td><td>复购频率潜力高；重视可编辑和授权</td><td>首期共建用户</td></tr>
+<tr><td>自媒体创作者</td><td>封面、图文组图、脚本与视频素材</td><td>容易做内容传播；价格敏感、同质化较强</td><td>第二切口</td></tr>
+<tr><td>漫剧和短剧作者</td><td>角色资产、镜头、配音、续作</td><td>项目黏性强；抽卡成本、角色一致性和支持成本较高</td><td>二期专项验证</td></tr>
+<tr><td>大众办公用户</td><td>PPT、总结、文档问答</td><td>人群广；需要单独的文件质量和获客策略</td><td>三期或独立产品线</td></tr>
+</tbody></table></div>
+<p>建议首发卖点：“上传一张商品图，做出一套可继续修改的营销素材；每一步提前知道费用，失败可恢复。”先挑一到两个类目，例如家居小物或包装商品，避免一开始承诺珠宝反光、透明瓶、服装上身、复杂机械都能准确还原。</p>
+<p>如果你已有稳定的自媒体或漫剧客户渠道，首个场景应跟随真实渠道调整。决定优先级的证据是客户愿意带素材来试用、愿意付费和再次使用，而不是哪个模型名字更热门。</p></section>
+
+<section><h2 id="s4">04 白标 源码与独立建设的选择</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>路线</th><th>适合情况</th><th>主要代价</th><th>执行建议</th></tr></thead><tbody>
+<tr><td>购买白标/代理</td><td>快速测试客群和渠道；研发资源不足</td><td>受上游定价、可用性、账号与数据导出限制；通常不等于拥有产品</td><td>可作短期验证工具，先核实商户归属、客户迁移、停服处理和品牌授权</td></tr>
+<tr><td>购买源码二次开发</td><td>有技术负责人，能做审计与长期维护</td><td>隐藏依赖、授权边界、代码质量、升级冲突、账本缺陷</td><td>先用隔离环境做1—2周审计与核心流程验证，再付主体款</td></tr>
+<tr><td>独立开发业务底座</td><td>准备长期经营，重视差异化和资产控制</td><td>前期投入和管理要求更高</td><td>推荐路线；复用成熟基础库，但自有账户、项目、账本、数据和品牌</td></tr>
+</tbody></table></div>
+<p><strong>购买前必须拿到的答案：</strong>能否取得源码和修改权；依赖哪些付费服务；用户数据如何导出；域名、云资源和支付商户归谁；是否可独立接新供应商；第三方授权是否允许商业转售；停服或涨价如何退出；历史订单和积分怎么迁移。任何“永久授权”都需要对应清晰的合同条款。</p>
+<p>开发合作建议按“需求与原型15%—完整测试闭环25%—内测与异常处理30%—正式交付20%—质保尾款10%”讨论付款，比例是谈判示例。验收以交付和账务为准，代码仓库、设计稿、部署脚本、数据库迁移、文档、测试账号和第三方许可证清单应同步交接。</p></section>
+
+<section><h2 id="s5">05 分期功能清单</h2>
+<p>P0是可收费上线的必要闭环；P1增强留存和制作效率；P2是独立增长方向。以下是建议的新产品范围，并非对参考站全部功能的复刻承诺。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>模块</th><th>P0 商业V1</th><th>P1 稳定后扩展</th></tr></thead><tbody>
+<tr><td>账户</td><td>注册登录、找回、会话管理、注销流程、协议与隐私说明</td><td>团队空间与协作权限</td></tr>
+<tr><td>创作辅助</td><td>需求整理、配文、提示词优化；保留基础对话入口</td><td>素材理解、品牌资料库、项目长期记忆</td></tr>
+<tr><td>图片</td><td>文生图、参考图编辑、尺寸比例、少量批量、参数记录、下载</td><td>局部编辑增强、批量SKU、风格锁定</td></tr>
+<tr><td>视频</td><td>图生短视频或文生短视频、时长/清晰度、排队、状态和下载</td><td>分镜拼接、字幕、授权配音和轻量时间线</td></tr>
+<tr><td>模板</td><td>3—5种流程、10—20个精选模板；仅重跑失败或修改步骤</td><td>模板分组、效果反馈、版本和个性化推荐</td></tr>
+<tr><td>画布</td><td>50万以上版本可做单人基础节点、连线、保存和续跑；精简版先用向导</td><td>复杂依赖、分支对比、批量编排；多人协作再单独评估</td></tr>
+<tr><td>项目作品</td><td>文件夹、筛选、预览、收藏、原件下载、有效期、删除、私有默认</td><td>角色/商品资产库、品牌空间、授权分享与客户审阅</td></tr>
+<tr><td>计费</td><td>报价、额度冻结、结算/释放、订单、消费明细、退款与对账</td><td>月度套餐、积分加购、存储包、优惠活动</td></tr>
+<tr><td>运营后台</td><td>用户、任务、渠道、价格、订单、退款、审核、工单、公告、审计</td><td>分群、模板转化漏斗、渠道贡献利润、活动实验</td></tr>
+<tr><td>安全运维</td><td>限流、反刷、密钥管理、输入输出审核、备份恢复、监控告警</td><td>灾备增强、精细风险规则、企业审计</td></tr>
+</tbody></table></div>
+<p><strong>P2 后置：</strong>完整漫剧制作、专业PPT、开发者API、CLI、开放Skill市场、创作者交易、代理白标、多级佣金、原生App。每项都要重新计算产品、合规、支持与获客成本。</p>
+<p>不建议首期自训大模型、采购大规模GPU、同时开发多个终端、开放任意代码执行，或宣传全模型不限量。这些事项会显著扩大成本和交付范围。</p></section>
+
+<section><h2 id="s6">06 核心用户流程与异常处理</h2>
+<h3>首个可收费流程</h3><div class="flow"><span>上传商品素材</span><span>确认用途与卖点</span><span>选风格与尺寸</span><span>确认预算</span><span>先做低成本样稿</span><span>选片与局部修改</span><span>生成成套素材</span><span>下载交付包</span></div>
+<ol><li>访客先看到同一真实任务的输入、修改过程和最终结果；注册后用低成本额度体验，不默认赠送高成本视频。</li><li>用户上传后可选择“保持商品外观”；平台检查文件类型、大小、授权和适用性。文字、Logo、尺寸与卖点需要用户确认。</li><li>P0交付图片原件与配文，可用提示词/参考图再修改，不承诺PSD或可编辑分层源文件。执行前显示预计消耗、最大消耗、输出数量、预计等待范围、保存期限和失败规则；预估发生实质变化时重新确认。</li><li>先生成可选草稿，用户确认构图和商品准确性，再执行昂贵的高清化或视频步骤。</li><li>结果支持对比、局部重做、复用参数与导出；一键导出原件、配文和素材清单。</li><li>首个项目完成后保存品牌/商品信息为项目备注，方便下次复用；跨项目品牌记忆与独立资产库在P1增强。</li></ol>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>异常</th><th>用户看到什么</th><th>系统如何处理</th></tr></thead><tbody>
+<tr><td>余额不足</td><td>可完成步骤与需要补足的额度</td><td>暂停后续昂贵步骤、保留已产出结果，补充额度后续跑</td></tr>
+<tr><td>技术失败</td><td>失败原因、已退额度、继续选项</td><td>按既定规则释放冻结额度，平台重试有成本上限</td></tr>
+<tr><td>上游超时但可能已受理</td><td>状态待确认及预计核实时间</td><td>查询或对账，避免盲目换渠道重复生成</td></tr>
+<tr><td>部分成功</td><td>各节点/图片的成功数、费用和剩余步骤</td><td>按事先展示规则结算成功部分，失败部分可续跑</td></tr>
+<tr><td>输出不满意</td><td>可调整参数及重做费用</td><td>与技术失败区分；提供有限补偿策略，防无限抽卡</td></tr>
+<tr><td>审核拒绝</td><td>可理解的分类提示与申诉入口</td><td>阻止交付违规内容；明确额度释放与上游已发生费用承担方</td></tr>
+<tr><td>关闭网页或断网</td><td>回到项目即可查看状态</td><td>任务在服务端运行，恢复展示，不由浏览器保活</td></tr>
+<tr><td>取消任务</td><td>能否取消、是否已产生费用</td><td>未提交可释放；已受理须按供应商实际取消能力处理</td></tr></tbody></table></div>
+<h3>页面结构</h3><p>一级导航建议为“创作首页、项目与作品、模板、额度与订单、帮助”。首页用商品图、图文、短视频等任务入口；模型、线路、种子、参数放到高级设置。移动端以向导和任务列表为主，避免把桌面画布等比例缩小。</p></section>
+
+<section><h2 id="s7">07 技术架构与关键实现</h2>
+<p>推荐模块化单体业务服务＋独立任务Worker。前端采用React/Next.js与TypeScript；业务后端可采用NestJS，已有Java或Python团队时以团队熟悉技术为准。PostgreSQL保存权威状态和账本，Redis承载队列、缓存和限流，对象存储保存媒体，CDN负责预览和下载。具体版本在启动时锁定。</p>
+<div class="architecture"><div>用户Web与运营后台</div><div>业务API<br>身份 / 项目 / 报价 / 订单 / 账本 / 权限</div><div>PostgreSQL + Redis + 对象存储</div><div>任务Worker<br>审核 / 工作流 / 模型适配 / 媒体处理 / 交付</div><div>已验证模型供应商 + 支付渠道 + 审核服务</div></div>
+<p>API与Worker可以同库分进程部署，图片与视频任务分队列。首期使用托管数据库和基础容器部署即可；后续根据瓶颈扩Worker。界面上线、任务生成和数据库恢复是不同能力，分别测试与监控。</p>
+<h3>任务状态与一致性</h3><p><code>草稿 → 已报价 → 已冻结 → 排队 → 提交中 → 生成中 → 输出审核 → 成功/失败/取消</code>，另设<code>上游待确认</code>状态。任务、供应商尝试、回调事件、订单均有独立ID。服务端事务、唯一约束和事务消息表确保“记账成功但任务未派发”等故障可恢复。</p>
+<p>重复点击、回调重放和Worker重启均不能重复入账或重复结算。上游返回超时不等于没有生成；必须先核实再重试。成功交付前将文件从上游临时链接复制到自有对象存储，校验可读性并完成内容审核。</p>
+<h3>画布的实质</h3><p>基础节点可用React Flow实现；节点UI与执行引擎分离。首期只支持文本、素材、图片生成、视频生成和导出等有限节点，禁止循环依赖；保存工作流版本、节点参数快照和运行历史。上游素材变化时，下游结果标记为待更新，经用户确认费用后重跑。画布库不替代工作流调度和预算系统。<a href="https://reactflow.dev/">React Flow官方文档</a></p>
+<p>异步队列可以选择BullMQ等成熟组件，但幂等需由业务代码和数据库约束共同保证；安装队列库不会自动解决重复扣费。<a href="https://docs.bullmq.io/patterns/idempotent-jobs">BullMQ幂等任务指南</a></p>
+<h3>安全边界</h3><ul><li>每次作品、订单、任务和下载授权请求检查用户归属；预留workspace_id，团队能力开放前就落实数据隔离。短时签名链接在有效期内可能被持有者使用，需要立即撤销的分享应通过鉴权网关，不把不可猜测链接当作权限控制。</li><li>供应商密钥仅保存在服务端密钥系统；前端、错误信息、日志和导出包均不得包含密钥。</li><li>后台启用多因素认证，客服、审核、财务、系统管理员分权；退款、赠送、调价与渠道变更可审计。</li><li>限制上传文件的实际类型、像素、大小与时长；优先用平台资产ID引用素材，控制外链抓取的SSRF风险。</li><li>Agent调用工具设白名单、最小权限和预算；用户上传内容是数据，不能覆盖系统权限。</li></ul></section>
+
+<section><h2 id="s8">08 数据对象与接口交付范围</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>数据对象</th><th>关键字段或责任</th></tr></thead><tbody>
+<tr><td>用户与工作区</td><td>user、workspace、membership、session、授权与注销状态</td></tr>
+<tr><td>模型供应</td><td>provider、model、capability、channel、price_version、限额、地域与合同状态</td></tr>
+<tr><td>项目资产</td><td>project、asset、workflow_version、node、input_reference、retention_until</td></tr>
+<tr><td>执行记录</td><td>job、run、attempt、upstream_request_id、failure_reason、报价与输入快照</td></tr>
+<tr><td>账务</td><td>quote、wallet_account、ledger_entry、reservation、payment_order、refund、settlement</td></tr>
+<tr><td>运营与审核</td><td>template_version、moderation_case、support_ticket、audit_event、event_log</td></tr></tbody></table></div>
+<p>内部接口至少覆盖：登录与会话；素材上传授权和上传完成检查；创建/更新项目；生成报价；按报价提交任务；任务查询/事件推送/取消；作品列表与授权下载；支付下单与回调；退款；运营后台查询与审核。提交类接口提供幂等键。对外API可以暂不开放，但内部接口要有文档和权限测试。</p>
+<p>作品记录保存模型与价格版本、参数、输入素材引用、输出文件校验和、审核状态和使用授权声明。可用于追溯，不应承诺模型更新后能完全复现。删除账户、删除作品、法定日志留存和备份轮换分别设计，不能只有“删除数据库一行”。</p></section>
+
+<section><h2 id="s9">09 模型供应采购与评测方案</h2>
+<p>首期控制在5—8个常用模型：1—2个文本、2—3个图片、1—2个视频，可按用户需求增加一个语音能力。每个模型都要明确真实模型ID、版本、接口地区、输入限制、价格和用途授权。以官方或合同授权清楚的供应商为主；“能调用”不等于“可长期用于面向公众的商业服务”。</p>
+<p>可从<a href="https://docs.volcengine.com/docs/ark?lang=zh">火山方舟官方文档</a>与<a href="https://help.aliyun.com/zh/model-studio/model-pricing">阿里云百炼计费文档</a>建立候选池。模型能力与价格按签约时文档和实际账单核验，不在系统里永久写死某个热门版本。参考站的渠道标签不能代替这一步。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>采购维度</th><th>验证内容</th></tr></thead><tbody>
+<tr><td>商业和数据授权</td><td>是否允许服务终端消费者；输入输出保存多久、是否训练、数据去向、删除方式</td></tr>
+<tr><td>计费与结算</td><td>按token/图/秒/任务；参考视频、音频、高清化、失败与重试如何收费；退款凭证</td></tr>
+<tr><td>技术可靠性</td><td>幂等提交、任务查询、回调验签、取消、最大并发和速率限制</td></tr>
+<tr><td>可替代性</td><td>同能力第二供应商实测；迁移参数、风格和价格差异有记录</td></tr>
+<tr><td>资金风险</td><td>小额预付、余额告警、单日限额；避免把全部资金沉淀在一个渠道</td></tr>
+</tbody></table></div>
+<p>建立100个有使用授权的固定评测任务：商品图40、内容配图20、人物/角色20、视频20。先盲评可用性，再比较成本。记录技术成功率、可用作品率、文字/商品准确性、P50/P95耗时、每个可用结果总成本和审核误拒；有需要时对同任务重复抽样。上线后每次换模型或大幅改价都跑回归。</p>
+<p>对外显示成功率时必须同时显示统计时间、样本量和定义。技术返回成功与用户得到可用作品分别统计。经济/标准/高质量档可以简化用户选择，但涉及更高费用、不同数据目的地或模型能力时要告知并获得相应授权。</p></section>
+
+<section><h2 id="s10">10 收费设计与单任务经济模型</h2>
+<p>长期推荐“低成本体验＋明确额度套餐＋超额加购＋存储权益”。P0采用手动充值与逐任务报价；下表中的月度套餐和存储权益作为P1测试商品。首期暂不做自动续费和全模型不限量。内部按成本核算，前台用易理解的额度与单次报价；明确人民币、积分及赠送积分的换算、适用范围和有效期。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>试验商品</th><th>价格假设</th><th>设计目标与限制</th></tr></thead><tbody>
+<tr><td>新手体验</td><td>免费少量低成本生成；可测试9.9元体验包</td><td>完成一个小任务；限制设备与领取频次，不送无限视频</td></tr>
+<tr><td>轻创作包</td><td>49元</td><td>面向低频用户；明确额度与适用模型，按权益消耗</td></tr>
+<tr><td>常用创作包</td><td>99元/月度权益</td><td>模板与项目组织、一定额度、合理存储；视频单独扣额度</td></tr>
+<tr><td>高频创作包</td><td>199元/月度权益</td><td>更高额度、有限并发、批量与品牌资产；仍有资源边界</td></tr>
+<tr><td>额外收入</td><td>按实际成本后定价</td><td>视频额度、存储包、专业模板、商业交付包；不把法定AI标识当成付费去除项</td></tr>
+</tbody></table></div>
+<p>这些是A/B测试价格，不是已证明的市场价。套餐不能先定死“多少张高质量图片”再采购上游；应按模型、分辨率、重试率和重度用户分布反推可承诺额度。</p>
+<blockquote>每个成功交付任务贡献＝对应净收入－所有模型尝试成本－审核/存储/流量增量成本－支付与售后增量成本。技术成功不等于可用结果，重做也必须纳入成本。</blockquote>
+<p>假设一个工作流净收入5元，初次生成1.6元、平均重试0.4元、审核和媒体0.2元、支付及售后增量0.3元，则贡献2.5元，贡献率50%。如果模型相关成本从2元涨至3元，贡献只剩1.5元。该例仅说明定价方法，实际应以试运行账单替换。</p>
+<p>多节点工作流要给出总预算上限，并按节点锁定报价。充值余额、赠送额度、冻结额度、已消费额度独立记账；账本不可直接修改，纠错使用冲正。退款必须区分未使用额度和已履行服务，不能一概写“虚拟商品不退”。</p></section>
+
+<section id="calculator"><h2 id="s11">11 经营测算与资金储备</h2>
+<p><strong>下列全部为规划假设，不是该站营收，也不是盈利预测。</strong>每付费用户月收入按履约确认、退款及税项调整后的净收入口径计算，不等于充值到账；变量成本含模型、重试、增量审核媒体、支付售后等。固定费用不含营销，避免重复计算。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>月度场景</th><th>付费人数</th><th>人均净收入</th><th>变量成本率</th><th>固定费</th><th>营销费</th><th>月经营结果</th></tr></thead><tbody>
+<tr><td>验证期</td><td>300</td><td>69元</td><td>50%</td><td>8万元</td><td>1万元</td><td>−79,650元</td></tr>
+<tr><td>过渡期</td><td>1,500</td><td>99元</td><td>45%</td><td>8万元</td><td>2.5万元</td><td>−23,325元</td></tr>
+<tr><td>增长期</td><td>3,000</td><td>129元</td><td>40%</td><td>10万元</td><td>6万元</td><td>＋72,200元</td></tr></tbody></table></div>
+<p>过渡期假设下，单个付费用户贡献为99×55%=54.45元；约需<strong>1,929名月付费用户</strong>覆盖10.5万元固定与营销支出。若变量成本率升到60%，盈亏平衡升至约2,652人。若人均净收入降至79元、成本率仍45%，则需约2,417人。忽略留存、重试和获客成本，很容易高估利润。</p>
+<div id="calc-ui"><div class="calc-fallback">
+<p class="eyebrow">月度经营测算 · 默认假设</p>
+<p>付费用户 1,500 人，已履约净客单价 ¥99 / 人 / 月，变动成本率 45%，固定费用 ¥80,000 / 月，营销费用 ¥25,000 / 月。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="默认财务假设与结果">
+<table><thead><tr><th scope="col">指标</th><th scope="col">默认情景</th></tr></thead><tbody>
+<tr><td>已履约净收入</td><td>¥148,500 / 月</td></tr>
+<tr><td>扣除变动成本后的贡献</td><td>¥81,675 / 月</td></tr>
+<tr><td>测算经营结果</td><td>−¥23,325 / 月</td></tr>
+<tr><td>达到盈亏平衡的付费人数</td><td>1,929 人 / 月</td></tr>
+</tbody></table></div>
+<p class="fine-print">以上均为假设，不是本站或拟建项目的真实经营数据。收入按已履约确认、扣除税费等后的净额填写，不是充值流水。固定费用不含单列的营销费用；成本分类应保持一致，避免重复计算。此处为简化测算，不构成盈利承诺。</p>
+<noscript><p class="fine-print">当前浏览器未启用 JavaScript，展示默认情景。启用后可在本地调整五项参数。</p></noscript>
+</div></div>
+<h3>研发资金与经营资金分开</h3>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>资金层级</th><th>适合交付</th><th>边界</th></tr></thead><tbody>
+<tr><td>30万—50万元首期资金池</td><td>3名核心研发＋兼职设计测试；图片＋固定模板＋轻视频＋完整收费后台</td><td>创始人承担产品运营；减少自由画布；预算中仍要留试用与运营余量</td></tr>
+<tr><td>50万—80万元首期资金池</td><td>4—6人商业V1，基础画布、供应切换、较完善的异常恢复</td><td>研发建议50万—60万元；余量仅支持有限运营，不代表一年总成本</td></tr>
+<tr><td>80万元以上</td><td>增强渠道验证、模板制作、用户支持和运营储备</td><td>应分阶段释放；新增资金优先保证交付与复购，再扩产品线</td></tr>
+</tbody></table></div>
+<p>可复核的研发示例：阶段投入折算为5个全职等效×3.5个月×2.2万元综合人月成本=38.5万元；加约5.8万元风险准备和4万—10万元测试云/API评测/安全合规支持，合计约48万—55万元，立项可按50万—60万元留弹性。综合人月成本若变成3万元，同规模预算将明显上升；这些均不是外包报价。</p>
+<p>经营储备示例：按每月8万元固定费、2.5万元营销费，六个月为63万元；另留5万—10万元上游预付与试用峰值资金。加55万元研发，累计准备约<strong>123万—128万元</strong>用于建设、六个月固定与营销支出，以及有限的API周转。这不是全部可变消耗的充分保障：还须逐月加入实际模型等支出并减去可回收现金，考虑结算延迟与未履约责任。这里没有把未来收入作为必然现金来源；API支出超预付额度时必须限额或追加预算。更小资金也能启动，但必须减团队、减范围、逐月拨款。</p>
+<p>固定费用8万元的例子可以拆为维护研发与产品5.5万元、客服运营1.2万元、基础云与监控0.6万元、行政财税合规0.7万元。与业务量绑定的模型、存储带宽和审核费用归变量成本。研发期人力与上线后的维护人力按时间分开，不能双算。</p></section>
+
+<section><h2 id="s12">12 团队配置与十六周排期</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>角色</th><th>核心责任</th><th>配置建议</th></tr></thead><tbody>
+<tr><td>产品负责人</td><td>定位、需求、价格、用户访谈、验收和预算</td><td>创始人必须参与；可兼产品设计</td></tr>
+<tr><td>技术负责人兼后端</td><td>架构、账本、支付、安全和交付质量</td><td>1人，关键长期岗位</td></tr>
+<tr><td>前端工程师</td><td>创作工作台、项目、画布、移动端适配</td><td>1人，复杂画布期可增加支持</td></tr>
+<tr><td>后端与模型工程师</td><td>异步任务、供应商、媒体、成本路由</td><td>1人</td></tr>
+<tr><td>产品设计与测试</td><td>流程原型、异常场景、体验和回归验收</td><td>1—2人等效，按阶段调整</td></tr>
+<tr><td>运营客服与外部支持</td><td>模板、教程、用户支持、财务及合规</td><td>内测前到位；专业审查按需采购</td></tr></tbody></table></div>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>时间</th><th>必须交付</th><th>阶段放行条件</th></tr></thead><tbody>
+<tr><td>第1—2周</td><td>20人访谈、20个真实任务、原型、功能清单、供应候选、成本表、主体与合规路径</td><td>锁定一个主场景；至少5位愿意带素材持续参与的共建用户</td></tr>
+<tr><td>第3—6周</td><td>账户、图片、任务、作品、报价、支付、账本与基础后台</td><td>测试环境完成从购买到交付/失败退还的完整闭环</td></tr>
+<tr><td>第7—10周</td><td>短视频、模板、基础画布或向导、单步重跑、审核、客服和成本面板</td><td>异常注入、重复回调、超时核实、权限隔离测试通过</td></tr>
+<tr><td>第11—12周</td><td>50—100名邀请用户内测，完成20—30次真实付费或明确付费测试</td><td>退款对账可用，核心需求确有支付意愿；公开收费须满足上线条件</td></tr>
+<tr><td>第13—16周</td><td>性能、安全、备份恢复、数据删除、标识、文档培训、灰度上线</td><td>技术验收及外部资质条件齐备；无未解决的资金或数据高风险缺陷</td></tr></tbody></table></div>
+<p>研发周期不等于审批承诺。支付进件、备案/登记、供应商授权和合同从第一周并行；外部条件未完成时，可以继续受控内测与技术验证，但不承诺按日期强行对公众收费开放。</p></section>
+
+<section><h2 id="s13">13 上线后九十天运营与增长</h2>
+<p>北极星指标建议为“每周完成并导出可用作品的付费用户数”。同时看首次可用结果率、每个可用作品成本、七日复用、三十日复购、退款率和客服工时。注册数、生成次数和充值流水不能单独说明产品健康。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>阶段</th><th>重点动作</th><th>建议决策门槛</th></tr></thead><tbody>
+<tr><td>上线后1—30天</td><td>陪跑50名目标用户；每周分析失败与流失；制作10个可复现教程</td><td>至少30个完成交付的真实项目；首次任务可用率≥60%作为改进目标</td></tr>
+<tr><td>31—60天</td><td>只扩大一个已有效渠道；测试49/99/199等价格与两类模板入口</td><td>按同一注册批次观察七日再次有效创作≥25%；贡献率目标≥45%</td></tr>
+<tr><td>61—90天</td><td>验证复购与推荐，减少人工陪跑；决定是否投入画布增强或漫剧小试</td><td>满30天的首次付费用户复购/续购≥25%；CAC回本目标≤3个月</td></tr></tbody></table></div>
+<p>上述数字是管理门槛假设，不是行业均值。小样本波动很大，先要求有不少于100名已成熟观察期用户再作较强结论。七日复用、付费复购和订阅续费分别统计，不能混用。</p>
+<h3>获客渠道顺序</h3><ol><li>创始人已有客户或社群：用真实素材一对一验证，并记录他们原本如何完成任务。</li><li>内容教程：发布“原图—操作—成品—用时—实际消耗”，每个教程对应一个可复用模板，减少夸张效果宣传。</li><li>垂直合作：与电商课程作者、接单设计师、小型服务商合作，先做单层推荐码和可核算佣金。</li><li>搜索与内容资产：围绕“某类商品场景图怎么做”等任务建立可索引教程与案例，使用已授权素材。</li><li>付费投放：先用小预算比较每个付费客户的贡献回收，稳定后再放量。</li></ol>
+<p>例如每月1万名合格访客，20%注册、40%完成首个任务、10%首付，仅产生80名新付费用户。若投放1万元，按此口径CAC为125元。按每月贡献54.45元计算，需约2.3个付费月才回收，真实回收还取决于流失和再次付费间隔。此为漏斗示例，不是流量预测。</p>
+<p>团队每周复盘三张表：渠道到付费与复购、模型到可用作品和成本、任务失败到客服与退款。若连续两轮迭代仍低留存或负贡献，暂停增加渠道和模型数量，重新访谈与收缩产品承诺。</p></section>
+
+<section><h2 id="s14">14 合规与商业服务上线条件</h2>
+<p>以下按境内公众AI创作服务规划，属于上线事项梳理。具体办理路径由经营主体、所在地、功能、模型接入和数据流决定，立项时应向主管部门及专业顾问核实。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>事项</th><th>落地动作</th><th>责任与依据</th></tr></thead><tbody>
+<tr><td>生成式AI备案或登记</td><td>直接调用已备案模型的应用也要核实地方登记；公示模型及备案/上线编号。具有舆论属性或社会动员能力时评估相应安全评估和算法备案要求</td><td>产品＋合规；<a href="https://www.cac.gov.cn/2026-09/14/c_1791136833136332.htm">网信办2026公告</a>、<a href="https://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm">暂行办法</a></td></tr>
+<tr><td>网站主体与经营资质</td><td>区分ICP备案和经营许可，核实收费服务适用性；后续交易市场再核实EDI等，不把所有许可证一概列为必须</td><td>创始人＋合规；<a href="https://cqca.miit.gov.cn/zwgk/zcwj/flfg/art/2026/art_3aa3d50dbe1648fda74aeab4f39b2db1.html">互联网信息服务管理办法</a></td></tr>
+<tr><td>生成内容标识</td><td>UI、生成文件、转码和导出链路保留相应显式/隐式标识；品牌水印与AI标识分开</td><td>产品＋工程；<a href="https://www.cac.gov.cn/2025-03/14/c_1743654684782215.htm">标识办法</a></td></tr>
+<tr><td>隐私与跨境</td><td>作品默认私有，授权分享、可撤销、可删除；盘点传往境外的提示词和素材，落实告知同意、影响评估及适用出境机制</td><td>工程＋合规；<a href="https://www.samr.gov.cn/wljys/gzzd/art/2023/art_3ef1e889c1e644d4b65b5f5c7f432386.html">个人信息保护法</a>、<a href="https://www.cac.gov.cn/2024-03/22/c_1712776611775634.htm">数据跨境规定</a></td></tr>
+<tr><td>真人与版权</td><td>人像、声音、商标、商品图、字体、音乐、模板保留授权证据；建立侵权投诉和下架流程</td><td>运营＋合规；<a href="https://www.cac.gov.cn/2022-12/11/c_1672221949354811.htm">深度合成管理规定</a></td></tr>
+<tr><td>内容治理</td><td>输入输出审核、公开展示复核、举报申诉、人工处置、审计；不宣传绕过审核</td><td>运营＋工程；同上及生成式AI暂行办法</td></tr>
+<tr><td>充值与退款</td><td>列明服务、额度、期限、未消费退款、失败计费、价格调整与发票规则</td><td>产品＋财务；<a href="https://app.www.gov.cn/govdata/gov/202403/19/513111/article.html">消费者权益保护法实施条例</a></td></tr>
+<tr><td>自动续费</td><td>以后开通时，在接受服务前及续费日期前显著提醒，提供便捷取消；一期可采用手动续购</td><td>产品；<a href="https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/fgs/art/2025/art_4b47c79b8d994a42bba4835997688faa.html">2025修订网络交易监督管理办法</a></td></tr>
+<tr><td>支付接入</td><td>正式商户进件、匹配经营类目；回调验签、金额校验、退款查询、三方对账</td><td>财务＋工程；<a href="https://pay.wechatpay.cn/doc/v3/merchant/4015614538">微信Native接入</a>、<a href="https://aipay.alipay.com/article/3470">支付宝网站支付</a></td></tr>
+</tbody></table></div>
+<p>标识办法对不含显式标识的特定提供方式设置了协议、责任告知和相关日志不少于六个月等条件；不能宣传一键清除所有AI标识。普通作品保存期限、账户注销与法定必要日志应分别设计。云部署在境外也不会自动消除面向境内用户的服务责任。</p>
+<p>若以后扩展到AI陪伴、虚拟恋人等持续情感互动，应另评估2026年7月15日起施行的<a href="https://www.cac.gov.cn/2026-04/10/c_1777558395078289.htm">拟人化互动服务管理暂行办法</a>。此方向不建议混入首期创作工具。现行相关备案入口为<a href="https://beian.cac.gov.cn/">网信备案系统</a>。</p></section>
+
+<section><h2 id="s15">15 交付验收与风险预案</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>验收项</th><th>必须演示的结果</th></tr></thead><tbody>
+<tr><td>支付与额度幂等</td><td>同一支付回调重放20次只入账一次；错误商户/金额不发放；重复任务提交不重复扣费</td></tr>
+<tr><td>未知状态与补偿</td><td>模拟上游已接单后断线，进入待核实；不盲目重试；日对账能处理差异</td></tr>
+<tr><td>部分成功与预算</td><td>多图或工作流部分失败按规则结算；涨价、重试、并发均不超过用户确认上限</td></tr>
+<tr><td>账务追溯</td><td>任何扣费能查到报价版本、操作、任务、供应商尝试和成本；管理员更改有审计</td></tr>
+<tr><td>资产隔离</td><td>另一用户不能越权查询作品、订单或取得下载授权；下载经鉴权网关或短时链接交付，撤销生效时限须明确并验证；到期删除有任务记录</td></tr>
+<tr><td>交付可恢复</td><td>关闭页面后任务继续；Worker重启可恢复；原件已保存，临时上游链接失效不影响作品</td></tr>
+<tr><td>合规与内容</td><td>输入输出审核、申诉和处置可运行；导出后标识仍正确；授权与隐私流程可查</td></tr>
+<tr><td>备份与发布</td><td>真实恢复演练、迁移与回滚演练；不以存在备份文件替代恢复测试</td></tr>
+<tr><td>用户体验</td><td>从注册到首个可用结果有明确引导；等待、成本、错误、保存期限及客服入口清楚</td></tr>
+</tbody></table></div>
+<p>初始服务设计目标可定为平台月可用性99.5%、数据库RPO≤15分钟、核心服务RTO≤2小时；这些是需经基础设施和演练验证的目标，并非模型生成时间承诺。压测用DAU×任务数×峰值系数和供应商并发反推，分别验页面访问、任务提交和生成并发。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>风险场景</th><th>提前措施</th><th>触发后的动作</th></tr></thead><tbody>
+<tr><td>主供应商停服7天</td><td>备用适配器与评测集，预付资金限额</td><td>暂停问题渠道，展示可用替代并重新报价，保留历史结果</td></tr>
+<tr><td>模型成本上涨30%</td><td>价格版本、项目预算、单日亏损告警</td><td>调整新订单价格或下架低毛利档；不追溯加价已承诺订单</td></tr>
+<tr><td>成功率下降或重试暴增</td><td>按模型/线路监控、重试限额、异常分类</td><td>熔断、停止营销放量，优先核实在途任务</td></tr>
+<tr><td>试用被刷或密钥泄露</td><td>限流、风控、密钥隔离、全站费用上限</td><td>停高风险入口、轮换泄露密钥、审计与补偿</td></tr>
+<tr><td>支付通道受限</td><td>正规商户、订单证据、备用合规渠道</td><td>暂停受影响下单，保留可查询订单，处理在途退款</td></tr>
+<tr><td>内容或权利投诉</td><td>授权台账、举报入口、默认私有</td><td>限制公开传播、保全必要证据、复核申诉并处置</td></tr>
+<tr><td>资金不足</td><td>每月现金预测，研发分阶段付款</td><td>停扩品和无效投放，控制新预付与免费试用消耗</td></tr></tbody></table></div></section>
+
+<section><h2 id="s16">16 发散方向与长期壁垒</h2>
+<p>发散应围绕同一批用户、同一份素材、同一套资产反复使用，优先让一次创作变成下次创作的起点。下面按价值与依赖区分，避免把方向清单直接变成第一期需求。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>机会</th><th>用户价值与收入</th><th>何时做及前提</th></tr></thead><tbody>
+<tr><td>品牌与商品记忆</td><td>记住配色、Logo、文案语气与SKU，下次少重复描述</td><td>P1；用户授权、可删除、商品准确性评测</td></tr>
+<tr><td>一份素材多平台版本</td><td>生成不同尺寸封面、图文、短视频和文案，提高单项目价值</td><td>P1；先导出适配包，自动发布需官方接口和明确授权</td></tr>
+<tr><td>预算模式</td><td>用户给出预算，先样稿后精修，在预算内完成优先内容</td><td>P1；报价引擎和节点成本已可靠</td></tr>
+<tr><td>客户审稿链接</td><td>接单设计师让客户圈点、批注、选图，提升复购</td><td>P1；私有分享、权限和撤销完整</td></tr>
+<tr><td>批量SKU与季节活动</td><td>一次处理系列商品，按批量包收费</td><td>P1；队列、预算、结果抽检与商品信息绑定</td></tr>
+<tr><td>角色资产与连续故事</td><td>固定角色、服装、场景、镜头语言，服务漫剧与绘本</td><td>P2；先做3镜头样片，再扩多集；不保证天然一致性</td></tr>
+<tr><td>创作质量检查</td><td>检查错字、画面尺寸、字幕越界、商品不一致等</td><td>P1/P2；给可解释提示，不把模型判断当质量保证</td></tr>
+<tr><td>模板作者市场</td><td>创作者出售可复用流程，平台收服务费</td><td>P2；先运营精选模板，再做交易、授权、审核和结算</td></tr>
+<tr><td>专家辅助交付</td><td>AI结果可购买人工精修、排版或配音服务</td><td>P2；明确交付标准、售后和人工成本，适合验证高客单需求</td></tr>
+<tr><td>存储与项目备份权益</td><td>延长保留、版本恢复、优先支持</td><td>P1；明确容量、保留期限、恢复范围及客服承诺</td></tr>
+<tr><td>团队工作区</td><td>共享品牌素材、成员预算、审批、账单</td><td>P2；个人业务稳定后，从2—5人的真实团队需求做起</td></tr>
+<tr><td>代理白标</td><td>借渠道伙伴触达细分用户</td><td>P2；先验证单层推荐，明确客户归属、退款、余额和退出迁移</td></tr>
+<tr><td>开发者API</td><td>把已稳定能力向第三方收费提供</td><td>P2；独立限流、账务、文档、服务承诺和客服体系</td></tr>
+<tr><td>海外本地化</td><td>语言、支付、模板与渠道扩展</td><td>独立项目评估地区数据、税务、支付与内容政策</td></tr></tbody></table></div>
+<p>长期可积累的优势包括：某类商品的可用效果评测集、能提升成功交付率的模板与流程、用户授权保存的品牌资产、低返工率的编辑体验，以及稳定透明的服务。用户作品是否用于训练或优化需另有明确、可撤回的授权安排，不能默认占用。</p></section>
+
+<section><h2 id="s17">17 立项后十四天行动清单</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="数据表，可横向滚动"><table><thead><tr><th>时间</th><th>行动</th><th>具体产出</th></tr></thead><tbody>
+<tr><td>第1—2天</td><td>确定负责人、资金上限、主体与市场；盘点现有渠道和技术底座</td><td>一页立项卡、预算上限、责任表、范围边界</td></tr>
+<tr><td>第3—5天</td><td>访谈20位候选用户，收集有授权素材及原工作方式</td><td>任务频率、愿付金额、失败容忍度、保存需求表</td></tr>
+<tr><td>第4—7天</td><td>筛选两组供应商，验证价格、质量、授权、数据流和异常行为</td><td>采购比较表、实测任务账单、供应商风险清单</td></tr>
+<tr><td>第6—9天</td><td>设计首个流程及全部异常页面，确定前后台信息架构</td><td>可点击原型、10—20个模板清单、报价与退款规则</td></tr>
+<tr><td>第8—11天</td><td>技术设计与估工；与支付、属地主管部门/顾问核实接入条件</td><td>架构图、表结构、接口表、验收用例、外部依赖排期</td></tr>
+<tr><td>第12—14天</td><td>邀请共建用户验证原型和样稿；复核预算与合同</td><td>冻结P0需求、16周里程碑、首批用户名单、阶段拨款决定</td></tr></tbody></table></div>
+<p>需要补齐的业务信息：经营主体及所在地；现有研发/运营人员；可直接触达的第一批客户；现有模型API与合同；境内或境外部署；是否公开社区、真人形象/声音、创作者交易。它们决定方案的细化分支，但不妨碍先做访谈、原型和供应评测。</p>
+<div class="callout"><strong>建议的启动决定</strong><p>批准两周验证阶段，锁定一个付费场景和一条完整交付链路。验证通过后按商业V1拨款，并单列上线后现金储备。先把“买得明白、做得出来、失败能恢复、下次愿意再来”四件事做扎实。</p></div></section>
+
+<section><h2 id="s18">18 资料口径与交付使用说明</h2>
+<p>参考站页面观察日期为2026年11月13日；页面功能与价格为当时快照。法规与技术链接对应本次查阅的官方来源，办理及采购时应再次核实最新文本、地域与合同。本文的技术结构是拟建产品建议，未访问参考站后台或源代码，未判断其实际架构。</p>
+<p>预算、工期、套餐价格、经营情景和验证门槛均为立项假设，需由团队人月、正式供应报价、试运行成本与用户行为替换。报告和测算器不包含登录密码、会话令牌或API密钥；计算在本地执行，不发送输入数据。</p>
+<p>这份报告可用于创始人决策、技术负责人拆任务、外包询价和合作谈判。正式签约前，应把P0逐项转成验收用例，把双方职责、知识产权、账号归属、数据迁移、质保与付款条件写入合同附件。</p></section>
+</article>
+  <footer class="document-footer"><span>AI 创作平台建设落地方案 · 2026.11.13</span><a href="#cover">返回封面 ↑</a></footer>
+</main>
+</div>
+<script>
+(() => {
+  'use strict';
+  document.querySelector('#print-report')?.addEventListener('click', () => window.print());
+
+  const tocLinks = Array.from(document.querySelectorAll('.toc a'));
+  const headingMap = new Map(tocLinks.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+  const headings = Array.from(document.querySelectorAll('.report-content h2[id]'));
+  let ticking = false;
+  function highlightChapter() {
+    let active = headings[0];
+    for (const heading of headings) {
+      if (heading.getBoundingClientRect().top <= 125) active = heading;
+      else break;
+    }
+    for (const link of tocLinks) {
+      const selected = active && headingMap.get(active.id) === link;
+      link.classList.toggle('active', Boolean(selected));
+      if (selected) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    }
+    ticking = false;
+  }
+  window.addEventListener('scroll', () => {
+    if (!ticking) { ticking = true; window.requestAnimationFrame(highlightChapter); }
+  }, {passive:true});
+  highlightChapter();
+
+  const mount = document.querySelector('#calc-ui');
+  if (!mount) return;
+  const defaults = {paid:1500, arppu:99, variable:45, fixed:80000, marketing:25000};
+  const controls = [
+    {key:'paid', label:'月付费用户数', unit:'人', min:0, max:100000000, step:1, hint:'当月形成已履约收入的付费用户'},
+    {key:'arppu', label:'月已履约净客单价', unit:'元 / 人', min:0, max:1000000, step:0.01, hint:'扣除税费等后的净额；不是充值金额'},
+    {key:'variable', label:'变动成本率', unit:'%', min:0, max:100, step:0.1, hint:'模型、审核、流量等增量成本占净收入比例'},
+    {key:'fixed', label:'月固定费用', unit:'元', min:0, max:10000000000, step:1, hint:'人力、基础设施等；不含右侧单列营销费用'},
+    {key:'marketing', label:'月营销费用', unit:'元', min:0, max:10000000000, step:1, hint:'投放、渠道等当月获客支出'}
+  ];
+  const fields = controls.map(c => `<div class="calc-field"><label for="calc-${c.key}">${c.label} <span>（${c.unit}）</span></label><input id="calc-${c.key}" name="${c.key}" type="number" inputmode="${c.step === 1 ? 'numeric' : 'decimal'}" min="${c.min}" max="${c.max}" step="${c.step}" value="${defaults[c.key]}" required aria-describedby="hint-${c.key}"><small id="hint-${c.key}">${c.hint}</small></div>`).join('');
+  mount.innerHTML = `<div class="calc-panel"><div class="calc-heading"><h3>把投入与收入放进同一张账</h3><p>调整五项月度假设，观察经营结果与盈亏平衡人数。以下默认数值为演示假设，不代表真实经营数据。</p></div><form class="calc-form" id="calc-form" novalidate><div class="calc-fields">${fields}</div><div class="calc-actions"><button type="reset" class="reset-button">恢复默认假设 ↺</button><p class="calc-feedback" id="calc-feedback" role="status" aria-live="polite"></p></div></form><div class="calc-results" aria-live="polite" aria-atomic="true"><div class="calc-result"><label for="calc-revenue">已履约净收入</label><output id="calc-revenue" for="calc-paid calc-arppu">¥148,500</output><small>元 / 月</small></div><div class="calc-result"><label for="calc-contribution">扣除变动成本后的贡献</label><output id="calc-contribution" for="calc-paid calc-arppu calc-variable">¥81,675</output><small>元 / 月</small></div><div class="calc-result"><label for="calc-profit">测算经营结果</label><output id="calc-profit" class="negative" for="calc-paid calc-arppu calc-variable calc-fixed calc-marketing">−¥23,325</output><small id="calc-profit-caption">元 / 月 · 当前假设亏损</small></div><div class="calc-result"><label for="calc-break-even">盈亏平衡付费人数</label><output id="calc-break-even" for="calc-arppu calc-variable calc-fixed calc-marketing">1,929</output><small>人 / 月 · 向上取整</small></div></div><div class="calc-explanation"><p class="calc-formula">净收入 = 付费人数 × 已履约净客单价<br>贡献 = 净收入 × (1 − 变动成本率)<br>经营结果 = 贡献 − 固定费用 − 营销费用<br>盈亏平衡人数 = 向上取整[(固定费用 + 营销费用) ÷ (净客单价 × (1 − 变动成本率))]</p><p>按已履约确认、扣除税费等后的净收入口径填写，不是充值流水。固定费用不含营销，变动费用也不应重复计入固定或营销费用。此模型假设客单价与成本率在用户规模变化时保持不变，不包含另行发生的一次性开发投入和资金占用，不能替代现金流预测。</p><p>全部计算仅在当前浏览器执行，无网络请求，不上传或保存你输入的数值。</p></div></div>`;
+  const form = mount.querySelector('#calc-form');
+  const feedback = mount.querySelector('#calc-feedback');
+  const money = value => (value < 0 ? '−' : '') + '¥' + Math.abs(value).toLocaleString('zh-CN', {maximumFractionDigits:2});
+  const number = value => value.toLocaleString('zh-CN', {maximumFractionDigits:0});
+  function update() {
+    const values = {};
+    let error = '';
+    for (const c of controls) {
+      const input = form.elements.namedItem(c.key);
+      const value = input.valueAsNumber;
+      const valid = input.value.trim() !== '' && Number.isFinite(value) && value >= c.min && value <= c.max && (c.key !== 'paid' || Number.isInteger(value));
+      input.setAttribute('aria-invalid', String(!valid));
+      if (!valid && !error) error = `${c.label}请输入 ${number(c.min)}—${number(c.max)}${c.key === 'paid' ? ' 之间的整数' : ' 之间的数值'}。`;
+      values[c.key] = value;
+    }
+    feedback.textContent = error;
+    if (error) return;
+    const revenue = values.paid * values.arppu;
+    const contribution = revenue * (1 - values.variable / 100);
+    const profit = contribution - values.fixed - values.marketing;
+    const perUser = values.arppu * (1 - values.variable / 100);
+    const totalFixed = values.fixed + values.marketing;
+    const breakEven = perUser > 0 ? Math.ceil(totalFixed / perUser) : totalFixed === 0 ? 0 : null;
+    mount.querySelector('#calc-revenue').textContent = money(revenue);
+    mount.querySelector('#calc-contribution').textContent = money(contribution);
+    const profitOutput = mount.querySelector('#calc-profit');
+    profitOutput.textContent = money(profit);
+    profitOutput.classList.toggle('negative', profit < 0);
+    mount.querySelector('#calc-profit-caption').textContent = '元 / 月 · ' + (profit < 0 ? '当前假设亏损' : profit > 0 ? '当前假设盈利' : '当前假设收支平衡');
+    mount.querySelector('#calc-break-even').textContent = breakEven === null ? '无法达到' : number(breakEven);
+    if (breakEven === null) feedback.textContent = '单用户贡献为零且仍有固定或营销费用，当前假设无法达到盈亏平衡。';
+  }
+  form.addEventListener('submit', event => event.preventDefault());
+  form.addEventListener('input', update);
+  form.addEventListener('change', update);
+  form.addEventListener('reset', () => window.setTimeout(update, 0));
+  update();
+})();
+</script>
+</body>
+</html>

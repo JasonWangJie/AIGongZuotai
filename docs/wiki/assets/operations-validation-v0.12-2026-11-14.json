@@ -1,0 +1,106 @@
+{
+  "version": "0.12.0",
+  "date": "2026-11-14",
+  "batch": "V14-A",
+  "full_v14_status": "in_progress",
+  "go_check": {
+    "command": "npm run check",
+    "status": "passed",
+    "go_vet": true,
+    "go_tests": true,
+    "go_build": true,
+    "task_tests": 8,
+    "frontend_tests": 217,
+    "frontend_files": 23,
+    "frontend_seconds": 1.51,
+    "vite_seconds": 1.58
+  },
+  "postgres": {
+    "command": "npm run test:db",
+    "status": "passed",
+    "studio_seconds": 169.657,
+    "isolated_schema": true
+  },
+  "commit_ack_loss": {
+    "test": "TestPostgresOperationsUnknownCommitRecoversOneReceipt",
+    "status": "passed",
+    "seconds": 2.54,
+    "scope": "Real PostgreSQL COMMIT acknowledgement dropped by TCP proxy; App restart recovers unique receipt; not OS process Kill"
+  },
+  "openapi": {
+    "version": "0.12.0",
+    "paths": 61,
+    "operations": 73,
+    "schemas": 82,
+    "refs": 340,
+    "valid": true
+  },
+  "smokes": {
+    "passed_commands": [
+      "smoke",
+      "smoke:runtime",
+      "smoke:catalog",
+      "smoke:references",
+      "smoke:library",
+      "smoke:conversations"
+    ],
+    "five_json_reports": [
+      {
+        "name": "runtime",
+        "binary_sha256": "eed5c52525ff99f4d74d583766bc2efdefe4541d3c4bc6f9f211f74df63dc40a",
+        "status": "passed"
+      },
+      {
+        "name": "catalog",
+        "binary_sha256": "eed5c52525ff99f4d74d583766bc2efdefe4541d3c4bc6f9f211f74df63dc40a",
+        "status": "passed"
+      },
+      {
+        "name": "reference",
+        "binary_sha256": "eed5c52525ff99f4d74d583766bc2efdefe4541d3c4bc6f9f211f74df63dc40a",
+        "status": "passed"
+      },
+      {
+        "name": "library",
+        "binary_sha256": "eed5c52525ff99f4d74d583766bc2efdefe4541d3c4bc6f9f211f74df63dc40a",
+        "status": "passed"
+      },
+      {
+        "name": "conversation",
+        "binary_sha256": "eed5c52525ff99f4d74d583766bc2efdefe4541d3c4bc6f9f211f74df63dc40a",
+        "status": "passed"
+      }
+    ],
+    "hostile_parent_environment_overridden": [
+      "OPERATIONS_ENABLED=true",
+      "BILLING_MODE=credits with invalid price file",
+      "AUTH_MAIL_ENABLED=true with invalid host"
+    ]
+  },
+  "binary_sha256": "eed5c52525ff99f4d74d583766bc2efdefe4541d3c4bc6f9f211f74df63dc40a",
+  "performance_artifact": "performance-local-v0.12-2026-11-14.json",
+  "real_provider_requests": 0,
+  "real_external_mail": false,
+  "real_payments": false,
+  "limitations": [
+    "Single control writer retained",
+    "V14-B and V14-C pending",
+    "Real email acceptance deferred by user",
+    "No production capacity or real supplier acceptance"
+  ],
+  "governance": {
+    "status": "passed",
+    "commands": [
+      "todo:sync",
+      "check:todo",
+      "check:docs",
+      "check:changes"
+    ],
+    "modules": 10,
+    "batches": 23,
+    "done_batches": 11,
+    "documents": 104,
+    "ledgers": 50,
+    "changed_paths": 440
+  }
+}

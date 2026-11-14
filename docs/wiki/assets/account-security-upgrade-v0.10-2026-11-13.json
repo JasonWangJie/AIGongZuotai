@@ -1,0 +1,37 @@
+{
+  "checked_at": "2026-11-13T14:54:49.907Z",
+  "version": "0.10.0",
+  "compared_with_pre_upgrade_dump": true,
+  "baseline": {
+    "asset_count": 8,
+    "draft_max_revision": 5,
+    "asset_max_revision": 10,
+    "conversation_node_counts": [
+      12
+    ]
+  },
+  "schema_versions": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "draft_max_revision": 5,
+  "asset_count": 8,
+  "main_project_asset_count": 6,
+  "asset_max_revision": 10,
+  "conversation_node_counts": [
+    12
+  ],
+  "legacy_run_count": 2,
+  "mail_outbox_count": 0,
+  "account_tokens_count": 0,
+  "session_backfill_valid": true
+}

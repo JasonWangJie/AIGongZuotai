@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "models": [
+    {
+      "id": "studio-chat",
+      "name": "创意对话",
+      "kind": "chat",
+      "description": "示例服务端文本模型；demo模式不会访问上游",
+      "enabled": true,
+      "upstream_model": "replace-with-your-chat-model",
+      "chat_output_limit_field": "max_tokens",
+      "capabilities": { "context_window_tokens": 32768, "max_output_tokens": 4096, "max_count": 1, "max_prompt_bytes": 16000, "parameter_presets": [] }
+    },
+    {
+      "id": "studio-image",
+      "name": "概念图像",
+      "kind": "image",
+      "description": "精确组合示例；真实网关支持范围须另行核对",
+      "enabled": true,
+      "upstream_model": "replace-with-your-image-model",
+      "capabilities": {
+		"image_edit_supported": true,
+		"max_reference_images": 4,
+        "max_count": 4,
+        "max_prompt_bytes": 8000,
+        "parameter_presets": [
+          { "id": "square", "name": "方形 1024", "aspect_ratio": "1:1", "size": "1024x1024" },
+          { "id": "landscape", "name": "横向", "aspect_ratio": "16:9" }
+        ]
+      }
+    },
+    {
+      "id": "studio-video",
+      "name": "短视频草案",
+      "kind": "video",
+      "description": "时长与分辨率按同一个预设提交",
+      "enabled": true,
+      "upstream_model": "replace-with-your-video-model",
+      "capabilities": {
+        "max_count": 1,
+        "max_prompt_bytes": 8000,
+        "parameter_presets": [
+          { "id": "landscape-five", "name": "横向 5 秒 720p", "aspect_ratio": "16:9", "seconds": 5, "resolution": "720p" },
+          { "id": "portrait-ten", "name": "竖向 10 秒 1080p", "aspect_ratio": "9:16", "seconds": 10, "resolution": "1080p" }
+        ]
+      }
+    }
+  ]
+}
