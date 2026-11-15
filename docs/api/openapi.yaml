@@ -1,14 +1,16 @@
 openapi: 3.1.0
 info:
   title: AI 工作台本地开发 API
-  version: 0.13.0
-  description: '回环单写工作台。默认memory+demo；DATABASE_URL启用PostgreSQL，AUTH_MODE=required启用真实cookie会话和工作区隔离。LLM与已配置异步媒体支持live，逐模型能力以models[].capabilities为准。PG持久化创建、幂等、检查点和handle；重启未完成LLM为INTERRUPTED，提交不明不重发。
-    V03支持PostgreSQL项目云草稿与不可变修订/CAS；V04提供同事务业务活动审计（非计费），不记录prompt/output/凭据。 V05增加工作区资源准入、缓存就绪检查、私有工作区运行状态、独立运维令牌Prometheus指标和服务端request_id；不是分布式配额或供应商健康检测。
-    V06支持版本化有限模型目录和精确规格预设，目录启动加载、更改重启生效；已受理媒体原始提交体冻结，不随模型目录改写。 V07增加私有参考图片上传、512像素预览、有序引用编辑和不可变multipart请求文件；目录及模型声明不替代真实供应商验收。
-    V08提供独立私有资产目录和S3兼容后端；V09支持持久元数据回放和任务租约；V10增加项目私有多轮会话、不可变消息分支与受理时冻结的上下文预算，继续生成是显式新请求。 V11增加邮箱验证、密码找回/变更、会话撤销和账户私有安全事件；邮件默认关闭，配置后通过加密持久队列异步发送。敏感请求响应不明时先核对或重新登录，不沿用生成请求的自动重试语义。
-    V12增加CREDIT六位精度权益报价、同事务冻结/结算、待核实、流水与离线核账；默认关闭，无真实支付接口。 V14-A增加默认关闭的工作区运营权限、异常工单、预演与密码确认处置；没有在线角色授予、真实退款或完整内容审核。
+  version: 0.20.0
+  description: '回环单写工作台。默认memory+demo；DATABASE_URL启用PostgreSQL，AUTH_MODE=required启用真实cookie会话和工作区隔离。LLM与已配置异步媒体支持live，逐模型能力以models[].capabilities为准。PG持久化创建、幂等、检查点和handle；重启未完成LLM为INTERRUPTED，提交不明不重发。 V03支持PostgreSQL项目云草稿与不可变修订/CAS；V04提供同事务业务活动审计（非计费），不记录prompt/output/凭据。
+    V05增加工作区资源准入、缓存就绪检查、私有工作区运行状态、独立运维令牌Prometheus指标和服务端request_id；不是分布式配额或供应商健康检测。 V06支持版本化有限模型目录和精确规格预设，目录启动加载、更改重启生效；已受理媒体原始提交体冻结，不随模型目录改写。 V07增加私有参考图片上传、512像素预览、有序引用编辑和不可变multipart请求文件；目录及模型声明不替代真实供应商验收。
+    V08提供独立私有资产目录和S3兼容后端；V09支持持久元数据回放和任务租约；V10增加项目私有多轮会话、不可变消息分支与受理时冻结的上下文预算，继续生成是显式新请求。 V11增加邮箱验证、密码找回/变更、会话撤销和账户私有安全事件；邮件默认关闭，配置后通过加密持久队列异步发送。敏感请求响应不明时先核对或重新登录，不沿用生成请求的自动重试语义。 V12增加CREDIT六位精度权益报价、同事务冻结/结算、待核实、流水与离线核账；默认关闭，无真实支付接口。
+    V14-A增加默认关闭的工作区运营权限、异常工单、预演与密码确认处置；没有在线角色授予、真实退款或完整内容审核。
 
-    V14-B1仅文本审核本地链：开启后全文检查前不公开delta，真实审核商和多模态分别待验收。'
+    V14-B1仅文本审核本地链：开启后全文检查前不公开delta，真实审核商和多模态分别待验收。 V14-B2增加独立媒体全字节审核：同步参考前审、私有候选、租约保护、整组允许后同事务交付。仅本地闭环，真实审核渠道未验收。
+
+
+    V14-C1增加持久工作区新生成限制、用户复核申请、独立moderator权限、真实预演及密码确认执行。原生成幂等重放优先于当前限制，已受理任务继续执行；解除不重发生成、不改内容审核决定、不退款。本批无账户登录封禁、自动风控或单次额度上限，完整V14尚未完成。 V16-A1为聊天增加单控制写者workspace轮转、全局/工作区/冻结上游模型执行预算和有界等待队列，原幂等及COMMIT后入队保持；后续A2/A3.1/A3.2已提供submit/query/delivery/review四通道及持久私有交付、首次审核；v0.20的A3.3公平与持久冷却已本地验收。仍未提供持久token流或全站跨实例配额。'
 servers:
 - url: http://127.0.0.1:8080
 paths:
@@ -200,10 +202,11 @@ paths:
       - $ref: '#/components/parameters/ProjectHeader'
     post:
       operationId: createRun
-      description: '同键同输入返回当前原运行，同键不同输入 409；排队满 503。不自动重发模型。 幂等重放先于准入；新请求超工作区/模型额度429 ADMISSION_WORKSPACE_LIMIT/ADMISSION_MODEL_LIMIT，不新增资源/幂等/审计。终态释放，未知/待核实保留占用。
-        幂等命中先于当前模型启停/版本/参数校验；新请求禁用模型或无效预设422，旧能力版本409 MODEL_VERSION_CHANGED。新媒体受理时冻结精确上游字节；预V06无原始提交体且无handle的live排队任务保守进入待核实，不猜测新模型配置。
+      description: '同键同输入返回当前原运行，同键不同输入 409；排队满 503。不自动重发模型。 幂等重放先于准入；新请求超工作区/模型额度429 ADMISSION_WORKSPACE_LIMIT/ADMISSION_MODEL_LIMIT，不新增资源/幂等/审计。终态释放，未知/待核实保留占用。 幂等命中先于当前模型启停/版本/参数校验；新请求禁用模型或无效预设422，旧能力版本409
+        MODEL_VERSION_CHANGED。新媒体受理时冻结精确上游字节；预V06无原始提交体且无handle的live排队任务保守进入待核实，不猜测新模型配置。
 
-        审核开启时原键优先。新文本先审核实际完整上下文，锁外调用后重核摘要/CAS；确定拒绝不生成/冻结。MODERATION_INPUT_BLOCKED(422)、MODERATION_INPUT_REVIEW(409)、MODERATION_INPUT_INVALID(422)、MODERATION_UNAVAILABLE(503)、MODERATION_BUSY(429)均为前置未受理；先前受理不明的请求仍保留原body/key。新媒体返回MODERATION_MEDIA_UNSUPPORTED(422)。'
+        审核开启时原键优先。新文本先审核实际完整上下文，锁外调用后重核摘要/CAS；确定拒绝不生成/冻结。MODERATION_INPUT_BLOCKED(422)、MODERATION_INPUT_REVIEW(409)、MODERATION_INPUT_INVALID(422)、MODERATION_UNAVAILABLE(503)、MODERATION_BUSY(429)均为前置未受理；先前受理不明的请求仍保留原body/key。文本审核开启但媒体审核未开启时，新媒体返回MODERATION_MEDIA_UNSUPPORTED(422)。
+        V14-C1：原生成幂等键与相同原输入重放优先于当前工作区限制。新请求在锁外审核/磁盘准备前及最终受理事务重核；RESTRICTED返回403 GENERATION_RESTRICTED，本次零新资源/消息/冻结/报价消费/幂等占用。不能用此次明确拒绝清除更早受理不明的原body/key/quote；解除后也不自动重发。'
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -238,6 +241,9 @@ paths:
           $ref: '#/components/responses/Error'
         '422':
           $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+          description: GENERATION_RESTRICTED：当前新请求确定未受理，原键已受理重放仍返回原资源；以前未知请求仍须保留原body/key。
   /api/v1/runs/{id}/snapshot:
     parameters:
     - $ref: '#/components/parameters/ResourceID'
@@ -379,11 +385,12 @@ paths:
       - $ref: '#/components/parameters/ProjectHeader'
     post:
       operationId: createTask
-      description: 'demo或已配置的真实异步媒体；未配置501。相同工作区+操作+幂等键不同输入409。PG持久精确上游请求和受理handle。 幂等重放先于准入；新请求超工作区/模型额度429 ADMISSION_WORKSPACE_LIMIT/ADMISSION_MODEL_LIMIT，不新增资源/幂等/审计。终态释放，未知/待核实保留占用。
-        幂等命中先于当前模型启停/版本/参数校验；新请求禁用模型或无效预设422，旧能力版本409 MODEL_VERSION_CHANGED。新媒体受理时冻结精确上游字节；预V06无原始提交体且无handle的live排队任务保守进入待核实，不猜测新模型配置。
-        编辑先验证有序reference_asset_ids归属及模型编辑能力，受理前冻结multipart文件；数据表只保存内容摘要/长度/Content-Type/文件ID，不保存图片Base64。文件缺失/损坏在上游前拒绝，仍保留原任务身份；没有mask或直接外部URL编辑接口。
+      description: 'demo或已配置的真实异步媒体；未配置501。相同工作区+操作+幂等键不同输入409。PG持久精确上游请求和受理handle。 幂等重放先于准入；新请求超工作区/模型额度429 ADMISSION_WORKSPACE_LIMIT/ADMISSION_MODEL_LIMIT，不新增资源/幂等/审计。终态释放，未知/待核实保留占用。 幂等命中先于当前模型启停/版本/参数校验；新请求禁用模型或无效预设422，旧能力版本409
+        MODEL_VERSION_CHANGED。新媒体受理时冻结精确上游字节；预V06无原始提交体且无handle的live排队任务保守进入待核实，不猜测新模型配置。 编辑先验证有序reference_asset_ids归属及模型编辑能力，受理前冻结multipart文件；数据表只保存内容摘要/长度/Content-Type/文件ID，不保存图片Base64。文件缺失/损坏在上游前拒绝，仍保留原任务身份；没有mask或直接外部URL编辑接口。
 
-        审核开启时原键优先。新文本先审核实际完整上下文，锁外调用后重核摘要/CAS；确定拒绝不生成/冻结。MODERATION_INPUT_BLOCKED(422)、MODERATION_INPUT_REVIEW(409)、MODERATION_INPUT_INVALID(422)、MODERATION_UNAVAILABLE(503)、MODERATION_BUSY(429)均为前置未受理；先前受理不明的请求仍保留原body/key。新媒体返回MODERATION_MEDIA_UNSUPPORTED(422)。'
+        审核开启时原键优先。新文本先审核实际完整上下文，锁外调用后重核摘要/CAS；确定拒绝不生成/冻结。MODERATION_INPUT_BLOCKED(422)、MODERATION_INPUT_REVIEW(409)、MODERATION_INPUT_INVALID(422)、MODERATION_UNAVAILABLE(503)、MODERATION_BUSY(429)均为前置未受理；先前受理不明的请求仍保留原body/key。文本审核开启但媒体审核未开启时，新媒体返回MODERATION_MEDIA_UNSUPPORTED(422)。
+        媒体审核启用时先锁外检查实际prompt与有序参考原件，重入重核原输入摘要及能力；输入拒绝无Task/冻结/供应商POST。MEDIA_MODERATION_INPUT_BLOCKED(422)、MEDIA_MODERATION_INPUT_REVIEW(409)、MEDIA_MODERATION_INPUT_INVALID(422)、MEDIA_MODERATION_UNAVAILABLE(503)、MEDIA_MODERATION_BUSY(429)、MEDIA_MODERATION_CONTEXT_CHANGED(409)为明确前置未受理，已有未知请求仍保留原body/key。
+        V14-C1：原生成幂等键与相同原输入重放优先于当前工作区限制。新请求在锁外审核/磁盘准备前及最终受理事务重核；RESTRICTED返回403 GENERATION_RESTRICTED，本次零新资源/消息/冻结/报价消费/幂等占用。不能用此次明确拒绝清除更早受理不明的原body/key/quote；解除后也不自动重发。'
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -417,6 +424,9 @@ paths:
           $ref: '#/components/responses/Error'
         '422':
           $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+          description: GENERATION_RESTRICTED：当前新请求确定未受理，原键已受理重放仍返回原资源；以前未知请求仍须保留原body/key。
   /api/v1/tasks/{id}:
     parameters:
     - $ref: '#/components/parameters/ResourceID'
@@ -498,8 +508,7 @@ paths:
   /api/v1/workspaces/{workspace_id}/events:
     get:
       operationId: subscribeWorkspace
-      description: PG模式按项目持久通知流：resource.changed仅含资源标识/版本/状态和闭集动作；task.updated附带读取时当前授权Task快照，不能视为事件当时的完整快照。通知序号独立于Task.version与Run.seq，LLM
-        token仍通过run专用流传输。Last-Event-ID优先after，opaque游标绑定数据库、账户、工作区和项目，所有请求仍验证会话范围。初次或超过保留窗口发送stream.reset{reason,cursor}，客户端有界刷新必要列表并保留未确认操作/编辑，不能重新发送生成。兼容task快照和元数据可能共用cursor，断线时客户端须依据元数据补读，不依赖第二帧必达。memory保持内存广播且不跨重启。工作区上限429
+      description: PG模式按项目持久通知流：resource.changed仅含资源标识/版本/状态和闭集动作；task.updated附带读取时当前授权Task快照，不能视为事件当时的完整快照。通知序号独立于Task.version与Run.seq，LLM token仍通过run专用流传输。Last-Event-ID优先after，opaque游标绑定数据库、账户、工作区和项目，所有请求仍验证会话范围。初次或超过保留窗口发送stream.reset{reason,cursor}，客户端有界刷新必要列表并保留未确认操作/编辑，不能重新发送生成。兼容task快照和元数据可能共用cursor，断线时客户端须依据元数据补读，不依赖第二帧必达。memory保持内存广播且不跨重启。工作区上限429
         ADMISSION_STREAM_LIMIT、全局128上限503 STREAM_LIMIT；断开释放名额但不取消生成。
       responses:
         '200':
@@ -746,8 +755,7 @@ paths:
     - $ref: '#/components/parameters/ResourceID'
     get:
       operationId: getPrivateAsset
-      description: 必须验证所属任务的工作区；返回已验证并安全导入的本地图片或视频，支持Range，不返回网关URL。 V08起旧内容接口也检查active目录授权；同一作用域多条目录共享同artifact
-        ID时任意active授权仍可读取。S3持久收据身份不匹配或对象缺失不回退local副本。
+      description: 必须验证所属任务的工作区；返回已验证并安全导入的本地图片或视频，支持Range，不返回网关URL。 V08起旧内容接口也检查active目录授权；同一作用域多条目录共享同artifact ID时任意active授权仍可读取。S3持久收据身份不匹配或对象缺失不回退local副本。 私有未审候选、未批准或未交付内容拒绝；历史无摘要保持原权限，不伪称批准。
       responses:
         '200':
           description: 媒体字节
@@ -777,8 +785,7 @@ paths:
     - $ref: '#/components/parameters/ResourceID'
     post:
       operationId: reconcileTask
-      description: 仅恢复原持久handle的Query，不再次Submit。需要所有权，允许RECONCILE_REQUIRED/PROVIDER_STATE_UNKNOWN及有handle的SUBMIT_UNKNOWN；无handle409、冷却未过429。禁止客户端提供upstream
-        ID。无请求体或空对象。
+      description: 仅恢复原持久handle的Query，不再次Submit。需要所有权，允许RECONCILE_REQUIRED/PROVIDER_STATE_UNKNOWN及有handle的SUBMIT_UNKNOWN；无handle409、冷却未过429。禁止客户端提供upstream ID。无请求体或空对象。 已登记审核候选或已有最终审核决定不可通过此接口重审/放行；此入口只核对原供应商handle。
       requestBody:
         required: false
         content:
@@ -1147,6 +1154,7 @@ paths:
     post:
       operationId: uploadReference
       description: 单个file part，不接受额外字段/文件。先验证账户项目，再流式接收、真实格式/像素预算/完整解码和预览；只支持PNG/JPEG/WebP，不接受GIF/SVG或mask。幂等按项目+规范化文件名+原字节摘要及大小计算；原件/预览文件先发布，元数据/上传幂等/审计同事务。断线不等于未受理，保留原File/key核对；孤立文件可用离线维护计划核对后回收；已注册含trash的引用仍保留。
+        媒体审核启用时，私有落盘后同步检查完整原件；只有ALLOW才201注册参考/资产/批准摘要。被拒或审核未知不创建参考记录，已知原上传键优先。网络受理不明保留File/key；不可把审核失败当作已保存参考。
       parameters:
       - $ref: '#/components/parameters/ProjectHeader'
       - name: project_id
@@ -1207,7 +1215,7 @@ paths:
   /api/v1/references/{id}/content:
     get:
       operationId: getReferenceContent
-      description: 每次验证当前账户/项目归属；跨账户/项目404，URL/header项目冲突400。支持Range；HEAD不返回正文。
+      description: 每次验证当前账户/项目归属；跨账户/项目404，URL/header项目冲突400。支持Range；HEAD不返回正文。 私有未审候选、未批准或未交付内容拒绝；历史无摘要保持原权限，不伪称批准。
       parameters:
       - $ref: '#/components/parameters/ResourceID'
       - $ref: '#/components/parameters/ProjectHeader'
@@ -1295,7 +1303,7 @@ paths:
                 type: string
     head:
       operationId: headReferenceContent
-      description: 每次验证当前账户/项目归属；跨账户/项目404，URL/header项目冲突400。支持Range；HEAD不返回正文。
+      description: 每次验证当前账户/项目归属；跨账户/项目404，URL/header项目冲突400。支持Range；HEAD不返回正文。 私有未审候选、未批准或未交付内容拒绝；历史无摘要保持原权限，不伪称批准。
       parameters:
       - $ref: '#/components/parameters/ResourceID'
       - $ref: '#/components/parameters/ProjectHeader'
@@ -1350,7 +1358,7 @@ paths:
   /api/v1/references/{id}/thumbnail:
     get:
       operationId: getReferenceThumbnail
-      description: 每次验证当前账户/项目归属；跨账户/项目404，URL/header项目冲突400。支持Range；HEAD不返回正文。
+      description: 每次验证当前账户/项目归属；跨账户/项目404，URL/header项目冲突400。支持Range；HEAD不返回正文。 私有未审候选、未批准或未交付内容拒绝；历史无摘要保持原权限，不伪称批准。
       parameters:
       - $ref: '#/components/parameters/ResourceID'
       - $ref: '#/components/parameters/ProjectHeader'
@@ -1422,7 +1430,7 @@ paths:
                 type: string
     head:
       operationId: headReferenceThumbnail
-      description: 每次验证当前账户/项目归属；跨账户/项目404，URL/header项目冲突400。支持Range；HEAD不返回正文。
+      description: 每次验证当前账户/项目归属；跨账户/项目404，URL/header项目冲突400。支持Range；HEAD不返回正文。 私有未审候选、未批准或未交付内容拒绝；历史无摘要保持原权限，不伪称批准。
       parameters:
       - $ref: '#/components/parameters/ResourceID'
       - $ref: '#/components/parameters/ProjectHeader'
@@ -1580,8 +1588,7 @@ paths:
           $ref: '#/components/responses/Error'
     patch:
       operationId: updateLibraryEntry
-      description: 先项目授权和结构校验，再原键重放，再CAS/状态校验；同键异body409 IDEMPOTENCY_CONFLICT，旧revision409 ASSET_REVISION_CONFLICT。trashed不得PATCH；状态冲突409
-        ASSET_STATE_CONFLICT。最多1000修订，trash提前保留一个恢复名额，容量不足429 ASSET_REVISION_LIMIT。原件不物理删除，原任务冻结正文不改变。
+      description: 先项目授权和结构校验，再原键重放，再CAS/状态校验；同键异body409 IDEMPOTENCY_CONFLICT，旧revision409 ASSET_REVISION_CONFLICT。trashed不得PATCH；状态冲突409 ASSET_STATE_CONFLICT。最多1000修订，trash提前保留一个恢复名额，容量不足429 ASSET_REVISION_LIMIT。原件不物理删除，原任务冻结正文不改变。
       parameters:
       - $ref: '#/components/parameters/ResourceID'
       - $ref: '#/components/parameters/ProjectHeader'
@@ -1629,8 +1636,7 @@ paths:
   /api/v1/library/{id}/trash:
     post:
       operationId: trashLibraryEntry
-      description: 先项目授权和结构校验，再原键重放，再CAS/状态校验；同键异body409 IDEMPOTENCY_CONFLICT，旧revision409 ASSET_REVISION_CONFLICT。trashed不得PATCH；状态冲突409
-        ASSET_STATE_CONFLICT。最多1000修订，trash提前保留一个恢复名额，容量不足429 ASSET_REVISION_LIMIT。原件不物理删除，原任务冻结正文不改变。
+      description: 先项目授权和结构校验，再原键重放，再CAS/状态校验；同键异body409 IDEMPOTENCY_CONFLICT，旧revision409 ASSET_REVISION_CONFLICT。trashed不得PATCH；状态冲突409 ASSET_STATE_CONFLICT。最多1000修订，trash提前保留一个恢复名额，容量不足429 ASSET_REVISION_LIMIT。原件不物理删除，原任务冻结正文不改变。
       parameters:
       - $ref: '#/components/parameters/ResourceID'
       - $ref: '#/components/parameters/ProjectHeader'
@@ -1678,8 +1684,7 @@ paths:
   /api/v1/library/{id}/restore:
     post:
       operationId: restoreLibraryEntry
-      description: 先项目授权和结构校验，再原键重放，再CAS/状态校验；同键异body409 IDEMPOTENCY_CONFLICT，旧revision409 ASSET_REVISION_CONFLICT。trashed不得PATCH；状态冲突409
-        ASSET_STATE_CONFLICT。最多1000修订，trash提前保留一个恢复名额，容量不足429 ASSET_REVISION_LIMIT。原件不物理删除，原任务冻结正文不改变。
+      description: 先项目授权和结构校验，再原键重放，再CAS/状态校验；同键异body409 IDEMPOTENCY_CONFLICT，旧revision409 ASSET_REVISION_CONFLICT。trashed不得PATCH；状态冲突409 ASSET_STATE_CONFLICT。最多1000修订，trash提前保留一个恢复名额，容量不足429 ASSET_REVISION_LIMIT。原件不物理删除，原任务冻结正文不改变。
       parameters:
       - $ref: '#/components/parameters/ResourceID'
       - $ref: '#/components/parameters/ProjectHeader'
@@ -1776,7 +1781,7 @@ paths:
   /api/v1/library/{id}/content:
     get:
       operationId: getLibraryContent
-      description: 先library归属/active授权，再读取私有本地或S3内容。没有公共签名URL；所有存储身份只在服务端。S3请求范围由有界适配器处理。
+      description: 先library归属/active授权，再读取私有本地或S3内容。没有公共签名URL；所有存储身份只在服务端。S3请求范围由有界适配器处理。 私有未审候选、未批准或未交付内容拒绝；历史无摘要保持原权限，不伪称批准。
       parameters:
       - $ref: '#/components/parameters/ResourceID'
       - $ref: '#/components/parameters/ProjectHeader'
@@ -1890,7 +1895,7 @@ paths:
           description: 错误可能来自业务JSON或底层文件text/plain；HEAD无正文，X-Request-ID可用于核对。
     head:
       operationId: headLibraryContent
-      description: 先library归属/active授权，再读取私有本地或S3内容。没有公共签名URL；所有存储身份只在服务端。S3请求范围由有界适配器处理。
+      description: 先library归属/active授权，再读取私有本地或S3内容。没有公共签名URL；所有存储身份只在服务端。S3请求范围由有界适配器处理。 私有未审候选、未批准或未交付内容拒绝；历史无摘要保持原权限，不伪称批准。
       parameters:
       - $ref: '#/components/parameters/ResourceID'
       - $ref: '#/components/parameters/ProjectHeader'
@@ -1947,7 +1952,7 @@ paths:
   /api/v1/library/{id}/thumbnail:
     get:
       operationId: getLibraryThumbnail
-      description: 先library归属/active授权，再读取私有本地或S3内容。没有公共签名URL；所有存储身份只在服务端。S3请求范围由有界适配器处理。
+      description: 先library归属/active授权，再读取私有本地或S3内容。没有公共签名URL；所有存储身份只在服务端。S3请求范围由有界适配器处理。 私有未审候选、未批准或未交付内容拒绝；历史无摘要保持原权限，不伪称批准。
       parameters:
       - $ref: '#/components/parameters/ResourceID'
       - $ref: '#/components/parameters/ProjectHeader'
@@ -2029,7 +2034,7 @@ paths:
           description: 错误可能来自业务JSON或底层文件text/plain；HEAD无正文，X-Request-ID可用于核对。
     head:
       operationId: headLibraryThumbnail
-      description: 先library归属/active授权，再读取私有本地或S3内容。没有公共签名URL；所有存储身份只在服务端。S3请求范围由有界适配器处理。
+      description: 先library归属/active授权，再读取私有本地或S3内容。没有公共签名URL；所有存储身份只在服务端。S3请求范围由有界适配器处理。 私有未审候选、未批准或未交付内容拒绝；历史无摘要保持原权限，不伪称批准。
       parameters:
       - $ref: '#/components/parameters/ResourceID'
       - $ref: '#/components/parameters/ProjectHeader'
@@ -2303,10 +2308,10 @@ paths:
     - $ref: '#/components/parameters/ResourceID'
     post:
       operationId: createConversationRun
-      description: '同键同原请求优先于CAS/目录/忙/限额返回原资源；异参409。状态/节点/Run/冻结上下文/幂等/审计/Outbox同事务，确认不明保留原body/key，不自动重新生成。 409
-        CONVERSATION_VERSION_CONFLICT/CONVERSATION_BUSY，422父节点/编辑/继续/预算错误，429 CONVERSATION_LIMIT。继续生成固定新user指令并创建新Run，可能消耗额度，不续接原供应商连接。
+      description: '同键同原请求优先于CAS/目录/忙/限额返回原资源；异参409。状态/节点/Run/冻结上下文/幂等/审计/Outbox同事务，确认不明保留原body/key，不自动重新生成。 409 CONVERSATION_VERSION_CONFLICT/CONVERSATION_BUSY，422父节点/编辑/继续/预算错误，429 CONVERSATION_LIMIT。继续生成固定新user指令并创建新Run，可能消耗额度，不续接原供应商连接。
 
-        审核开启时原键优先。新文本先审核实际完整上下文，锁外调用后重核摘要/CAS；确定拒绝不生成/冻结。MODERATION_INPUT_BLOCKED(422)、MODERATION_INPUT_REVIEW(409)、MODERATION_INPUT_INVALID(422)、MODERATION_UNAVAILABLE(503)、MODERATION_BUSY(429)均为前置未受理；先前受理不明的请求仍保留原body/key。新媒体返回MODERATION_MEDIA_UNSUPPORTED(422)。'
+        审核开启时原键优先。新文本先审核实际完整上下文，锁外调用后重核摘要/CAS；确定拒绝不生成/冻结。MODERATION_INPUT_BLOCKED(422)、MODERATION_INPUT_REVIEW(409)、MODERATION_INPUT_INVALID(422)、MODERATION_UNAVAILABLE(503)、MODERATION_BUSY(429)均为前置未受理；先前受理不明的请求仍保留原body/key。文本审核开启但媒体审核未开启时，新媒体返回MODERATION_MEDIA_UNSUPPORTED(422)。
+        V14-C1：原生成幂等键与相同原输入重放优先于当前工作区限制。新请求在锁外审核/磁盘准备前及最终受理事务重核；RESTRICTED返回403 GENERATION_RESTRICTED，本次零新资源/消息/冻结/报价消费/幂等占用。不能用此次明确拒绝清除更早受理不明的原body/key/quote；解除后也不自动重发。'
       parameters:
       - $ref: '#/components/parameters/ProjectHeader'
       - $ref: '#/components/parameters/IdempotencyKey'
@@ -2350,6 +2355,9 @@ paths:
           $ref: '#/components/responses/Error'
         '422':
           $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+          description: GENERATION_RESTRICTED：当前新请求确定未受理，原键已受理重放仍返回原资源；以前未知请求仍须保留原body/key。
   /api/v1/auth/email/verification/request:
     post:
       operationId: requestEmailVerification
@@ -2715,7 +2723,10 @@ paths:
                 $ref: '#/components/schemas/BillingQuote'
         default:
           $ref: '#/components/responses/Error'
-      description: 需要已认证工作区及credits模式；关闭返回409 BILLING_DISABLED。游标绑定账户/工作区/项目/类型/筛选；不接受其他工作区身份。资金变更只由受理/执行事务或离线工具触发。
+        '403':
+          $ref: '#/components/responses/Error'
+          description: GENERATION_RESTRICTED：工作区当前不能创建新报价，本次无报价/冻结/资源副作用。
+      description: 需要已认证工作区及credits模式；关闭返回409 BILLING_DISABLED。游标绑定账户/工作区/项目/类型/筛选；不接受其他工作区身份。资金变更只由受理/执行事务或离线工具触发。 V14-C1工作区RESTRICTED拒绝新报价403 GENERATION_RESTRICTED；旧未消费报价的价格承诺不改变，但最终生成受理仍核验当前限制，拒绝时不消费报价或冻结额度。
   /api/v1/operations/access:
     get:
       operationId: operationsAccess
@@ -2966,6 +2977,304 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/OperationsExecuteInput'
+  /api/v1/workspace/generation-access:
+    get:
+      operationId: generationAccess
+      security:
+      - SessionCookie: []
+      description: 需要PostgreSQL及AUTH_MODE=required的当前账户；由会话决定工作区，不接受客户端指定他人工作区。AUTH_DISABLED=409，AUTH_REQUIRED=401；存储不可用503。关闭OPERATIONS_ENABLED不清除既有限制，用户仍可读取及申请。 只限制新生成和新报价；已有任务、原幂等重放、上传、资产和账户读取继续按原规则。本批无工作区实时广播，客户端按需有界补读。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationAccess'
+        default:
+          $ref: '#/components/responses/Error'
+          description: 业务错误及服务端request_id；不泄漏SQL、凭据、用户说明或上游内容。
+  /api/v1/restrictions/{id}/appeals:
+    post:
+      operationId: generationAppealCreate
+      security:
+      - SessionCookie: []
+      description: 需要PostgreSQL及AUTH_MODE=required的当前账户；由会话决定工作区，不接受客户端指定他人工作区。AUTH_DISABLED=409，AUTH_REQUIRED=401；存储不可用503。关闭OPERATIONS_ENABLED不清除既有限制，用户仍可读取及申请。 每episode每申请人最多一份申请；创建与幂等、安全审计同事务。相同键和原输入返回原申请的当前状态，先于当前限制是否仍有效；同键异输入409。响应不明先GET自己的申请列表/详情核对，再允许用户显式原键重放；不能因当前限制变化清除旧未知请求。
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationAppeal'
+          headers:
+            Idempotency-Replayed:
+              schema:
+                type: string
+                const: 'true'
+              description: 仅原键重放成功时返回。
+        default:
+          $ref: '#/components/responses/Error'
+          description: 业务错误及服务端request_id；不泄漏SQL、凭据、用户说明或上游内容。
+        '400':
+          $ref: '#/components/responses/Error'
+          description: INVALID_JSON或幂等键格式错误；正文只能为使用精确字段名的单个JSON对象。
+        '413':
+          $ref: '#/components/responses/Error'
+          description: GENERATION_BODY_TOO_LARGE：请求正文超过8KiB或读取失败。
+        '415':
+          $ref: '#/components/responses/Error'
+          description: UNSUPPORTED_MEDIA_TYPE：需要application/json。
+        '409':
+          $ref: '#/components/responses/Error'
+          description: IDEMPOTENCY_CONFLICT、GENERATION_RESTRICTION_CHANGED或GENERATION_APPEAL_EXISTS；同episode已有申请应读原申请。
+        '422':
+          $ref: '#/components/responses/Error'
+          description: INVALID_GENERATION_APPEAL：标识、原因、说明或幂等键不满足领域校验。
+        '429':
+          $ref: '#/components/responses/Error'
+          description: GENERATION_APPEAL_LIMIT：每workspace10000/全局100000/每episode128份历史容量；Retry-After:15。不删除历史来绕过限制，解除仍可执行。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^grst_[a-f0-9]{32}$
+      - $ref: '#/components/parameters/GenerationAppealIdempotencyKey'
+      requestBody:
+        required: true
+        description: 仅application/json；原始正文最多8192字节，拒绝重复键、未知字段、大小写别名、无效UTF-8及多个JSON值。
+        x-max-body-bytes: 8192
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerationAppealInput'
+  /api/v1/appeals:
+    get:
+      operationId: generationAppeals
+      security:
+      - SessionCookie: []
+      description: 需要PostgreSQL及AUTH_MODE=required的当前账户；由会话决定工作区，不接受客户端指定他人工作区。AUTH_DISABLED=409，AUTH_REQUIRED=401；存储不可用503。关闭OPERATIONS_ENABLED不清除既有限制，用户仍可读取及申请。 只列当前用户自己的申请元信息，不含statement或public_reply。按created_at/id降序，默认20、最大50；筛选/游标无效400。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationAppealPage'
+        default:
+          $ref: '#/components/responses/Error'
+          description: 业务错误及服务端request_id；不泄漏SQL、凭据、用户说明或上游内容。
+      parameters:
+      - $ref: '#/components/parameters/GenerationAppealState'
+      - $ref: '#/components/parameters/GenerationAppealLimit'
+      - $ref: '#/components/parameters/GenerationAppealCursor'
+  /api/v1/appeals/{id}:
+    get:
+      operationId: generationAppeal
+      security:
+      - SessionCookie: []
+      description: 需要PostgreSQL及AUTH_MODE=required的当前账户；由会话决定工作区，不接受客户端指定他人工作区。AUTH_DISABLED=409，AUTH_REQUIRED=401；存储不可用503。关闭OPERATIONS_ENABLED不清除既有限制，用户仍可读取及申请。 只读自己当前工作区的申请详情；其他用户/工作区或无效标识404，不泄漏是否存在。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationAppeal'
+        default:
+          $ref: '#/components/responses/Error'
+          description: 业务错误及服务端request_id；不泄漏SQL、凭据、用户说明或上游内容。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^gapl_[a-f0-9]{32}$
+  /api/v1/operations/generation-access:
+    get:
+      operationId: operationsGenerationAccess
+      security:
+      - SessionCookie: []
+      description: 需要OPERATIONS_ENABLED、PostgreSQL账户模式及目标工作区显式moderator授权。默认409 OPERATIONS_DISABLED；未授权范围404 OPERATIONS_NOT_FOUND。每次请求事务内重核会话和当前角色，普通owner及旧角色无自动权限。 需要generation_restrict。can_appeal固定false，不能拿此投影推断用户是否已申请。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationAccess'
+        default:
+          $ref: '#/components/responses/Error'
+          description: 业务错误及服务端request_id；不泄漏SQL、凭据、用户说明或上游内容。
+      parameters:
+      - $ref: '#/components/parameters/GenerationWorkspace'
+  /api/v1/operations/appeals:
+    get:
+      operationId: operationsGenerationAppeals
+      security:
+      - SessionCookie: []
+      description: 需要OPERATIONS_ENABLED、PostgreSQL账户模式及目标工作区显式moderator授权。默认409 OPERATIONS_DISABLED；未授权范围404 OPERATIONS_NOT_FOUND。每次请求事务内重核会话和当前角色，普通owner及旧角色无自动权限。 需要appeal_resolve。目标工作区元信息列表，不返回用户说明或公开答复；状态/游标规则与用户列表相同，但游标不可互用。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationAppealPage'
+        default:
+          $ref: '#/components/responses/Error'
+          description: 业务错误及服务端request_id；不泄漏SQL、凭据、用户说明或上游内容。
+      parameters:
+      - $ref: '#/components/parameters/GenerationWorkspace'
+      - $ref: '#/components/parameters/GenerationAppealState'
+      - $ref: '#/components/parameters/GenerationAppealLimit'
+      - $ref: '#/components/parameters/GenerationAppealCursor'
+  /api/v1/operations/appeals/{id}:
+    get:
+      operationId: operationsGenerationAppeal
+      security:
+      - SessionCookie: []
+      description: 需要OPERATIONS_ENABLED、PostgreSQL账户模式及目标工作区显式moderator授权。默认409 OPERATIONS_DISABLED；未授权范围404 OPERATIONS_NOT_FOUND。每次请求事务内重核会话和当前角色，普通owner及旧角色无自动权限。 需要appeal_resolve。仅授权工作区详情包含有界用户说明及公开答复，不能记录进日志、审计字段或项目通知。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationAppeal'
+        default:
+          $ref: '#/components/responses/Error'
+          description: 业务错误及服务端request_id；不泄漏SQL、凭据、用户说明或上游内容。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^gapl_[a-f0-9]{32}$
+      - $ref: '#/components/parameters/GenerationWorkspace'
+  /api/v1/operations/generation-plans:
+    post:
+      operationId: operationsGenerationPreview
+      security:
+      - SessionCookie: []
+      description: 需要OPERATIONS_ENABLED、PostgreSQL账户模式及目标工作区显式moderator授权。默认409 OPERATIONS_DISABLED；未授权范围404 OPERATIONS_NOT_FOUND。每次请求事务内重核会话和当前角色，普通owner及旧角色无自动权限。 restrict_future/lift_restriction需要generation_restrict，uphold_restriction需要appeal_resolve。SAVEPOINT内真实执行业务及延迟约束校验后回滚，再持久预演和安全审计，不改变控制状态或答复。计划五分钟有效，绑定身份、授权、当前episode/版本及OPEN申请集合，改变后须重读预演。新限制/维持预演：每workspace最多64有效、全局10000有效及100000历史；过期未消费项超过一天有界清理。解除使用独立恢复通道：同workspace新lift预演替换先前未执行lift计划，不删除已消费计划/回执；旧预演随后404，不得继续执行。解除不需要指定appeal_id，会答复当前episode全部OPEN申请；UPHELD历史不改。
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationPlan'
+        default:
+          $ref: '#/components/responses/Error'
+          description: 业务错误及服务端request_id；不泄漏SQL、凭据、用户说明或上游内容。
+        '400':
+          $ref: '#/components/responses/Error'
+          description: INVALID_JSON或幂等键格式错误；正文只能为使用精确字段名的单个JSON对象。
+        '413':
+          $ref: '#/components/responses/Error'
+          description: GENERATION_BODY_TOO_LARGE：请求正文超过8KiB或读取失败。
+        '415':
+          $ref: '#/components/responses/Error'
+          description: UNSUPPORTED_MEDIA_TYPE：需要application/json。
+        '409':
+          $ref: '#/components/responses/Error'
+          description: GENERATION_CONTROL_CHANGED或GENERATION_VERSION_LIMIT；必须刷新控制/申请后重新预演。
+        '422':
+          $ref: '#/components/responses/Error'
+          description: INVALID_GENERATION_PLAN：动作对应的版本、episode/申请、原因、证据或公开答复无效。
+        '429':
+          $ref: '#/components/responses/Error'
+          description: GENERATION_PLAN_LIMIT或GENERATION_RESTRICTION_LIMIT；Retry-After:15。新限制/维持容量满仍保留解除预演通道。
+      requestBody:
+        required: true
+        description: 仅application/json；原始正文最多8192字节，拒绝重复键、未知字段、大小写别名、无效UTF-8及多个JSON值。
+        x-max-body-bytes: 8192
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerationPlanInput'
+  /api/v1/operations/generation-executions:
+    post:
+      operationId: operationsGenerationExecute
+      security:
+      - SessionCookie: []
+      description: 需要OPERATIONS_ENABLED、PostgreSQL账户模式及目标工作区显式moderator授权。默认409 OPERATIONS_DISABLED；未授权范围404 OPERATIONS_NOT_FOUND。每次请求事务内重核会话和当前角色，普通owner及旧角色无自动权限。 提交当前密码；bcrypt在全局状态锁和业务事务外有界执行，再同事务重核会话、密码散列/凭据版本、授权、计划摘要、数据库身份、控制版本和OPEN申请集合。业务变更、申请答复、计划消费、不可变回执和安全审计原子提交；本域不改变生成、账务或审核决定，不发送项目Outbox。计划一次消费，重复执行409，不能用重试再次改变业务。网络/提交确认未知时立即清密码，仅GET原plan_id的receipt；不能自动再次POST执行或把404当成已证明未执行。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationReceipt'
+        default:
+          $ref: '#/components/responses/Error'
+          description: 业务错误及服务端request_id；不泄漏SQL、凭据、用户说明或上游内容。
+        '400':
+          $ref: '#/components/responses/Error'
+          description: INVALID_JSON或幂等键格式错误；正文只能为使用精确字段名的单个JSON对象。
+        '413':
+          $ref: '#/components/responses/Error'
+          description: GENERATION_BODY_TOO_LARGE：请求正文超过8KiB或读取失败。
+        '415':
+          $ref: '#/components/responses/Error'
+          description: UNSUPPORTED_MEDIA_TYPE：需要application/json。
+        '403':
+          $ref: '#/components/responses/Error'
+          description: OPERATIONS_PASSWORD_INVALID或OPERATIONS_REAUTH_REQUIRED；未通过当前密码/凭据校验。
+        '404':
+          $ref: '#/components/responses/Error'
+          description: NOT_FOUND或OPERATIONS_NOT_FOUND：计划不存在、被新解除预演替换、非原预演者或当前范围无权。
+        '408':
+          $ref: '#/components/responses/Error'
+          description: OPERATIONS_REQUEST_CANCELLED：密码核验请求已取消。
+        '409':
+          $ref: '#/components/responses/Error'
+          description: GENERATION_PLAN_CONSUMED、GENERATION_PLAN_EXPIRED、GENERATION_PLAN_CHANGED、GENERATION_CONTROL_CHANGED或GENERATION_VERSION_LIMIT；已消费只读原回执，其他失效重读后重新预演。
+        '422':
+          $ref: '#/components/responses/Error'
+          description: INVALID_GENERATION_PLAN或INVALID_OPERATIONS_PASSWORD：严格小写64hex摘要/标识，密码10至72 UTF-8字节。
+        '429':
+          $ref: '#/components/responses/Error'
+          description: OPERATIONS_RATE_LIMIT或AUTH_BUSY；Retry-After:15，不能自动重投密码。
+      requestBody:
+        required: true
+        description: 仅application/json；原始正文最多8192字节，拒绝重复键、未知字段、大小写别名、无效UTF-8及多个JSON值。
+        x-max-body-bytes: 8192
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerationExecuteInput'
+  /api/v1/operations/generation-plans/{id}/receipt:
+    get:
+      operationId: operationsGenerationReceipt
+      security:
+      - SessionCookie: []
+      description: 需要OPERATIONS_ENABLED、PostgreSQL账户模式及目标工作区显式moderator授权。默认409 OPERATIONS_DISABLED；未授权范围404 OPERATIONS_NOT_FOUND。每次请求事务内重核会话和当前角色，普通owner及旧角色无自动权限。 需要generation_restrict。按原plan_id及目标workspace只读已提交的不可变回执，权限撤销后立即不可读。只读不消费计划、不再次执行；未提交、未查到或无权返回404，单次404不能证明此前未知请求未提交，先恢复连接/身份并核对。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationReceipt'
+        default:
+          $ref: '#/components/responses/Error'
+          description: 业务错误及服务端request_id；不泄漏SQL、凭据、用户说明或上游内容。
+        '404':
+          $ref: '#/components/responses/Error'
+          description: NOT_FOUND或OPERATIONS_NOT_FOUND；没有可读回执，不代表此前未知执行已确定失败。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^gplan_[a-f0-9]{32}$
+      - $ref: '#/components/parameters/GenerationWorkspace'
 components:
   parameters:
     ResourceID:
@@ -2990,11 +3299,53 @@ components:
       schema:
         type: string
       description: 可选当前项目；必须属于当前工作区，与project_id查询参数同时提供时应一致。
+    GenerationWorkspace:
+      name: workspace_id
+      in: query
+      required: true
+      schema:
+        type: string
+        pattern: ^ws_[a-f0-9]{32}$
+      description: 独立运营工作区作用域；不可用X-Project-ID替代，不从创作项目推导权限。
+    GenerationAppealState:
+      name: state
+      in: query
+      schema:
+        type: string
+        enum:
+        - all
+        - OPEN
+        - RESOLVED
+        default: all
+    GenerationAppealLimit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+    GenerationAppealCursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+        maxLength: 2048
+      description: 服务端复合游标；绑定当前用户、工作区、用户/运营模式及state，跨范围使用返回400 INVALID_CURSOR。
+    GenerationAppealIdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+        pattern: ^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$
+      description: 工作区+申请人范围内持久幂等，绑定原restriction_id和完整reason_code/statement。未知响应保留原键与原输入，先只读核对；如显式重放须完全相同，不自动换键。
   responses:
     Error:
-      description: JSON业务错误附服务端request_id。429准入拒绝带Retry-After:3且本次未新受理；不能用一次重试拒绝清除以前受理未知的原请求。DB失联503停止执行，不回退memory。
-        PG通知积压满时变更返回503 EVENT_BACKLOG_FULL，业务与事件事务一起回滚，原幂等键可在恢复后重试；这不同于提交结果未知。事件游标无效400 INVALID_EVENT_CURSOR，未来游标409
-        EVENT_CURSOR_AHEAD。 账户安全：MAIL_UNAVAILABLE=503，AUTH_DISABLED=409，AUTH_REQUIRED=401，ACCOUNT_TOKEN_INVALID=400。安全操作缺失响应不代表未执行，核对账户/重新登录，不能盲目重投密码或令牌。
+      description: JSON业务错误附服务端request_id。V16-A1聊天等待队列满503 RUN_QUEUE_FULL及工作区等待队列满429 EXECUTION_WORKSPACE_QUEUE_LIMIT均明确本次新请求未受理，Retry-After:3；原幂等查询优先，不能据本次拒收清除以前未知请求。执行预算与资源准入分开，单控制写者内按工作区轮转，不保证耗时公平。429准入拒绝带Retry-After:3且本次未新受理；不能用一次重试拒绝清除以前受理未知的原请求。DB失联503停止执行，不回退memory。 PG通知积压满时变更返回503 EVENT_BACKLOG_FULL，业务与事件事务一起回滚，原幂等键可在恢复后重试；这不同于提交结果未知。事件游标无效400 INVALID_EVENT_CURSOR，未来游标409
+        EVENT_CURSOR_AHEAD。 账户安全：MAIL_UNAVAILABLE=503，AUTH_DISABLED=409，AUTH_REQUIRED=401，ACCOUNT_TOKEN_INVALID=400。安全操作缺失响应不代表未执行，核对账户/重新登录，不能盲目重投密码或令牌。 V14-C1新生成/新报价403 GENERATION_RESTRICTED不影响既有原键回放；本次拒绝不能清掉先前未知请求。复核/预演/执行429由实际处理器带Retry-After:15，只有真正返回该头时生效。敏感执行未知只读原计划回执，不自动重投密码或执行。
       content:
         application/json:
           schema:
@@ -3248,6 +3599,7 @@ components:
           - SUBMIT_UNKNOWN
           - RECONCILE_REQUIRED
           - PROVIDER_STATE_UNKNOWN
+          - MODERATING
         progress:
           type: integer
           minimum: 0
@@ -3307,6 +3659,9 @@ components:
           description: 有序私有参考ID，edit至少1项；generate不得含参考。原未知请求重试保留原顺序和全部字段。
         billing:
           $ref: '#/components/schemas/BillingSummary'
+        moderation:
+          $ref: '#/components/schemas/ModerationSummary'
+      description: ' 审核开启时MODERATING为已导入私有候选、未交付；公开artifacts为空。只有ALLOWED与SUCCEEDED/PARTIAL且事务成功才开放整组。任何BLOCK/REVIEW保持隔离，已执行冻结待核实，不重生成。'
     User:
       type: object
       required:
@@ -3931,6 +4286,8 @@ components:
         thumbnail_url:
           type: string
           description: 同源受鉴权PNG预览，最长边512像素。
+        moderation:
+          $ref: '#/components/schemas/ModerationSummary'
       description: 不返回存储路径、内容摘要、blob ID或供应商信息。移出本次选择不删除服务器记录。
     LibraryEntry:
       type: object
@@ -4023,6 +4380,8 @@ components:
         byte_size:
           type: integer
           minimum: 1
+        moderation:
+          $ref: '#/components/schemas/ModerationSummary'
       description: 独立资产目录；原内容及来源不可变。修订历史是元数据历史，非二进制内容版本。不暴露bucket/key/hash/path/storage_info。旧已导入产物可能缺MIME/大小/缩略图，字段不伪造。
     LibraryRevision:
       type: object
@@ -5075,6 +5434,7 @@ components:
           - observer
           - operator
           - finance
+          - moderator
         permissions:
           type: array
           items:
@@ -5084,10 +5444,13 @@ components:
             - case_open
             - investigate
             - finance
+            - generation_restrict
+            - appeal_resolve
         version:
           type: integer
           minimum: 1
           maximum: 9007199254740991
+      description: 按目标工作区显式授予。moderator仅具有read、generation_restrict、appeal_resolve；既有observer/operator/finance不继承新权限。同一人可有多个独立角色，撤权在每次请求事务中重新核验。
     OperationsCapabilities:
       type: object
       additionalProperties: false
@@ -5587,6 +5950,7 @@ components:
         phase:
           type: string
           enum:
+          - input
           - output
         state:
           type: string
@@ -5616,7 +5980,7 @@ components:
           - execution_incomplete
           - process_restarted
           - cancelled
-      description: 仅安全摘要，无规则/候选正文/endpoint/凭据。只有ALLOWED且运行COMPLETED开放正文；nil或缺失为历史/未启用，并非审核通过。审核version与资源seq分别比较。
+      description: 仅安全摘要，不含规则/私有候选/端点/凭据。LLM须ALLOWED+COMPLETED，Task须ALLOWED+SUCCEEDED/PARTIAL；参考与资产仅批准后开放内容。审核version独立于资源seq/version/revision；nil历史不是审核通过，旧响应缺摘要不能解除已观察到的隔离。
     ModerationCapability:
       type: object
       additionalProperties: false
@@ -5625,6 +5989,7 @@ components:
       - mode
       - text_delivery
       - media_supported
+      - media_mode
       properties:
         enabled:
           type: boolean
@@ -5645,7 +6010,473 @@ components:
           - after_review
         media_supported:
           type: boolean
-      description: 当前新请求能力。rules仅demo有限规则；http为私有text-v1适配，真实渠道另验收。enabled时本轮媒体新请求不支持，已受理请求仍原幂等优先。
+        media_mode:
+          type: string
+          enum:
+          - disabled
+          - fixtures
+          - http
+        media_policy_id:
+          type: string
+          maxLength: 64
+        media_policy_version:
+          type: string
+          maxLength: 64
+      description: 当前新请求能力；文本rules仅demo有限规则。开启文本而未开启媒体审核时media_supported=false；两者开启才提供新媒体生成。fixtures匹配真实文件SHA/长度闭集，未知样本REVIEW；http是服务端私有media-v1适配，真实渠道另验收。旧原键重放优先。
+    GenerationRestriction:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - reason_code
+      - public_notice
+      - created_at
+      properties:
+        id:
+          type: string
+          pattern: ^grst_[a-f0-9]{32}$
+        reason_code:
+          type: string
+          enum:
+          - manual_review
+          - policy_concern
+          - abuse_concern
+        public_notice:
+          type: string
+          maxLength: 1024
+          x-max-utf8-bytes: 1024
+          description: 必须含非空白内容；最多1024个UTF-8字节，不是1024个汉字。允许换行LF，拒绝其他Unicode控制字符和格式字符；须为有效UTF-8。
+        created_at:
+          type: string
+          format: date-time
+      description: 当前限制episode的公开说明，不含内部证据或运营者身份。解除后该episode仍保留历史。
+    GenerationAccess:
+      type: object
+      additionalProperties: false
+      required:
+      - workspace_id
+      - state
+      - version
+      - can_appeal
+      properties:
+        workspace_id:
+          type: string
+          pattern: ^ws_[a-f0-9]{32}$
+        state:
+          type: string
+          enum:
+          - OPEN
+          - RESTRICTED
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        restriction:
+          $ref: '#/components/schemas/GenerationRestriction'
+        can_appeal:
+          type: boolean
+          description: 用户投影仅在当前限制尚无自己的申请时为true；运营投影固定false，不代表运营处置权限。
+      description: 无控制记录时OPEN/version=1；限制首次持久化为version=2。RESTRICTED含restriction，OPEN省略。状态不代表账户登录或内容审核是否获准。
+    GenerationAppealInput:
+      type: object
+      additionalProperties: false
+      required:
+      - reason_code
+      properties:
+        reason_code:
+          type: string
+          enum:
+          - request_review
+          - restriction_error
+          - issue_resolved
+        statement:
+          type: string
+          maxLength: 1024
+          x-max-utf8-bytes: 1024
+          description: 可省略或为空；最多1024个UTF-8字节，不是1024个汉字。允许换行LF，拒绝其他Unicode控制字符和格式字符；须为有效UTF-8。
+    GenerationAppealSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - workspace_id
+      - restriction_id
+      - state
+      - version
+      - reason_code
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^gapl_[a-f0-9]{32}$
+        workspace_id:
+          type: string
+          pattern: ^ws_[a-f0-9]{32}$
+        restriction_id:
+          type: string
+          pattern: ^grst_[a-f0-9]{32}$
+        state:
+          type: string
+          enum:
+          - OPEN
+          - RESOLVED
+        outcome:
+          type: string
+          enum:
+          - UPHELD
+          - LIFTED
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2
+        reason_code:
+          type: string
+          enum:
+          - request_review
+          - restriction_error
+          - issue_resolved
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      description: 有界列表仅元信息，不含用户说明、公开答复或申请人身份。OPEN/version=1省略outcome；RESOLVED/version=2含outcome。
+    GenerationAppeal:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - workspace_id
+      - restriction_id
+      - state
+      - version
+      - reason_code
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^gapl_[a-f0-9]{32}$
+        workspace_id:
+          type: string
+          pattern: ^ws_[a-f0-9]{32}$
+        restriction_id:
+          type: string
+          pattern: ^grst_[a-f0-9]{32}$
+        state:
+          type: string
+          enum:
+          - OPEN
+          - RESOLVED
+        outcome:
+          type: string
+          enum:
+          - UPHELD
+          - LIFTED
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2
+        reason_code:
+          type: string
+          enum:
+          - request_review
+          - restriction_error
+          - issue_resolved
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        statement:
+          type: string
+          maxLength: 1024
+          x-max-utf8-bytes: 1024
+          description: 可省略或为空；最多1024个UTF-8字节，不是1024个汉字。允许换行LF，拒绝其他Unicode控制字符和格式字符；须为有效UTF-8。
+        public_reply:
+          type: string
+          maxLength: 1024
+          x-max-utf8-bytes: 1024
+          description: 必须含非空白内容；最多1024个UTF-8字节，不是1024个汉字。允许换行LF，拒绝其他Unicode控制字符和格式字符；须为有效UTF-8。
+      description: 仅申请人或目标工作区具有appeal_resolve权限的运营者可读。statement空时省略；public_reply只在已答复且非空时出现，不提供任何生成提示词或候选内容。
+    GenerationAppealPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/GenerationAppealSummary'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 2048
+      description: 按created_at、id降序的复合游标分页；next_cursor=null表示本次没有下一页。游标绑定账户、工作区、用户/运营模式及state筛选。
+    GenerationEffect:
+      type: object
+      additionalProperties: false
+      required:
+      - from_state
+      - to_state
+      - version
+      - restriction_id
+      - affected_appeals
+      properties:
+        from_state:
+          type: string
+          enum:
+          - OPEN
+          - RESTRICTED
+        to_state:
+          type: string
+          enum:
+          - OPEN
+          - RESTRICTED
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        restriction_id:
+          type: string
+          pattern: ^grst_[a-f0-9]{32}$
+        affected_appeals:
+          type: integer
+          minimum: 0
+          maximum: 128
+      description: 真实预演/执行后的控制状态与版本，不是增量。restrict_future为新episode且0份申请；lift_restriction解除当前episode并答复其全部OPEN申请；uphold_restriction只答复选定申请，控制版本不变。
+    GenerationPlanInput:
+      type: object
+      additionalProperties: false
+      required:
+      - workspace_id
+      - action
+      - expected_version
+      - reason_code
+      - evidence_ref
+      - public_reply
+      properties:
+        workspace_id:
+          type: string
+          pattern: ^ws_[a-f0-9]{32}$
+        action:
+          type: string
+          enum:
+          - restrict_future
+          - lift_restriction
+          - uphold_restriction
+        expected_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        restriction_id:
+          anyOf:
+          - type: string
+            const: ''
+          - type: string
+            pattern: ^grst_[a-f0-9]{32}$
+        appeal_id:
+          anyOf:
+          - type: string
+            const: ''
+          - type: string
+            pattern: ^gapl_[a-f0-9]{32}$
+        expected_appeal_version:
+          type: integer
+          minimum: 0
+          maximum: 1
+        reason_code:
+          type: string
+          enum:
+          - manual_review
+          - policy_concern
+          - abuse_concern
+          - review_complete
+          - restriction_error
+        evidence_ref:
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$
+          description: 内部安全ASCII短标识，禁止包含://，不得填URL、密码、密钥或正文。
+        public_reply:
+          type: string
+          maxLength: 1024
+          x-max-utf8-bytes: 1024
+          description: 必须含非空白内容；最多1024个UTF-8字节，不是1024个汉字。允许换行LF，拒绝其他Unicode控制字符和格式字符；须为有效UTF-8。
+      description: 目标工作区显式指定，不继承创作项目。限制时public_reply成为公开限制说明；解除/维持时成为申请答复。reason_code按action校验；不接收任意身份、生成正文或账务操作。
+      allOf:
+      - if:
+          properties:
+            action:
+              const: restrict_future
+        then:
+          properties:
+            restriction_id:
+              const: ''
+            appeal_id:
+              const: ''
+            expected_appeal_version:
+              const: 0
+            reason_code:
+              type: string
+              enum:
+              - manual_review
+              - policy_concern
+              - abuse_concern
+      - if:
+          properties:
+            action:
+              const: lift_restriction
+        then:
+          required:
+          - restriction_id
+          properties:
+            restriction_id:
+              type: string
+              pattern: ^grst_[a-f0-9]{32}$
+            appeal_id:
+              const: ''
+            expected_appeal_version:
+              const: 0
+            reason_code:
+              type: string
+              enum:
+              - review_complete
+              - restriction_error
+      - if:
+          properties:
+            action:
+              const: uphold_restriction
+        then:
+          required:
+          - restriction_id
+          - appeal_id
+          - expected_appeal_version
+          properties:
+            restriction_id:
+              type: string
+              pattern: ^grst_[a-f0-9]{32}$
+            appeal_id:
+              type: string
+              pattern: ^gapl_[a-f0-9]{32}$
+            expected_appeal_version:
+              const: 1
+            reason_code:
+              type: string
+              enum:
+              - manual_review
+              - policy_concern
+              - abuse_concern
+    GenerationPlan:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - workspace_id
+      - action
+      - expected_version
+      - plan_digest
+      - expires_at
+      - effect
+      properties:
+        id:
+          type: string
+          pattern: ^gplan_[a-f0-9]{32}$
+        workspace_id:
+          type: string
+          pattern: ^ws_[a-f0-9]{32}$
+        action:
+          type: string
+          enum:
+          - restrict_future
+          - lift_restriction
+          - uphold_restriction
+        expected_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        restriction_id:
+          type: string
+          pattern: ^grst_[a-f0-9]{32}$
+        appeal_id:
+          type: string
+          pattern: ^gapl_[a-f0-9]{32}$
+        plan_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        expires_at:
+          type: string
+          format: date-time
+        effect:
+          $ref: '#/components/schemas/GenerationEffect'
+      description: 五分钟有效的一次性预演。摘要绑定数据库身份、用户/会话/凭据/授权版本、输入、控制episode及当前OPEN申请集合；不返回内部证据、密码或用户说明。限制预演返回拟创建的restriction_id，其他动作返回原episode。
+    GenerationExecuteInput:
+      type: object
+      additionalProperties: false
+      required:
+      - workspace_id
+      - plan_id
+      - plan_digest
+      - password
+      properties:
+        workspace_id:
+          type: string
+          pattern: ^ws_[a-f0-9]{32}$
+        plan_id:
+          type: string
+          pattern: ^gplan_[a-f0-9]{32}$
+        plan_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          minLength: 1
+          maxLength: 72
+          x-min-utf8-bytes: 10
+          x-max-utf8-bytes: 72
+          description: 当前密码，实际校验10至72个UTF-8字节；只在当前请求内使用，不能放入恢复仓、日志或持久计划。
+    GenerationReceipt:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - plan_id
+      - workspace_id
+      - action
+      - effect
+      - executed_at
+      properties:
+        id:
+          type: string
+          pattern: ^grec_[a-f0-9]{32}$
+        plan_id:
+          type: string
+          pattern: ^gplan_[a-f0-9]{32}$
+        workspace_id:
+          type: string
+          pattern: ^ws_[a-f0-9]{32}$
+        action:
+          type: string
+          enum:
+          - restrict_future
+          - lift_restriction
+          - uphold_restriction
+        effect:
+          $ref: '#/components/schemas/GenerationEffect'
+        executed_at:
+          type: string
+          format: date-time
+      description: 与控制状态、申请答复、计划消费和安全审计同一事务提交的不可变回执。无账务、内容重审或生成副作用；并非真实资金退款回执。
   securitySchemes:
     SessionCookie:
       type: apiKey

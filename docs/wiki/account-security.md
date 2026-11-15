@@ -50,7 +50,7 @@ Cookie保持HttpOnly、SameSite=Strict及TLS请求Secure，API为no-store。撤�
 
 ## 迁移、验证与恢复
 
-[011迁移](../../internal/studio/migrations/011_account_security.sql)增加凭据版本/验证时间、session公开ID/版本、用途token、安全事件和加密邮件队列。活动队列/清理有部分索引，容量检查最多统计10000条未过期活跃邮件。旧程序不认识011会拒绝启动，不能删除版本登记绕过。
+[011迁移](../../db/migrations/011_account_security.sql)增加凭据版本/验证时间、session公开ID/版本、用途token、安全事件和加密邮件队列。活动队列/清理有部分索引，容量检查最多统计10000条未过期活跃邮件。旧程序不认识011会拒绝启动，不能删除版本登记绕过。
 
 本模块真实PG专项6函数通过8.537秒，覆盖跨账户/游标、双向独立连接竞争、并发token消费、用途/过期、旧session升级、密码事务与审计/邮件插入失败回滚。普通格式/密码/邮箱/ID/独立密钥2函数通过0.080秒；`go vet ./...`通过。SMTP专项、TLS fixture完整HTTP链及最终联合结果分别由邮件和根台账记录，不代表真实外部邮箱送达。
 

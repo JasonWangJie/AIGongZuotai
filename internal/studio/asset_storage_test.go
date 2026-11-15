@@ -268,6 +268,20 @@ func TestS3RealPrivateImportMigrationAndRanges(t *testing.T) {
 	if err != nil {
 		t.Fatal("fixture object deletion failed")
 	}
+	if info.ObjectVersion != "" {
+		// A delete marker hides the current key, not the exact retained version
+		// bound in this fixture's receipt. Verify that identity before removing
+		// only the version created by this test to simulate actual storage loss.
+		versioned := httptest.NewRecorder()
+		store.ServeAsset(versioned, httptest.NewRequest("GET", "/private", nil), info.ID)
+		if versioned.Code != 200 || !bytes.Equal(versioned.Body.Bytes(), full.Body.Bytes()) {
+			t.Fatal("delete marker replaced or hid the bound object version")
+		}
+		_, err = store.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(config.Bucket), Key: aws.String(info.ObjectKey), VersionId: aws.String(info.ObjectVersion)})
+		if err != nil {
+			t.Fatal("fixture bound-version deletion failed")
+		}
+	}
 	missing := httptest.NewRecorder()
 	store.ServeAsset(missing, httptest.NewRequest("GET", "/private", nil), info.ID)
 	if missing.Code != 404 {

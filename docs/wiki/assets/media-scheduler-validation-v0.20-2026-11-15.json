@@ -1,0 +1,165 @@
+{
+  "version": "0.20.0",
+  "batch": "V16-A3.3",
+  "verified_on": "2026-11-15",
+  "status": "passed_local",
+  "binary_sha256": "276e3455c2cfc31cfb131be9ac177165ff1b6e368161b9f1b92b90398ff39923",
+  "database_format": "020",
+  "scope": "Single control writer, isolated real PostgreSQL and loopback HTTP/versioned S3. No real paid gateway, moderation/email/payment or public launch.",
+  "checks": [
+    {
+      "command": "node .runtime/v16a33-check.mjs check",
+      "status": "passed",
+      "go_studio_seconds": 20.35,
+      "frontend_tests": 301,
+      "frontend_files": 29,
+      "governance_tests": 10,
+      "vite_seconds": 1.64,
+      "real_channels_isolated": true
+    },
+    {
+      "command": "GOFLAGS=-v node .runtime/v16a33-check.mjs db --s3",
+      "status": "passed",
+      "go_studio_seconds": 443.228,
+      "root_exclusive_pg_execution": true,
+      "real_pg_dump_restore_and_versioned_s3_enabled": true,
+      "required_restore_and_s3_paths_explicitly_passed": [
+        "TestPostgresMediaSchedulerCooldownBackupRestore",
+        "TestPostgresMediaDeliveryPrivateBackupRestore",
+        "TestPostgresMediaDeliveryPrivateBackupRestore/local",
+        "TestPostgresMediaDeliveryPrivateBackupRestore/real-s3-retained-objects",
+        "TestPostgresMediaReviewDispatchPrivateBackupRestore",
+        "TestPostgresMediaReviewDispatchPrivateBackupRestore/local-ready",
+        "TestPostgresMediaReviewDispatchPrivateBackupRestore/local-started",
+        "TestPostgresMediaReviewDispatchPrivateBackupRestore/real-s3-retained-objects-ready",
+        "TestS3RealLibraryLifecycle",
+        "TestPostgresMediaDeliveryRealS3AndProviderIndependentDownloads"
+      ],
+      "large_opt_in_tests_executed_separately": true
+    },
+    {
+      "command": "node .runtime/v16a33-smokes.mjs --smokes-only",
+      "status": "passed",
+      "smokes": 6,
+      "invalid_parent_execution_variables": 12
+    },
+    {
+      "command": "node .runtime/v16a33-smokes.mjs --performance-only",
+      "status": "passed",
+      "scope": "Same binary, after full PG and owned S3 ended; memory/demo, not media throughput"
+    },
+    {
+      "command": "python .runtime/v16-a33-schema-check.py",
+      "status": "passed",
+      "result": {
+        "sql_files": 20,
+        "original_sql_files": 19,
+        "original_sql_bytes": 61318,
+        "original_sql_unchanged": true,
+        "new_migration": "020_media_schedule.sql",
+        "new_sql_bytes": 9207,
+        "new_sql_sha256": "55822ede5d8abaf0787de63536ffc3af067c28a340dfd747ec4c269b320eb240",
+        "api_version": "0.20.0",
+        "paths": 71,
+        "operations": 83,
+        "schemas": 95,
+        "refs": 411
+      }
+    }
+  ],
+  "targeted_seconds": {
+    "strict_config": 0.03,
+    "reference_queue": 1.603,
+    "independent_fairness_429_upgrade": 7.97,
+    "core_eight_pg": 12.897,
+    "identity_and_late_review_429": 6.864,
+    "source_success_recovery": 5.101,
+    "query_delivery_review_fairness": 6.22,
+    "first_channel_lock_and_atomicity": 6.062,
+    "reference_cancel_deadline": 3.557,
+    "old_and_new_local_restore_and_lane_compatibility": 19.979,
+    "review_compatibility": 13.092,
+    "legacy_compatibility_with_real_s3": 11.105,
+    "large_plan_and_preselection_before_deadlock_fix": 174.77,
+    "large_plan_and_preselection_final": 170.78,
+    "large_upgrade_group": 30.741
+  },
+  "large_backlog": {
+    "active": 100000,
+    "history": 100000,
+    "sql_plans": 180,
+    "complete_preselection_samples": 48,
+    "raw_report_sha256": "e4bbd2516c52c50bb9c59018758782f62d87bca1b5a1002b47fceca6687dff4b",
+    "task_page": 8,
+    "workspace_page": 16,
+    "max_candidates_per_preselection": 128,
+    "max_query_calls_per_preselection": 71,
+    "large_24_samples_median_ms": 9.64395,
+    "large_24_samples_p95_nearest_rank_ms": 16.3019,
+    "large_24_samples_max_ms": 16.6752,
+    "excludes": "claim, upstream HTTP, app restore and terminal task delivery; only first four ticks per distribution, not full backlog drain"
+  },
+  "migration": {
+    "from": 19,
+    "to": 20,
+    "active": 100000,
+    "history": 100000,
+    "workspaces": 257,
+    "migration_seconds": 11.2288314,
+    "original_tables_unchanged": 59,
+    "original_sql_files_unchanged": 19,
+    "migration_timeout_seconds": 60,
+    "ordinary_transaction_timeout_seconds": 5,
+    "complete_app_startup_at_this_scale_verified": false
+  },
+  "execution": {
+    "lanes": [
+      "submit",
+      "query",
+      "delivery",
+      "review"
+    ],
+    "default_workers_per_lane": 2,
+    "default_workspace_concurrency_per_lane": 1,
+    "default_channel_concurrency_per_lane": 2,
+    "input_output_shared_review_permits": 2,
+    "fixed_media_metric_series": 35,
+    "automatic_probe": "original handle GET only",
+    "never_replay": "accepted/unknown POST or STARTED moderation",
+    "limits": "single process budget, not multi-instance quota or multi-provider routing"
+  },
+  "assets": [
+    "docs/wiki/assets/runtime-smoke-v0.20-2026-11-15.json",
+    "docs/wiki/assets/catalog-smoke-v0.20-2026-11-15.json",
+    "docs/wiki/assets/reference-smoke-v0.20-2026-11-15.json",
+    "docs/wiki/assets/library-smoke-v0.20-2026-11-15.json",
+    "docs/wiki/assets/conversation-smoke-v0.20-2026-11-15.json",
+    "docs/wiki/assets/performance-local-v0.20-2026-11-15.json",
+    "docs/wiki/assets/media-scheduler-schema-v0.20-2026-11-15.json",
+    "docs/wiki/assets/media-scheduler-plans-v0.20-2026-11-15.json",
+    "docs/wiki/assets/media-scheduler-s3-v0.20-2026-11-15.json"
+  ],
+  "corrections": [
+    "Initial ordinary scope metric test failed before memory wiring; kept assertion and completed runtime wiring.",
+    "Intermediate compilation failed during parallel incomplete edits (unused time, missing checkMemoryReconcileSchedule/errorsAsOperation); no PG was run by those failed commands.",
+    "200k upgrade hit ordinary 5s timeout. Separated bounded startup migration at 60s, retained ordinary 5s. Set-based backfill followed by indexes; unchanged 59-table verification passed.",
+    "Old lane fixture expected same-workspace submit concurrency 2; made this explicit, retained all isolation/peak/call assertions. New fairness tests use limit 1.",
+    "Preserved server/cooldown strictness and adapted old step helpers to advance only ordinary poll due times.",
+    "Independent review fixed missing source HTTP success recovery, late batch review response timestamp, and frozen identity conflicts remaining silently active.",
+    "Independent review fixed first-channel absent-row claim race using a transactionally materialized healthy baseline and row lock; real two-connection commit/rollback passed.",
+    "Caller cancellation while waiting for reference moderation now returns existing explicit 503 after original-key lookup, without writes/HTTP or releasing another permit.",
+    "First full PG/S3 run failed at 453.333s: 408 top-level functions passed and 13 failed. Kept all original assertions, corrected ordinary due-time fixtures and async shared-permit test, and set fixture provider mode explicitly.",
+    "A genuine SQLSTATE40P01 cycle between cursor FOR UPDATE and business foreign-key KEY SHARE was reproduced with two connections. Cursor locks now use FOR NO KEY UPDATE; no deadlock swallowing/retry, no schema edits. Temporary in-memory diagnostic fields were removed before acceptance; production preselection and full suite rerun.",
+    "Schema helper initially used bundled Python without PyYAML, then passed with already-installed Python 3.12; no dependencies installed.",
+    "Documentation helper stopped on an exact old Wiki wording mismatch, resumed only unwritten remainder; no historical ledger overwrite."
+  ],
+  "limitations": [
+    "Complete App recovery still loads active tasks and private phases with N+1 reads under ordinary 5s; 200k migration and bounded selector results do not prove 200k-task App startup or memory bounds.",
+    "Only output-task review observations persist reviewer cooldown; reference input shares fairness capacity but its HTTP429 does not update output-task channel runtime.",
+    "No real gateway/moderator/email/payment acceptance, cloud DR/RPO/RTO, whole-site multi-instance quota, durable token log or production SLO.",
+    "Local S3 objects retained across database/private-directory restoration; remote S3 service itself not backed up/restored.",
+    "No local CGO/race detector, remote CI or new browser visual test. Frontend code unchanged apart from version metadata.",
+    "Prepared-plan samples are preheated and same-host; machine not exclusive. Full preselection measures only first four ticks per scenario, not all queue tail wait."
+  ],
+  "next": "V16 durable stream/fencing and independently bounded recovery, followed by combined measurement; whole V16 and public paid launch remain incomplete."
+}

@@ -1,26 +1,26 @@
-export type ModerationSummary = { policy_id: string; policy_version: string; phase: 'output'; state: 'PENDING' | 'ALLOWED' | 'BLOCKED' | 'REVIEW'; version: number; reason_code?: string };
-export type ModerationCapability = { enabled: boolean; mode: 'disabled' | 'rules' | 'http'; policy_id?: string; policy_version?: string; text_delivery: 'stream' | 'after_review'; media_supported: boolean };
+export type ModerationSummary = { policy_id: string; policy_version: string; phase: 'input' | 'output'; state: 'PENDING' | 'ALLOWED' | 'BLOCKED' | 'REVIEW'; version: number; reason_code?: string };
+export type ModerationCapability = { enabled: boolean; mode: 'disabled' | 'rules' | 'http'; policy_id?: string; policy_version?: string; text_delivery: 'stream' | 'after_review'; media_supported: boolean; media_mode?: 'disabled' | 'fixtures' | 'http'; media_policy_id?: string; media_policy_version?: string };
 type TextSnapshot = { moderation?: ModerationSummary | null; status: string; text: string };
 
 export function validModeration(value: unknown): value is ModerationSummary {
   const summary = value as ModerationSummary | null;
-  return !!summary && typeof summary.policy_id === 'string' && summary.policy_id.length > 0 && summary.policy_id.length <= 128 && typeof summary.policy_version === 'string' && summary.policy_version.length > 0 && summary.policy_version.length <= 128 && summary.phase === 'output' && ['PENDING', 'ALLOWED', 'BLOCKED', 'REVIEW'].includes(summary.state) && Number.isSafeInteger(summary.version) && summary.version > 0;
+  return !!summary && typeof summary.policy_id === 'string' && summary.policy_id.length > 0 && summary.policy_id.length <= 128 && typeof summary.policy_version === 'string' && summary.policy_version.length > 0 && summary.policy_version.length <= 128 && ['input', 'output'].includes(summary.phase) && ['PENDING', 'ALLOWED', 'BLOCKED', 'REVIEW'].includes(summary.state) && Number.isSafeInteger(summary.version) && summary.version > 0;
 }
 export function moderationState(value?: ModerationSummary | null): ModerationSummary['state'] | undefined { return value == null ? undefined : validModeration(value) ? value.state : 'REVIEW'; }
-export function moderationAllowsText(value?: ModerationSummary | null, status?: string): boolean { return value == null || validModeration(value) && value.state === 'ALLOWED' && status === 'COMPLETED'; }
+export function moderationAllowsText(value?: ModerationSummary | null, status?: string): boolean { return value == null || validModeration(value) && value.phase === 'output' && value.state === 'ALLOWED' && status === 'COMPLETED'; }
 export function visibleModeratedText(value: TextSnapshot): string { return moderationAllowsText(value.moderation, value.status) ? value.text : ''; }
 export function moderationMediaBlocked(value?: ModerationCapability): boolean { return value?.enabled === true && value.media_supported !== true; }
 export const moderationNames = { PENDING: '生成与检查中', ALLOWED: '文本检查已通过', BLOCKED: '回复已限制', REVIEW: '文本检查待核实' };
 export function moderationDisplayState(value?: ModerationSummary | null, status?: string): ModerationSummary['state'] | undefined {
-  const state = moderationState(value);
+  const state = value != null && value.phase !== 'output' ? 'REVIEW' : moderationState(value);
   if (state !== 'ALLOWED' || status === undefined || status === 'COMPLETED') return state;
   return ['FAILED', 'INTERRUPTED', 'CANCELLED'].includes(status) ? 'REVIEW' : 'PENDING';
 }
 export function moderationText(value?: ModerationSummary | null, status?: string): string { const state = moderationDisplayState(value, status); return state ? moderationNames[state] : ''; }
 
-function sameDecision(left?: ModerationSummary | null, right?: ModerationSummary | null): boolean {
+export function sameModerationDecision(left?: ModerationSummary | null, right?: ModerationSummary | null): boolean {
   if (left == null || right == null) return left == null && right == null;
-  return validModeration(left) && validModeration(right) && left.policy_id === right.policy_id && left.policy_version === right.policy_version && left.version === right.version && left.state === right.state;
+  return validModeration(left) && validModeration(right) && left.policy_id === right.policy_id && left.policy_version === right.policy_version && left.phase === right.phase && left.version === right.version && left.state === right.state;
 }
 /** The frozen policy is part of a run's identity. Never clear a newer restriction with an old/missing projection. */
 export function mergeModeration(previous?: ModerationSummary | null, incoming?: ModerationSummary | null): ModerationSummary | undefined {
@@ -28,7 +28,7 @@ export function mergeModeration(previous?: ModerationSummary | null, incoming?: 
   if (incoming == null) return previous;
   if (!validModeration(incoming)) return incoming;
   if (!validModeration(previous)) return previous;
-  if (previous.policy_id !== incoming.policy_id || previous.policy_version !== incoming.policy_version) return { ...previous, state: 'REVIEW', reason_code: 'projection_conflict' };
+  if (previous.policy_id !== incoming.policy_id || previous.policy_version !== incoming.policy_version || previous.phase !== incoming.phase) return { ...previous, state: 'REVIEW', reason_code: 'projection_conflict' };
   if (previous.version !== incoming.version) return previous.version > incoming.version ? previous : incoming;
   const restriction = { ALLOWED: 0, PENDING: 1, REVIEW: 2, BLOCKED: 3 };
   return restriction[previous.state] > restriction[incoming.state] ? previous : incoming;
@@ -36,7 +36,7 @@ export function mergeModeration(previous?: ModerationSummary | null, incoming?: 
 /** Resource sequence and moderation decision versions are independent. A stale content snapshot cannot undo a restriction. */
 export function mergeModeratedText(previous: TextSnapshot | undefined, incoming: TextSnapshot, acceptIncoming = true): { moderation?: ModerationSummary; text: string } {
   const moderation = mergeModeration(previous?.moderation, incoming.moderation);
-  const source = acceptIncoming && sameDecision(moderation, incoming.moderation) ? incoming : previous && sameDecision(moderation, previous.moderation) ? previous : undefined;
+  const source = acceptIncoming && sameModerationDecision(moderation, incoming.moderation) ? incoming : previous && sameModerationDecision(moderation, previous.moderation) ? previous : undefined;
   return { ...(moderation ? { moderation } : {}), text: source ? visibleModeratedText({ ...source, moderation }) : '' };
 }
 

@@ -17,7 +17,7 @@ func main() {
 	action := flag.String("action", "inspect", "inspect | grant | revoke")
 	workspace := flag.String("workspace", "", "target workspace ID")
 	user := flag.String("user", "", "existing user ID; no email or credentials")
-	role := flag.String("role", "", "observer | operator | finance")
+	role := flag.String("role", "", "observer | operator | finance | moderator")
 	key := flag.String("operation-key", "", "stable operation key; reuse exact request after unknown commit")
 	reason := flag.String("reason", "", "bounded opaque reason code")
 	evidence := flag.String("evidence", "", "bounded opaque evidence reference, not a URL")

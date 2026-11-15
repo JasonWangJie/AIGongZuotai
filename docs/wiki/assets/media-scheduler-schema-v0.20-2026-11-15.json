@@ -1,0 +1,14 @@
+{
+  "sql_files": 20,
+  "original_sql_files": 19,
+  "original_sql_bytes": 61318,
+  "original_sql_unchanged": true,
+  "new_migration": "020_media_schedule.sql",
+  "new_sql_bytes": 9207,
+  "new_sql_sha256": "55822ede5d8abaf0787de63536ffc3af067c28a340dfd747ec4c269b320eb240",
+  "api_version": "0.20.0",
+  "paths": 71,
+  "operations": 83,
+  "schemas": 95,
+  "refs": 411
+}

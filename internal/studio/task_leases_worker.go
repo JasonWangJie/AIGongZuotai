@@ -9,23 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (a *App) runPersistentTaskWorker() {
-	if !waitTaskPoll(a.ctx, a.config.PollInterval) {
-		return
-	}
-	for a.ctx.Err() == nil {
-		if a.media == nil {
-			if !waitTaskPoll(a.ctx, a.config.PollInterval) {
-				return
-			}
-			continue
-		}
-		worked := a.executePersistentTaskStep("")
-		if !worked && !waitTaskPoll(a.ctx, a.config.PollInterval) {
-			return
-		}
-	}
-}
 func waitTaskPoll(ctx context.Context, d time.Duration) bool {
 	timer := time.NewTimer(d)
 	defer timer.Stop()
@@ -43,17 +26,63 @@ func isEventBacklog(err error) bool {
 }
 
 func (a *App) executePersistentTaskStep(id string) bool {
+	return a.executePersistentTaskLane(mediaSubmitLane, id) || a.executePersistentTaskLane(mediaQueryLane, id) || a.executePersistentTaskLane(mediaDeliveryLane, id) || a.executePersistentTaskLane(mediaReviewLane, id)
+}
+
+func (a *App) executePersistentTaskLane(lane mediaExecutionLane, id string) bool {
 	pool := a.taskLeases
-	if pool == nil || a.media == nil || a.ctx.Err() != nil {
+	if pool == nil || a.media == nil && lane != mediaReviewLane || a.ctx.Err() != nil {
 		return false
 	}
-	conn, err := pool.acquire(a.ctx)
-	if err != nil {
+	release, ok := a.mediaExecution.reserve(lane)
+	if !ok {
+		return false
+	}
+	defer release()
+	// A deliberately held/maintained connection must not make the generic
+	// explicit step wait on the wrong lane before trying an accepted handle.
+	conn, available := pool.tryAcquireLane(lane)
+	if !available {
 		return false
 	}
 	defer pool.release(conn)
-	record, err := pool.claim(a.ctx, conn, a.config.Mode, id)
+	var candidate *mediaScheduleCandidate
+	var err error
+	if id == "" {
+		candidate, err = a.selectMediaScheduleCandidate(a.ctx, conn, lane)
+	} else {
+		candidate, err = a.mediaScheduleCandidateByID(a.ctx, conn, lane, id)
+	}
 	if err != nil {
+		a.taskLeaseDatabaseFailure(err)
+		return false
+	}
+	if candidate == nil {
+		return false
+	}
+	scopeRelease, ok := a.mediaScheduler.tryReserve(*candidate)
+	if !ok {
+		return false
+	}
+	defer scopeRelease()
+	var permit *mediaModerationPermit
+	if lane == mediaReviewLane {
+		// A bounded wait owns no database transaction or business lock.
+		permitCtx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
+		permit, err = a.mediaModeration.acquireReviewPermit(permitCtx, candidate.WorkspaceID)
+		cancel()
+		if err != nil {
+			return false
+		}
+		defer permit.Close()
+	}
+	record, err := pool.claimScheduled(a.ctx, conn, *candidate)
+	if err != nil {
+		var op *operationError
+		if errors.As(err, &op) && op.code == "MEDIA_SCHEDULE_IDENTITY_CHANGED" {
+			a.parkMediaScheduleIdentity(candidate.TaskID)
+			return false
+		}
 		a.taskLeaseDatabaseFailure(err)
 		return false
 	}
@@ -61,12 +90,18 @@ func (a *App) executePersistentTaskStep(id string) bool {
 		return false
 	}
 	a.obs.recordLease("claimed", 1)
-	a.executeTaskClaim(conn, record)
+	a.mediaScheduler.claimed(lane)
+	a.mediaExecution.steps[lane].Add(1)
+	a.executeReservedTaskClaim(conn, record, permit)
 	return true
 }
 
 func (a *App) taskLeaseDatabaseFailure(err error) {
 	if err == nil || isLeaseLost(err) || a.ctx.Err() != nil {
+		return
+	}
+	var operation *operationError
+	if errors.As(err, &operation) {
 		return
 	}
 	a.store.failed.Store(true)
@@ -76,6 +111,14 @@ func (a *App) taskLeaseDatabaseFailure(err error) {
 func cloneLeasedRecord(record *taskRecord) *taskRecord {
 	copy := *record
 	copy.Task = copyTask(record.Task)
+	copy.MediaModeration = cloneTaskMediaModeration(record.MediaModeration)
+	copy.Delivery = cloneMediaDelivery(record.Delivery)
+	copy.ReviewDispatch = cloneMediaReviewDispatch(record.ReviewDispatch)
+	copy.Schedule = cloneMediaTaskSchedule(record.Schedule)
+	if record.ScheduleClaim != nil {
+		c := *record.ScheduleClaim
+		copy.ScheduleClaim = &c
+	}
 	if record.Lease != nil {
 		lease := *record.Lease
 		copy.Lease = &lease
@@ -126,6 +169,43 @@ func (a *App) renewTaskClaimForStep(ctx context.Context, conn *pgx.Conn, token T
 }
 
 func (a *App) executeTaskClaim(conn *pgx.Conn, record *taskRecord) {
+	if record == nil || record.Lease == nil {
+		return
+	}
+	lane := mediaLaneForTask(record)
+	candidate, err := a.mediaScheduleCandidateByID(a.ctx, conn, lane, record.Task.ID)
+	if err != nil || candidate == nil {
+		return
+	}
+	scopeRelease, ok := a.mediaScheduler.tryReserve(*candidate)
+	if !ok {
+		return
+	}
+	defer scopeRelease()
+	record.ScheduleClaim = candidate
+	record.Schedule, err = loadMediaScheduleSQL(a.ctx, conn, record.Task.ID)
+	if err != nil {
+		return
+	}
+	release, ok := a.mediaExecution.reserve(lane)
+	if !ok {
+		return
+	}
+	defer release()
+	var permit *mediaModerationPermit
+	if lane == mediaReviewLane {
+		permit, err = a.mediaModeration.acquireReviewPermit(a.ctx, candidate.WorkspaceID)
+		if err != nil {
+			return
+		}
+		defer permit.Close()
+	}
+	a.mediaExecution.steps[lane].Add(1)
+	a.executeReservedTaskClaim(conn, record, permit)
+}
+
+// Only callers holding the selected lane budget may enter this function.
+func (a *App) executeReservedTaskClaim(conn *pgx.Conn, record *taskRecord, permits ...*mediaModerationPermit) {
 	defer func() {
 		a.mu.Lock()
 		defer a.mu.Unlock()
@@ -136,8 +216,28 @@ func (a *App) executeTaskClaim(conn *pgx.Conn, record *taskRecord) {
 			cached.LeaseStatus = ""
 		}
 	}()
+	if record.ReviewDispatch != nil {
+		var permit *mediaModerationPermit
+		if len(permits) > 0 {
+			permit = permits[0]
+		}
+		a.executeMediaReviewClaim(conn, record, permit)
+		return
+	}
 	a.mu.Lock()
 	if a.ctx.Err() != nil {
+		a.mu.Unlock()
+		return
+	}
+	// A previous owner persisted private candidates but did not commit a
+	// decision. Reclaim is not permission to repeat review or query/generate.
+	if record.MediaModeration != nil && len(record.MediaModeration.Candidates) > 0 {
+		quarantineMediaTask(record, "execution_incomplete")
+		record.Task.Status = "FAILED"
+		record.Task.Error = &APIError{Code: "MEDIA_MODERATION_REVIEW", Message: "原媒体候选保持隔离，执行中断后不自动重审或生成"}
+		record.Task.Version++
+		record.Task.UpdatedAt = time.Now().UTC()
+		a.persistTaskClaim(record, true)
 		a.mu.Unlock()
 		return
 	}
@@ -199,10 +299,13 @@ func (a *App) executeTaskClaim(conn *pgx.Conn, record *taskRecord) {
 			}
 		}
 	}()
+	defer func() { stopBeat(); <-done }()
 	var result MediaResult
 	var err error
 	handle := record.Handle
-	if handle.ID == "" {
+	if record.Delivery != nil {
+		result, err = a.importMediaDelivery(ctx, record, func() error { return a.saveDeliveryClaim(ctx, record, false, &lost) })
+	} else if handle.ID == "" {
 		if prepared, ok := a.media.(interface {
 			SubmitPrepared(context.Context, MediaSubmission) (MediaHandle, error)
 		}); ok && record.Submission != nil {
@@ -210,9 +313,36 @@ func (a *App) executeTaskClaim(conn *pgx.Conn, record *taskRecord) {
 		} else {
 			handle, err = a.media.Submit(ctx, record.Input)
 		}
-		result = MediaResult{Status: "QUEUED", RetryAfter: handle.RetryAfter}
+		result = MediaResult{Status: "QUEUED", RetryAfter: handle.RetryAfter, Observation: handle.Observation}
+	} else if provider, ok := a.media.(MediaDeliveryProvider); ok {
+		queried, queryErr := provider.QueryStatus(ctx, handle)
+		result, err = queried.Result, queryErr
+		if err == nil && (result.Status == "SUCCEEDED" || result.Status == "PARTIAL") {
+			a.observeMediaStep(record, result, nil)
+			if !validMediaDeliverySources(handle, queried) {
+				err = mediaDeliveryFailure()
+			} else {
+				err = a.freezeMediaDelivery(ctx, record, queried, &lost)
+				// Once a transaction was attempted, retain its exact evidence and
+				// stop even when its acknowledgement is unknown. A seal failure
+				// before any handoff instead becomes a safe parked query result.
+				if err == nil || record.Delivery != nil {
+					return
+				}
+			}
+		} else if err == nil && (len(queried.Items) != 0 || len(result.Artifacts) != 0) {
+			err = mediaDeliveryFailure()
+		}
 	} else {
 		result, err = a.media.Query(ctx, handle)
+	}
+	if err == nil && record.Task.Moderation != nil && (result.Status == "SUCCEEDED" || result.Status == "PARTIAL") {
+		a.observeMediaStep(record, result, nil)
+		var proceed bool
+		result, proceed = a.reviewTaskMediaResult(ctx, record, result, &lost)
+		if !proceed {
+			return
+		}
 	}
 	stopBeat()
 	<-done
@@ -222,6 +352,12 @@ func (a *App) executeTaskClaim(conn *pgx.Conn, record *taskRecord) {
 		return
 	}
 	applyLeasedMediaResult(record, handle, result, err, a.config.Mode)
+	a.observeMediaStep(record, result, err)
+	applyMediaDeliveryError(record, err)
+	applyMediaScheduleExceeded(record)
+	if record.Task.Moderation != nil && terminal(record.Task.Status) && record.Task.Moderation.State == "PENDING" {
+		quarantineMediaTask(record, "generation_incomplete")
+	}
 	record.Task.Version++
 	record.Task.UpdatedAt = time.Now().UTC()
 	record.Task.CanReconcile = a.canReconcileTask(record)

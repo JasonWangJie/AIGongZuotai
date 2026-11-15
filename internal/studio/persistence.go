@@ -2,7 +2,6 @@ package studio
 
 import (
 	"context"
-	"embed"
 	"encoding/json"
 	"errors"
 	"io/fs"
@@ -13,12 +12,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"aigongzuotai/db"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-//go:embed migrations/*.sql
-var migrationFiles embed.FS
+var migrationFiles = db.Migrations
 
 // All statements use the same connection that holds the session advisory lock.
 // A lost connection cannot be silently replaced by a pool while the old process
@@ -44,7 +44,9 @@ func openPostgres(databaseURL string) (*postgresStore, error) {
 		return nil, errors.New("PostgreSQL writer lock unavailable; another workbench instance may already own this database")
 	}
 	s := &postgresStore{conn: conn}
-	if err = s.do(func(ctx context.Context, conn *pgx.Conn) error {
+	// Startup DDL/backfill has a separate bounded budget. Ordinary business
+	// operations retain their five-second fail-closed deadline.
+	if err = s.doWithTimeout(60*time.Second, func(ctx context.Context, conn *pgx.Conn) error {
 		tx, err := conn.Begin(ctx)
 		if err != nil {
 			return err
@@ -127,12 +129,15 @@ func applyMigrationsFrom(ctx context.Context, tx pgx.Tx, files fs.FS) error {
 }
 
 func (s *postgresStore) do(fn func(context.Context, *pgx.Conn) error) error {
+	return s.doWithTimeout(5*time.Second, fn)
+}
+func (s *postgresStore) doWithTimeout(timeout time.Duration, fn func(context.Context, *pgx.Conn) error) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.failed.Load() {
 		return failure(503, "DATABASE_UNAVAILABLE", "数据库不可用，服务已停止执行；请恢复数据库后重启")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	err := fn(ctx, s.conn)
 	var operation *operationError
@@ -156,143 +161,6 @@ func (s *postgresStore) close() {
 	_ = s.conn.Close(ctx)
 }
 
-func (s *postgresStore) restore(a *App) error {
-	return s.do(func(ctx context.Context, conn *pgx.Conn) error {
-		rows, err := conn.Query(ctx, "SELECT id,workspace_id,name,created_at FROM studio_projects ORDER BY created_at,id")
-		if err != nil {
-			return err
-		}
-		for rows.Next() {
-			var p Project
-			if err = rows.Scan(&p.ID, &p.WorkspaceID, &p.Name, &p.CreatedAt); err != nil {
-				rows.Close()
-				return err
-			}
-			a.projects[p.ID] = p
-		}
-		err = rows.Err()
-		rows.Close()
-		if err != nil {
-			return err
-		}
-		rows, err = conn.Query(ctx, "SELECT document FROM studio_runs WHERE document->>'status' NOT IN ('COMPLETED','FAILED','CANCELLED','INTERRUPTED')")
-		if err != nil {
-			return err
-		}
-		var interrupted []Run
-		for rows.Next() {
-			var blob []byte
-			if err = rows.Scan(&blob); err != nil {
-				rows.Close()
-				return err
-			}
-			var run Run
-			if err = json.Unmarshal(blob, &run); err != nil {
-				rows.Close()
-				return err
-			}
-			if !terminal(run.Status) {
-				quarantineInterruptedRun(&run, "process_restarted")
-				run.Status = "INTERRUPTED"
-				run.Error = &APIError{Code: "PROCESS_RESTARTED", Message: "服务已重启，保留最后检查点；未自动重新请求模型"}
-				run.Seq += recoverySequenceGap
-				run.UpdatedAt = time.Now().UTC()
-				interrupted = append(interrupted, run)
-			}
-			r := &runRecord{Run: run, Subscribers: make(map[chan event]bool), LastCheckpoint: time.Now()}
-			r.Output.WriteString(run.Output)
-			a.runs[run.ID] = r
-		}
-		err = rows.Err()
-		rows.Close()
-		if err != nil {
-			return err
-		}
-		for _, run := range interrupted {
-			if err = saveRunCandidateTransaction(ctx, conn, &run, nil); err != nil {
-				return err
-			}
-			a.runs[run.ID].Run = run
-		}
-		rows, err = conn.Query(ctx, "SELECT document,input,handle,submission,next_poll FROM studio_tasks WHERE document->>'status' NOT IN ('SUCCEEDED','PARTIAL','FAILED','CANCELLED','SUBMIT_UNKNOWN','RECONCILE_REQUIRED')")
-		if err != nil {
-			return err
-		}
-		var uncertain []*taskRecord
-		for rows.Next() {
-			var doc, input, handle, submission []byte
-			var next time.Time
-			if err = rows.Scan(&doc, &input, &handle, &submission, &next); err != nil {
-				rows.Close()
-				return err
-			}
-			t := &taskRecord{NextPoll: next}
-			if err = json.Unmarshal(doc, &t.Task); err != nil {
-				rows.Close()
-				return err
-			}
-			if err = json.Unmarshal(input, &t.Input); err != nil {
-				rows.Close()
-				return err
-			}
-			if err = json.Unmarshal(handle, &t.Handle); err != nil {
-				rows.Close()
-				return err
-			}
-			if len(submission) > 0 && string(submission) != "null" {
-				if err = json.Unmarshal(submission, &t.Submission); err != nil {
-					rows.Close()
-					return err
-				}
-			}
-			if t.Task.ProviderMode != a.config.Mode {
-				t.Task.Status = "RECONCILE_REQUIRED"
-				t.Task.Error = &APIError{Code: "PROVIDER_MODE_CHANGED", Message: "任务供应模式与当前配置不同，停止自动执行以待核实"}
-				t.Task.Version++
-				t.Task.UpdatedAt = time.Now().UTC()
-				uncertain = append(uncertain, t)
-			} else if t.Task.Status == "SUBMITTING" && t.Handle.ID == "" {
-				t.Task.Status = "SUBMIT_UNKNOWN"
-				t.Task.Error = &APIError{Code: "SUBMISSION_UNKNOWN", Message: "提交期间进程中断，受理结果未知；禁止自动重新提交"}
-				t.Task.Version++
-				t.Task.UpdatedAt = time.Now().UTC()
-				uncertain = append(uncertain, t)
-			} else if a.config.Mode == "live" && t.Handle.ID == "" && t.Submission == nil {
-				t.Task.Status = "RECONCILE_REQUIRED"
-				t.Task.Error = &APIError{Code: "EXECUTION_SNAPSHOT_MISSING", Message: "历史任务没有可验证的执行快照，停止自动提交以待核实"}
-				t.Task.Version++
-				t.Task.UpdatedAt = time.Now().UTC()
-				uncertain = append(uncertain, t)
-			}
-			a.tasks[t.Task.ID] = t
-		}
-		err = rows.Err()
-		rows.Close()
-		if err != nil {
-			return err
-		}
-		for _, t := range uncertain {
-			tx, beginErr := conn.Begin(ctx)
-			if beginErr != nil {
-				return beginErr
-			}
-			err = saveBilledTaskSQL(ctx, tx, t)
-			if err == nil {
-				err = appendTaskOutboxSQL(ctx, tx, t.Task)
-			}
-			if err == nil {
-				err = tx.Commit(ctx)
-			} else {
-				_ = tx.Rollback(ctx)
-			}
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
 func (s *postgresStore) createRun(run Run, index string, hash [32]byte, events ...AuditEvent) error {
 	return s.createRunCandidate(&run, index, hash, events...)
 }
@@ -304,6 +172,9 @@ func (s *postgresStore) createRunCandidate(run *Run, index string, hash [32]byte
 			return err
 		}
 		defer tx.Rollback(ctx)
+		if err = checkWorkspaceGenerationSQL(ctx, tx, next.WorkspaceID); err != nil {
+			return err
+		}
 		if err = insertBilledRunSQL(ctx, tx, &next, index, hash, events); err != nil {
 			return err
 		}
@@ -412,6 +283,9 @@ func (s *postgresStore) createTask(t *taskRecord, index string, hash [32]byte, e
 			return err
 		}
 		defer tx.Rollback(ctx)
+		if err = checkWorkspaceGenerationSQL(ctx, tx, t.Task.WorkspaceID); err != nil {
+			return err
+		}
 		if t.Task.BillingQuoteID != "" {
 			t.Task.Billing, err = reserveLedgerSQL(ctx, tx, LedgerReservationRequest{QuoteID: t.Task.BillingQuoteID, WorkspaceID: t.Task.WorkspaceID, ProjectID: t.Task.ProjectID, ResourceType: "task", ResourceID: t.Task.ID, ModelID: t.Task.ModelID, ModelVersion: t.Task.ModelVersion, ProviderMode: t.Task.ProviderMode, RequestHash: t.Task.BillingRequestHash})
 			if err != nil {
@@ -429,6 +303,12 @@ func (s *postgresStore) createTask(t *taskRecord, index string, hash [32]byte, e
 			if _, err = tx.Exec(ctx, "INSERT INTO studio_task_references(task_id,position,reference_id,workspace_id,project_id) VALUES($1,$2,$3,$4,$5)", t.Task.ID, position, referenceID, t.Task.WorkspaceID, t.Task.ProjectID); err != nil {
 				return err
 			}
+		}
+		if err = insertTaskMediaModerationSQL(ctx, tx, t.Task, t.MediaModeration); err != nil {
+			return err
+		}
+		if err = saveMediaScheduleSQL(ctx, tx, t, nil); err != nil {
+			return err
 		}
 		if err = registerTaskLibrarySQL(ctx, tx, t.Task); err != nil {
 			return err
@@ -448,6 +328,7 @@ func (s *postgresStore) createTask(t *taskRecord, index string, hash [32]byte, e
 	})
 	if err == nil {
 		candidate.Task = t.Task
+		candidate.Schedule = cloneMediaTaskSchedule(t.Schedule)
 	}
 	return err
 }
@@ -459,6 +340,9 @@ func (s *postgresStore) saveTask(t *taskRecord, events ...AuditEvent) error {
 	candidate := t
 	next := *t
 	next.Task = copyTask(t.Task)
+	next.Delivery = cloneMediaDelivery(t.Delivery)
+	next.ReviewDispatch = cloneMediaReviewDispatch(t.ReviewDispatch)
+	next.Schedule = cloneMediaTaskSchedule(t.Schedule)
 	t = &next
 	err := s.do(func(ctx context.Context, conn *pgx.Conn) error {
 		tx, err := conn.Begin(ctx)
@@ -481,6 +365,12 @@ func (s *postgresStore) saveTask(t *taskRecord, events ...AuditEvent) error {
 	})
 	if err == nil {
 		candidate.Task = t.Task
+		candidate.Delivery = cloneMediaDelivery(t.Delivery)
+		candidate.ReviewDispatch = cloneMediaReviewDispatch(t.ReviewDispatch)
+		candidate.Schedule = cloneMediaTaskSchedule(t.Schedule)
+		candidate.NextPoll = t.NextPoll
+		candidate.ScheduleOutcome = nil
+		candidate.ScheduleReconcile = false
 	}
 	return err
 }

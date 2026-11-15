@@ -1,0 +1,13 @@
+{
+  "version": "0.14.0",
+  "binary_sha256": "3e08a07c354d2099a9f46386ea68869dfdd82eabb377457f79fce3e2b1f5c6a5",
+  "verified_at": "2026-11-14T09:28:27.532Z",
+  "duration_ms": 7685,
+  "scope": "Isolated loopback memory/demo upload and edit workbench. Actual multipart gateway and private result import are tested by the separate Go HTTP fixture. No real paid supplier call.",
+  "checks": [
+    "private upload identity, exact bytes, full-format and size rejection, bounded PNG preview and HEAD",
+    "project isolation, ordered private references, edit validation and original task idempotency",
+    "demo edit completion, visible demo artifact, single upload audit and redacted metadata"
+  ],
+  "status": "passed"
+}

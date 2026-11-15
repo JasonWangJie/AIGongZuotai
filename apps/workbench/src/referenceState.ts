@@ -1,5 +1,6 @@
 import type { ApiError } from './api';
 import type { ReferenceAsset, ReferenceLimits } from './types';
+import { mediaContentAllowed, mergeReferenceAsset } from './mediaModeration';
 
 export type UploadPhase = 'queued' | 'uploading' | 'checking' | 'ready' | 'uncertain' | 'failed';
 export type ReferenceItem = { id: string; name: string; byteSize: number; file?: File; key?: string; phase: UploadPhase; progress: number | null; attempt: number; wasUnknown: boolean; asset?: ReferenceAsset; error?: ApiError };
@@ -20,12 +21,14 @@ export function patchReference(state: ReferenceState, id: string, attempt: numbe
 export function completeReference(state: ReferenceState, id: string, attempt: number, asset: ReferenceAsset): ReferenceState {
   const original = state.items.find(item => item.id === id); if (!original || original.attempt !== attempt) return state;
   const duplicates = new Set(state.items.filter(item => item.id !== id && item.asset?.id === asset.id).map(item => item.id));
-  const next = patchReference(state, id, attempt, { asset, name: asset.name, phase: 'ready', file: undefined, progress: 100, wasUnknown: false, error: undefined });
+  const known = state.items.filter(item => item.asset?.id === asset.id).reduce<ReferenceAsset | undefined>((value, item) => mergeReferenceAsset(value, item.asset!), undefined);
+  const safe = mergeReferenceAsset(known, asset);
+  const next = patchReference(state, id, attempt, { asset: safe, name: asset.name, phase: 'ready', file: undefined, progress: 100, wasUnknown: false, error: undefined });
   return { ...next, items: next.items.filter(item => !duplicates.has(item.id)), selected: [...new Set(next.selected.map(item => duplicates.has(item) ? id : item))] };
 }
 export function mergeReferences(state: ReferenceState, assets: ReferenceAsset[], projectId: string): ReferenceState {
   const items = [...state.items];
-  for (const asset of assets) { if (asset.project_id !== projectId) continue; const existing = items.findIndex(item => item.asset?.id === asset.id); if (existing >= 0) items[existing] = { ...items[existing], asset }; else items.push({ id: 'asset:' + asset.id, name: asset.name, byteSize: asset.byte_size, phase: 'ready', progress: 100, attempt: 0, wasUnknown: false, asset }); }
+  for (const asset of assets) { if (asset.project_id !== projectId) continue; const existing = items.findIndex(item => item.asset?.id === asset.id); if (existing >= 0) items[existing] = { ...items[existing], asset: mergeReferenceAsset(items[existing].asset, asset) }; else items.push({ id: 'asset:' + asset.id, name: asset.name, byteSize: asset.byte_size, phase: 'ready', progress: 100, attempt: 0, wasUnknown: false, asset: mergeReferenceAsset(undefined, asset) }); }
   return { ...state, items };
 }
 export function reconcileReferenceList(state: ReferenceState, assets: ReferenceAsset[], projectId: string, knownReady: Set<string>): ReferenceState {
@@ -36,7 +39,7 @@ export function reconcileReferenceList(state: ReferenceState, assets: ReferenceA
 }
 export function selectedReferenceIds(state: ReferenceState): string[] | null {
   const items = state.selected.map(id => state.items.find(item => item.id === id));
-  if (items.some(item => !item?.asset || item.phase !== 'ready')) return null;
+  if (items.some(item => !item?.asset || item.phase !== 'ready' || !mediaContentAllowed(item.asset.moderation))) return null;
   const ids = items.map(item => item!.asset!.id);
   return new Set(ids).size === ids.length ? ids : null;
 }

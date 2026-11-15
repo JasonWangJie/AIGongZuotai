@@ -2,6 +2,8 @@
 
 本页适用于本地开发。已增加 PostgreSQL 与账户模式，但尚未开放公网部署。依赖版本以仓库实际锁文件、`go.mod` 和 `package.json` 为准。
 
+当前开发v0.20/A3.3尚未联合验收，最近本地交付为[079的v0.19/A3.2](../changes/2026-11-14-079-media-review-dispatch-integration.md)。本文保留各阶段历史段落，历史成绩不等于当前开发代码已验收；真实审核渠道与完整V14仍另行验收。
+
 ## 本地运行
 
 要求 Node.js 22.12+、npm 和 `go.mod` 指定版本的 Go。在仓库根目录执行下列命令，安装前端依赖并一起启动 Go API 与前端开发服务。默认 Go 地址为 `127.0.0.1:8080`，前端为 `127.0.0.1:5173`。完整启动入口以[仓库 README](../../README.md)为准。
@@ -26,6 +28,8 @@ npm run dev
 | `BILLING_MODE` / `BILLING_PRICE_FILE` | 默认disabled；credits须PG+required及明确价格文件。demo/live价格隔离，详见[权益配置](billing-operations.md) |
 | `MODERATION_MODE` / `MODERATION_POLICY_FILE` | 默认disabled；rules/http须PG+required及明确政策文件，rules仅允许demo；启动冻结政策，变更后重启 |
 | `MODERATION_ENDPOINT` / `MODERATION_API_KEY` / `MODERATION_CREDENTIAL_ID` | http模式的私有完整HTTPS端点、独立服务端密钥与稳定凭据标签；不得放入浏览器、日志或仓库，协议见[文本审核](moderation.md) |
+| `MEDIA_MODERATION_MODE` / `MEDIA_MODERATION_POLICY_FILE` | 默认disabled；fixtures/http须PG+required且文本审核已启用。fixtures仅demo实际字节样本，政策启动冻结，修改后重启 |
+| `MEDIA_MODERATION_ENDPOINT` / `MEDIA_MODERATION_API_KEY` / `MEDIA_MODERATION_CREDENTIAL_ID` | http模式的私有media-v1端点、独立密钥和稳定凭据标签；不放入VITE、日志或仓库，见[媒体审核](media-moderation.md) |
 | `MODEL_CATALOG_FILE` | 可选JSON模型目录；最多64KiB、1—32模型，每媒体模型1—32完整规格预设；启动校验，更改后重启 |
 | `METRICS_TOKEN` | 留空关闭 `/metrics`；启用须32—256位可见ASCII，与AI密钥不同，使用独立Bearer令牌 |
 | `ADMISSION_WORKSPACE_RUNS` / `ADMISSION_MODEL_RUNS` | 默认64 / 32，限制当前工作区全部/单模型未终态LLM |
@@ -95,7 +99,7 @@ npm run perf:local
 
 [check-docs.mjs](../../scripts/check-docs.mjs)只依赖 Node 内置模块，包含两层检查：
 
-- 结构检查：要求指定基础文档存在；扫描 README、AGENTS、TODO、`docs/planning/`、`docs/wiki/` 和 `docs/changes/` 中 Markdown 的本地链接；检查编号台账的必要章节与索引覆盖。外部 URL、锚点内容不验证；不扫描 `deliverables/` 内部的历史报告。
+- 结构检查：要求指定基础文档存在；扫描根README、AGENTS、TODO及整个`docs/`中Markdown的本地链接，并检查源码文档/SQL归档目录；检查编号台账的必要章节与索引覆盖。外部 URL、锚点内容不验证；不扫描 `docs/deliverables/` 内部HTML历史报告正文。
 - 变更集合检查：`--changed` 合并 Git 暂存、工作区及未跟踪文件，要求有变更时同时包含根 README、一份编号台账、至少一份 Wiki、任务源和生成 TODO。支持尚无首次提交的仓库。
 
 CI 可使用已存在的 Git 基线检查已提交变更：
@@ -125,7 +129,7 @@ node scripts/check-docs.mjs --base origin/main
 
 构建后运行`npm run smoke:references`，独立实例覆盖上传、幂等、格式/权限、任务编辑、审计和固定指标标签；既有smoke/runtime/catalog/perf脚本也分别使用独立临时REFERENCE_DIR，退出只清理各自所有且经路径校验的临时目录。不会清理主预览上传。完整协议导入链另见[HTTP集成测试](../../internal/studio/reference_integration_test.go)。
 
-原始测试PNG/WebP位于[fixture说明](../../internal/studio/testdata/references/README.md)，为仓库原创几何图，不含用户文件。前端只预览服务器512px缩略图；未知上传的原File和原幂等键仅保存在本页内存，刷新前需要处理。验证实际结果及已知限制写入[025](../changes/2026-11-13-025-reference-integration.md)。
+原始测试PNG/WebP位于[fixture说明](../testing/references-fixtures.md)，为仓库原创几何图，不含用户文件。前端只预览服务器512px缩略图；未知上传的原File和原幂等键仅保存在本页内存，刷新前需要处理。验证实际结果及已知限制写入[025](../changes/2026-11-13-025-reference-integration.md)。
 
 ## V08 资产和离线维护
 
@@ -156,3 +160,43 @@ HTTP模式只接受平台自有text-v1严格协议，真实服务尚未选型。
 [scripts/lib/process.mjs](../../scripts/lib/process.mjs)的`isolatedModerationEnvironment`在六套smoke与perf子进程环境中覆盖父进程设置：强制`MODERATION_MODE=disabled`，清空政策路径、端点、密钥和凭据标签。普通回归不会继承开发终端的真实审核配置或被启用后的媒体门禁污染。审核专项自行使用本机HTTP fixture和明确政策；真实审核渠道必须另行受控验收，不能借用这些结果。
 
 引擎专项可运行`go test ./internal/studio -run '^TestModeration' -count=1`；持久化、输入拒绝零受理、候选隔离、提交确认不明和重启路径由独立`TEST_DATABASE_URL`测试覆盖。不要对开发主库运行测试，也不要与其他使用同一测试库的PG套件并行。具体执行事实见[051引擎台账](../changes/2026-11-14-051-text-moderation-engine.md)及[054联合记录](../changes/2026-11-14-054-text-review-integration.md)；本地B1完成不代表完整V14、B2或真实审核渠道放行。
+
+## V14-B2媒体审核与后续验证
+
+v0.14默认仍关闭媒体检查。本地样本需独立PG账户环境、已开启文本审核、`PROVIDER_MODE=demo`、`MEDIA_MODERATION_MODE=fixtures`及`MEDIA_MODERATION_POLICY_FILE=config/media-moderation.example.json`。已登记PNG/MP4样本仅验证完整字节及权限链，未知样本REVIEW；不得用匹配结果推断语义安全。HTTP模式遵守私有media-v1契约，不复用生成网关Key或放宽TLS来连接真实渠道。
+
+`isolatedModerationEnvironment`现在同时覆盖全部文本与媒体审核环境变量，普通六套smoke/perf不继承终端中的真实审核设置。专项必须显式选择本机fixture和独立测试库，并串行使用同一PG测试库。新参考同步检查后才注册；生成结果先登记私有候选，再整组检查与同事务发布，MODERATING不交付。016升级须联备数据库与配套私有目录，维护/账本/角色CLI只接受精确001—016；不得删除迁移、owner或候选记录绕过格式栅栏。具体边界见[契约](../planning/v14b2-contract.md)和[媒体审核](media-moderation.md)。
+
+前端270项/26文件、TypeScript与构建通过，详见[057](../changes/2026-11-14-057-media-moderation-workbench.md)。JS505.19kB/gzip159.37kB触发500kB分包提示；未关闭警告或声称线上性能通过。建议后续先按路由拆包并量化首屏/交互和播放器加载，再安排固定环境容量验证。真实审核商选型与受控联调、V14-C申诉/封禁/额度风控及真实邮件/网关仍分别维护；本批PG和浏览器的最终事实只引用[058](../changes/2026-11-14-058-media-review-integration.md)，不提前填写成绩。
+
+## v0.15开发与验收
+
+C1复核界面需PG账户；OPERATIONS_ENABLED开启后仍须停机CLI明确授予moderator，旧角色不会自动扩权。本地可以沿用demo+rules+media fixtures，不能替代真实供应商/审核验收。017升级联备要求、端到端证据与实际验证命令见[062](../changes/2026-11-14-062-generation-controls-integration.md)。
+
+## 统一目录
+
+项目说明进入docs，SQL进入db，完整任务在[规划清单](../planning/TODO.md)。根三入口保留发现用途；治理脚本同时校验完整清单和根摘要，详见[目录规则](repository-layout.md)与[063](../changes/2026-11-14-063-document-layout.md)。
+
+## v0.17媒体执行配置与测试隔离
+
+`MEDIA_SUBMIT_WORKERS`和`MEDIA_QUERY_WORKERS`未设置时各为2；显式值必须十进制1—32，空值也拒绝启动，错误不回显输入。两条通道各有worker、PG辅助连接及网关HTTP池；query仍包括下载、导入、审核和持久保存。使用同一数据库的PG App测试必须串行，随机schema不能绕过数据库级控制写者锁。
+
+普通smoke/perf统一通过`isolatedExecutionEnvironment`覆盖五个CHAT配置及两个MEDIA配置；独立审核、邮件、权益与运营也被隔离。不要用本地fixture验收替代真实渠道，也不要运行db:setup覆盖已有私有目录的数据库身份。当前017格式不变；根验证使用新独立test集群，原开发库恢复状态不因此改变。证据见[071](../changes/2026-11-14-071-media-lane-integration.md)。
+
+## v0.18持久交付配置与验收
+
+A3.1新增MEDIA_DELIVERY_WORKERS（默认2、十进制1—16），原生异步query与delivery分开；默认三通道共6个辅助PG连接及相应worker，另有控制连接。PG原生适配器必须配置独立MEDIA_DELIVERY_KEY（规范标准base64的32字节），不复用网关或邮件密钥；已有交付需原key，READY需兼容provider。没有新功能默认关闭开关，memory分阶段但不持久。普通smoke隔离新增worker及key，不能继承终端的真实私有配置。
+
+018精确栅栏及联备要求见[数据库迁移](database-migrations.md)；真实备份测试通过TEST_POSTGRES_BIN_DIR显式选择本地pg_dump/pg_restore，创建并清理独立恢复库，不覆盖原库。实际S3服务测试只允许127.0.0.1并需独立TEST_S3_*；缺条件时skip必须明示。图/视频、部分交付、四处ACK和完整文件验证见[075](../changes/2026-11-14-075-media-delivery-integration.md)，不以测试配置代替实际执行证据。
+
+## v0.19首次审核分派
+
+新增MEDIA_REVIEW_WORKERS，默认2、显式十进制1—2；当前默认四通道共8个辅助PG连接及worker，另有控制连接。输入与输出共用原两个审核许可，不是各有两个。review取得共享许可后才领取并持久写STARTED，整组仅一次首次审核；关闭或不兼容审核配置转隔离，不能无限挂起或放行。
+
+新019 READY已有完整候选/收据时，恢复首次审核不依赖原生AI生成适配器，但仍须原交付密钥、真实私有文件和兼容审核引擎。旧无019记录的候选以及STARTED恢复继续REVIEW。普通smoke/perf也隔离新增review配置。PG验证由root亲自串行执行，不能凭代理消息时间推定上一个进程已结束；本批实际验收见[079](../changes/2026-11-14-079-media-review-dispatch-integration.md)。
+
+## v0.20公平调度与退避
+
+新增`MEDIA_WORKSPACE_CONCURRENCY`默认1、`MEDIA_CHANNEL_CONCURRENCY`默认2，均只接受十进制1—32，并按每lane worker上限取小值。它们限制本进程每通道的执行占用，不增加连接或改变原请求身份。自动测试必须隔离这两个值和全部真实渠道配置；完整参数说明见[媒体调度](media-scheduler.md)。
+
+020启动迁移使用独立60秒有界预算，日常业务事务仍5秒。升级前停写联备数据库、私有目录与已启用队列密钥，配套工具只接受精确020；旧SQL不得改写或删除登记。真实20万旧任务迁移已单独测量，但不代表完整App启动容量，恢复边界见[架构](architecture.md)。本地大积压专项需显式设置`MEDIA_SCHEDULER_LARGE_PLAN=1`，一般全量回归不会自动执行该重测；报告应分别保存SQL计划和完整预选耗时。

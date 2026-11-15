@@ -3,7 +3,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import net from 'node:net';
 import { resolve } from 'node:path';
-import { binary, root, start, stopOwnedProcess, isolatedReferenceDirectory, isolatedMailEnvironment, isolatedBillingEnvironment, isolatedOperationsEnvironment, isolatedModerationEnvironment } from './lib/process.mjs';
+import { binary, root, start, stopOwnedProcess, isolatedReferenceDirectory, isolatedMailEnvironment, isolatedBillingEnvironment, isolatedOperationsEnvironment, isolatedModerationEnvironment, isolatedExecutionEnvironment } from './lib/process.mjs';
 
 // A separate loopback demo process, with its own metrics token and tiny limits.
 // Never connects to the development database, a real model or a remote target.
@@ -15,7 +15,7 @@ const port = await new Promise((resolvePort, reject) => {
 const base = `http://127.0.0.1:${port}`;
 const referenceDirectory = isolatedReferenceDirectory();
 const token = randomBytes(32).toString('hex');
-const server = start(binary, [], { env: { ...process.env, ...isolatedMailEnvironment,...isolatedBillingEnvironment,...isolatedOperationsEnvironment,...isolatedModerationEnvironment, APP_ADDR: `127.0.0.1:${port}`, PROVIDER_MODE: 'demo', MODEL_CATALOG_FILE: '', REFERENCE_DIR: referenceDirectory.directory, ASSET_DIR: referenceDirectory.assetDirectory, ASSET_STORAGE_BACKEND: 'local', S3_FORCE_PATH_STYLE: 'false', AUTH_MODE: 'disabled', DATABASE_URL: '', METRICS_TOKEN: token,
+const server = start(binary, [], { env: { ...process.env, ...isolatedMailEnvironment,...isolatedBillingEnvironment,...isolatedOperationsEnvironment,...isolatedModerationEnvironment,...isolatedExecutionEnvironment, APP_ADDR: `127.0.0.1:${port}`, PROVIDER_MODE: 'demo', MODEL_CATALOG_FILE: '', REFERENCE_DIR: referenceDirectory.directory, ASSET_DIR: referenceDirectory.assetDirectory, ASSET_STORAGE_BACKEND: 'local', S3_FORCE_PATH_STYLE: 'false', AUTH_MODE: 'disabled', DATABASE_URL: '', METRICS_TOKEN: token,
   ADMISSION_WORKSPACE_RUNS: '1', ADMISSION_MODEL_RUNS: '1', ADMISSION_WORKSPACE_TASKS: '2', ADMISSION_MODEL_TASKS: '1', ADMISSION_WORKSPACE_STREAMS: '2' }, stdio: ['ignore', 'pipe', 'pipe'] });
 let startError, log = '';
 server.on('error', error => { startError = error; });

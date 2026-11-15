@@ -65,12 +65,15 @@ type ModerationSummary struct {
 	ReasonCode    string `json:"reason_code,omitempty"`
 }
 type ModerationCapabilities struct {
-	Enabled        bool   `json:"enabled"`
-	Mode           string `json:"mode"`
-	PolicyID       string `json:"policy_id,omitempty"`
-	PolicyVersion  string `json:"policy_version,omitempty"`
-	TextDelivery   string `json:"text_delivery"`
-	MediaSupported bool   `json:"media_supported"`
+	Enabled            bool   `json:"enabled"`
+	Mode               string `json:"mode"`
+	PolicyID           string `json:"policy_id,omitempty"`
+	PolicyVersion      string `json:"policy_version,omitempty"`
+	TextDelivery       string `json:"text_delivery"`
+	MediaSupported     bool   `json:"media_supported"`
+	MediaMode          string `json:"media_mode"`
+	MediaPolicyID      string `json:"media_policy_id,omitempty"`
+	MediaPolicyVersion string `json:"media_policy_version,omitempty"`
 }
 type moderationEngine struct {
 	policy       ModerationPolicy
@@ -214,11 +217,16 @@ func InitialModerationSummary(p *ModerationPolicy) *ModerationSummary {
 	}
 	return &ModerationSummary{PolicyID: p.PolicyID, PolicyVersion: p.PolicyVersion, Phase: "output", State: "PENDING", Version: 1}
 }
-func moderationCapabilities(e *moderationEngine) ModerationCapabilities {
+func moderationCapabilities(e *moderationEngine, engines ...*mediaModerationEngine) ModerationCapabilities {
 	if e == nil {
-		return ModerationCapabilities{Mode: "disabled", TextDelivery: "stream", MediaSupported: true}
+		return ModerationCapabilities{Mode: "disabled", MediaMode: "disabled", TextDelivery: "stream", MediaSupported: true}
 	}
-	return ModerationCapabilities{Enabled: true, Mode: e.policy.Mode, PolicyID: e.policy.PolicyID, PolicyVersion: e.policy.PolicyVersion, TextDelivery: "after_review", MediaSupported: false}
+	result := ModerationCapabilities{Enabled: true, Mode: e.policy.Mode, MediaMode: "disabled", PolicyID: e.policy.PolicyID, PolicyVersion: e.policy.PolicyVersion, TextDelivery: "after_review", MediaSupported: false}
+	if len(engines) > 0 && engines[0] != nil {
+		policy := engines[0].policy
+		result.MediaSupported, result.MediaMode, result.MediaPolicyID, result.MediaPolicyVersion = true, policy.Mode, policy.PolicyID, policy.PolicyVersion
+	}
+	return result
 }
 func (e *moderationEngine) Capabilities() ModerationCapabilities { return moderationCapabilities(e) }
 func moderationReview(reason string) ModerationDecision {

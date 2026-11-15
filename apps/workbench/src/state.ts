@@ -1,13 +1,23 @@
 import type { Run, RunEvent, Task } from './types';
 import { terminal } from './types';
 import { mergeModeratedText, moderationAllowsText } from './moderation';
+import { mergeMediaProjection, taskMediaAllowed } from './mediaModeration';
 
 export function mergeTask(current: Task[], incoming: Task): Task[] {
   const existing = current.find(t => t.id === incoming.id);
-  if (existing && incoming.version <= existing.version) return current;
-  // Defensive guard: terminal task state cannot regress even if an upstream bug increments version.
-  if (existing && terminal(existing.status) && !terminal(incoming.status)) return current;
-  return [incoming, ...current.filter(t => t.id !== incoming.id)].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  if (existing && existing.project_id !== incoming.project_id) return current;
+  const next = mergeTaskSnapshot(existing, incoming);
+  if (next === existing) return current;
+  return [next, ...current.filter(t => t.id !== incoming.id)].sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+export function mergeTaskSnapshot(existing: Task | undefined, incoming: Task): Task {
+  if (existing && (existing.id !== incoming.id || existing.project_id !== incoming.project_id)) return existing;
+  const accepted = !existing || incoming.version > existing.version && !(terminal(existing.status) && !terminal(incoming.status));
+  const base = accepted ? incoming : existing!;
+  const projection = mergeMediaProjection(existing, incoming, accepted);
+  const artifacts = taskMediaAllowed({ status: base.status, moderation: projection.moderation }) ? projection.source?.artifacts || [] : [];
+  if (base.moderation === projection.moderation && (base.artifacts === artifacts || base.artifacts.length === 0 && artifacts.length === 0)) return base;
+  return { ...base, ...(projection.moderation ? { moderation: projection.moderation } : {}), artifacts };
 }
 
 export function mergeRun(current: Run[], incoming: Run): Run[] {

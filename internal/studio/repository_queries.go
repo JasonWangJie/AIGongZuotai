@@ -55,6 +55,26 @@ func (s *postgresStore) loadTask(id string) (*taskRecord, error) {
 				}
 			}
 		}
+		if t.Task.Moderation != nil {
+			var err error
+			t.MediaModeration, err = loadTaskMediaModerationSQL(ctx, conn, t.Task.ID)
+			if err != nil {
+				return err
+			}
+		}
+		var deliveryErr error
+		t.Delivery, deliveryErr = loadMediaDeliverySQL(ctx, conn, t.Task.ID)
+		if deliveryErr != nil {
+			return deliveryErr
+		}
+		t.ReviewDispatch, deliveryErr = loadMediaReviewDispatchSQL(ctx, conn, t.Task.ID)
+		if deliveryErr != nil {
+			return deliveryErr
+		}
+		t.Schedule, deliveryErr = loadMediaScheduleSQL(ctx, conn, t.Task.ID)
+		if deliveryErr != nil {
+			return deliveryErr
+		}
 		return nil
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -129,9 +149,12 @@ func (a *App) findIdempotencyLocked(index string) (idemRecord, bool, error) {
 }
 
 func (s *postgresStore) assetOwned(workspaceID, projectID, assetID string) (bool, error) {
+	if !localAssetID.MatchString(assetID) {
+		return false, nil
+	}
 	var found bool
 	err := s.do(func(ctx context.Context, conn *pgx.Conn) error {
-		return conn.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM studio_library_entries WHERE workspace_id=$1 AND ($2='' OR project_id=$2) AND artifact_id=$3 AND source='generated' AND state='active')", workspaceID, projectID, assetID).Scan(&found)
+		return conn.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM studio_library_entries l WHERE workspace_id=$1 AND ($2='' OR project_id=$2) AND artifact_id=$3 AND source='generated' AND state='active' AND EXISTS(SELECT 1 FROM studio_tasks t LEFT JOIN studio_task_media_moderation m ON m.task_id=t.id WHERE t.id=l.task_id AND ((m.task_id IS NULL AND (t.document->'moderation' IS NULL OR t.document->'moderation'='null'::jsonb)) OR (m.state='ALLOWED' AND t.document->>'status' IN ('SUCCEEDED','PARTIAL')))))`, workspaceID, projectID, assetID).Scan(&found)
 	})
 	return found, err
 }

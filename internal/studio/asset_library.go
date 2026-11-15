@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -21,25 +22,26 @@ import (
 )
 
 type LibraryEntry struct {
-	ID           string     `json:"id"`
-	ProjectID    string     `json:"project_id"`
-	Source       string     `json:"source"`
-	ReferenceID  string     `json:"reference_id,omitempty"`
-	TaskID       string     `json:"task_id,omitempty"`
-	ArtifactID   string     `json:"artifact_id,omitempty"`
-	ProviderMode string     `json:"provider_mode,omitempty"`
-	Kind         string     `json:"kind"`
-	Name         string     `json:"name"`
-	Tags         []string   `json:"tags"`
-	State        string     `json:"state"`
-	Revision     uint64     `json:"revision"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
-	DeletedAt    *time.Time `json:"deleted_at"`
-	ContentURL   *string    `json:"content_url"`
-	ThumbnailURL *string    `json:"thumbnail_url"`
-	ContentType  string     `json:"content_type,omitempty"`
-	ByteSize     int64      `json:"byte_size,omitempty"`
+	Moderation   *ModerationSummary `json:"moderation,omitempty"`
+	ID           string             `json:"id"`
+	ProjectID    string             `json:"project_id"`
+	Source       string             `json:"source"`
+	ReferenceID  string             `json:"reference_id,omitempty"`
+	TaskID       string             `json:"task_id,omitempty"`
+	ArtifactID   string             `json:"artifact_id,omitempty"`
+	ProviderMode string             `json:"provider_mode,omitempty"`
+	Kind         string             `json:"kind"`
+	Name         string             `json:"name"`
+	Tags         []string           `json:"tags"`
+	State        string             `json:"state"`
+	Revision     uint64             `json:"revision"`
+	CreatedAt    time.Time          `json:"created_at"`
+	UpdatedAt    time.Time          `json:"updated_at"`
+	DeletedAt    *time.Time         `json:"deleted_at"`
+	ContentURL   *string            `json:"content_url"`
+	ThumbnailURL *string            `json:"thumbnail_url"`
+	ContentType  string             `json:"content_type,omitempty"`
+	ByteSize     int64              `json:"byte_size,omitempty"`
 }
 type LibraryRevision struct {
 	Revision  uint64    `json:"revision"`
@@ -50,10 +52,11 @@ type LibraryRevision struct {
 }
 type libraryRecord struct {
 	LibraryEntry
-	WorkspaceID  string
-	HasThumbnail bool
-	OriginalURL  string
-	StorageInfo  *AssetInfo
+	ModerationTaskStatus string
+	WorkspaceID          string
+	HasThumbnail         bool
+	OriginalURL          string
+	StorageInfo          *AssetInfo
 }
 type libraryReplay struct {
 	Hash  [32]byte
@@ -64,6 +67,8 @@ const memoryLibraryLimit = 4096
 const memoryLibraryRevisionLimit = 16384
 const libraryRevisionLimit = 1000
 
+var libraryIDPattern = regexp.MustCompile(`^lib_[a-f0-9]{64}$`)
+
 func libraryID(source, sourceID, artifactID string) string {
 	identity := source + ":" + sourceID
 	if source == "generated" {
@@ -73,6 +78,7 @@ func libraryID(source, sourceID, artifactID string) string {
 	return "lib_" + hex.EncodeToString(hash[:])
 }
 func copyLibraryEntry(entry LibraryEntry) LibraryEntry {
+	entry.Moderation = copyRunModeration(entry.Moderation)
 	entry.Tags = append([]string{}, entry.Tags...)
 	if entry.DeletedAt != nil {
 		v := *entry.DeletedAt
@@ -91,7 +97,7 @@ func copyLibraryEntry(entry LibraryEntry) LibraryEntry {
 func (entry libraryRecord) public() LibraryEntry {
 	v := copyLibraryEntry(entry.LibraryEntry)
 	v.ContentURL, v.ThumbnailURL = nil, nil
-	if v.State == "active" {
+	if v.State == "active" && libraryContentReleased(entry) {
 		base := "/api/v1/library/" + url.PathEscape(v.ID)
 		query := "?project_id=" + url.QueryEscape(v.ProjectID)
 		content := base + "/content" + query
@@ -107,7 +113,7 @@ func libraryRevision(entry LibraryEntry) LibraryRevision {
 	return LibraryRevision{Revision: entry.Revision, Name: entry.Name, Tags: append([]string{}, entry.Tags...), State: entry.State, UpdatedAt: entry.UpdatedAt}
 }
 func libraryFromReference(ref referenceRecord) libraryRecord {
-	return libraryRecord{LibraryEntry: LibraryEntry{ID: libraryID("reference", ref.ID, ""), ProjectID: ref.ProjectID, Source: "reference", ReferenceID: ref.ID, Kind: "image", Name: ref.Name, Tags: []string{}, State: "active", Revision: 1, CreatedAt: ref.CreatedAt, UpdatedAt: ref.CreatedAt, ContentType: ref.Blob.ContentType, ByteSize: ref.Blob.ByteSize}, WorkspaceID: ref.WorkspaceID, HasThumbnail: ref.Blob.Thumbnail != nil}
+	return libraryRecord{LibraryEntry: LibraryEntry{Moderation: copyRunModeration(ref.Moderation), ID: libraryID("reference", ref.ID, ""), ProjectID: ref.ProjectID, Source: "reference", ReferenceID: ref.ID, Kind: "image", Name: ref.Name, Tags: []string{}, State: "active", Revision: 1, CreatedAt: ref.CreatedAt, UpdatedAt: ref.CreatedAt, ContentType: ref.Blob.ContentType, ByteSize: ref.Blob.ByteSize}, WorkspaceID: ref.WorkspaceID, HasThumbnail: ref.Blob.Thumbnail != nil}
 }
 func libraryFromArtifact(task Task, artifact Artifact) libraryRecord {
 	kind := artifact.Kind
@@ -123,6 +129,7 @@ func libraryFromArtifact(task Task, artifact Artifact) libraryRecord {
 		mode = "demo"
 	}
 	entry := libraryRecord{LibraryEntry: LibraryEntry{ID: libraryID("generated", task.ID, artifact.ID), ProjectID: task.ProjectID, Source: "generated", TaskID: task.ID, ArtifactID: artifact.ID, ProviderMode: mode, Kind: kind, Name: name, Tags: []string{}, State: "active", Revision: 1, CreatedAt: task.CreatedAt, UpdatedAt: task.UpdatedAt}, WorkspaceID: task.WorkspaceID, OriginalURL: artifact.URL, StorageInfo: artifact.StorageInfo, HasThumbnail: mode == "demo" && strings.HasPrefix(artifact.URL, "/demo-assets/")}
+	entry.Moderation, entry.ModerationTaskStatus = copyRunModeration(task.Moderation), task.Status
 	if info := artifact.StorageInfo; info != nil {
 		entry.ContentType, entry.ByteSize = info.ContentType, info.ByteSize
 		entry.HasThumbnail = info.Thumbnail != nil
@@ -181,16 +188,28 @@ func (a *App) memoryLibraryReservedRestoresLocked() int {
 	return reserved
 }
 
-const libraryColumns = `id,workspace_id,project_id,source,coalesce(reference_id,''),coalesce(task_id,''),coalesce(artifact_id,''),coalesce(provider_mode,''),kind,name,tags,state,revision,created_at,updated_at,deleted_at,coalesce(content_type,''),coalesce(byte_size,0),has_thumbnail,original_url,storage_info`
+const libraryColumns = `id,workspace_id,project_id,source,coalesce(reference_id,''),coalesce(task_id,''),coalesce(artifact_id,''),coalesce(provider_mode,''),kind,name,tags,state,revision,created_at,updated_at,deleted_at,coalesce(content_type,''),coalesce(byte_size,0),has_thumbnail,original_url,storage_info,` + libraryModerationProjection + `,coalesce((SELECT document->>'status' FROM studio_tasks t WHERE t.id=studio_library_entries.task_id),'')`
+
+const libraryModerationProjection = `coalesce(
+ (SELECT jsonb_build_object('policy_id',m.policy_id,'policy_version',m.policy_version,'phase','output','state',m.state,'version',m.version,'reason_code',m.reason_code) FROM studio_task_media_moderation m WHERE m.task_id=studio_library_entries.task_id),
+ (SELECT document->'moderation' FROM studio_tasks t WHERE t.id=studio_library_entries.task_id),
+ (SELECT jsonb_build_object('policy_id',m.policy_id,'policy_version',m.policy_version,'phase','input','state',m.state,'version',m.version,'reason_code',m.reason_code) FROM studio_reference_media_moderation m WHERE m.reference_id=studio_library_entries.reference_id))`
+
+func libraryContentReleased(entry libraryRecord) bool {
+	return entry.Moderation == nil || entry.Moderation.State == "ALLOWED" && (entry.Source != "generated" || entry.ModerationTaskStatus == "SUCCEEDED" || entry.ModerationTaskStatus == "PARTIAL")
+}
 
 type libraryScanner interface{ Scan(...any) error }
 
 func scanLibrary(row libraryScanner) (libraryRecord, error) {
 	var e libraryRecord
-	var storage []byte
-	err := row.Scan(&e.ID, &e.WorkspaceID, &e.ProjectID, &e.Source, &e.ReferenceID, &e.TaskID, &e.ArtifactID, &e.ProviderMode, &e.Kind, &e.Name, &e.Tags, &e.State, &e.Revision, &e.CreatedAt, &e.UpdatedAt, &e.DeletedAt, &e.ContentType, &e.ByteSize, &e.HasThumbnail, &e.OriginalURL, &storage)
+	var storage, moderation []byte
+	err := row.Scan(&e.ID, &e.WorkspaceID, &e.ProjectID, &e.Source, &e.ReferenceID, &e.TaskID, &e.ArtifactID, &e.ProviderMode, &e.Kind, &e.Name, &e.Tags, &e.State, &e.Revision, &e.CreatedAt, &e.UpdatedAt, &e.DeletedAt, &e.ContentType, &e.ByteSize, &e.HasThumbnail, &e.OriginalURL, &storage, &moderation, &e.ModerationTaskStatus)
 	if err == nil && len(storage) > 0 {
 		err = json.Unmarshal(storage, &e.StorageInfo)
+	}
+	if err == nil && len(moderation) > 0 {
+		err = json.Unmarshal(moderation, &e.Moderation)
 	}
 	return e, err
 }
@@ -220,6 +239,9 @@ func registerTaskLibrarySQL(ctx context.Context, tx pgx.Tx, task Task) error {
 }
 func (a *App) loadLibraryLocked(id, workspaceID, projectID string) (libraryRecord, error) {
 	var entry libraryRecord
+	if !libraryIDPattern.MatchString(id) {
+		return entry, failure(404, "ASSET_NOT_FOUND", "资产不存在或不属于当前项目")
+	}
 	if a.store == nil {
 		var found bool
 		entry, found = a.library[id]
@@ -270,6 +292,9 @@ func invalidLibraryQuery() error {
 func libraryQuery(r *http.Request) (libraryFilter, int, *libraryCursor, error) {
 	p := principalFrom(r)
 	q := r.URL.Query()
+	if !utf8.ValidString(q.Get("q")) || !utf8.ValidString(q.Get("tag")) {
+		return libraryFilter{}, 0, nil, invalidLibraryQuery()
+	}
 	f := libraryFilter{WorkspaceID: p.Workspace.ID, ProjectID: p.Project.ID, State: q.Get("state"), Source: q.Get("source"), Kind: q.Get("kind"), Query: strings.TrimSpace(q.Get("q")), Tag: strings.ToLower(strings.TrimSpace(q.Get("tag")))}
 	if f.State == "" {
 		f.State = "active"
@@ -295,7 +320,7 @@ func libraryQuery(r *http.Request) (libraryFilter, int, *libraryCursor, error) {
 			return f, 0, nil, invalidLibraryQuery()
 		}
 		var c libraryCursor
-		if err = json.Unmarshal(data, &c); err != nil || c.Filter != f || c.CreatedAt.IsZero() || len(c.ID) != 68 || !strings.HasPrefix(c.ID, "lib_") {
+		if err = json.Unmarshal(data, &c); err != nil || c.Filter != f || c.CreatedAt.IsZero() || !libraryIDPattern.MatchString(c.ID) {
 			return f, 0, nil, invalidLibraryQuery()
 		}
 		cursor = &c

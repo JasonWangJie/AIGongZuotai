@@ -68,7 +68,7 @@ Idempotency-Key: draft-example-0001
 
 ## 事务与数据结构
 
-迁移 [003_drafts.sql](../../internal/studio/migrations/003_drafts.sql) 增加三张表：
+迁移 [003_drafts.sql](../../db/migrations/003_drafts.sql) 增加三张表：
 
 | 表 | 数据与索引 |
 | --- | --- |

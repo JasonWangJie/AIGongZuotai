@@ -3,7 +3,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import net from 'node:net';
 import { resolve } from 'node:path';
-import { binary, root, start, stopOwnedProcess, isolatedReferenceDirectory, isolatedMailEnvironment, isolatedBillingEnvironment, isolatedOperationsEnvironment, isolatedModerationEnvironment } from './lib/process.mjs';
+import { binary, root, start, stopOwnedProcess, isolatedReferenceDirectory, isolatedMailEnvironment, isolatedBillingEnvironment, isolatedOperationsEnvironment, isolatedModerationEnvironment, isolatedExecutionEnvironment } from './lib/process.mjs';
 
 // Dedicated memory/demo process, private upload tree and random loopback port.
 // No actual gateway, developer database or credentials enter this scenario.
@@ -30,7 +30,7 @@ const upload = (key, bytes = imageBytes, name = 'reference.png', project = 'prj_
   return request('/api/v1/references',{method:'POST',headers:{Origin:base,'Idempotency-Key':key,'X-Project-ID':project},body:form});
 };
 try {
-  server = start(binary,[],{env:{...process.env,...isolatedMailEnvironment,...isolatedBillingEnvironment,...isolatedOperationsEnvironment,...isolatedModerationEnvironment,APP_ADDR:`127.0.0.1:${port}`,APP_WEB_DIR:resolve(root,'apps/workbench/dist'),
+  server = start(binary,[],{env:{...process.env,...isolatedMailEnvironment,...isolatedBillingEnvironment,...isolatedOperationsEnvironment,...isolatedModerationEnvironment,...isolatedExecutionEnvironment,APP_ADDR:`127.0.0.1:${port}`,APP_WEB_DIR:resolve(root,'apps/workbench/dist'),
     REFERENCE_DIR:directory, ASSET_DIR: referenceDirectory.assetDirectory, ASSET_STORAGE_BACKEND: 'local', S3_FORCE_PATH_STYLE: 'false',MODEL_CATALOG_FILE:'',DATABASE_URL:'',AUTH_MODE:'disabled',PROVIDER_MODE:'demo',METRICS_TOKEN:metricsToken,
     NEWAPI_BASE_URL:'',NEWAPI_API_KEY:'',NEWAPI_CHAT_MODEL:'',ASYNC_IMAGE_BASE_URL:'',ASYNC_IMAGE_API_KEY:'',
     ADMISSION_WORKSPACE_RUNS:'64',ADMISSION_MODEL_RUNS:'32',ADMISSION_WORKSPACE_TASKS:'128',ADMISSION_MODEL_TASKS:'64',ADMISSION_WORKSPACE_STREAMS:'32'},stdio:['ignore','ignore','pipe']});

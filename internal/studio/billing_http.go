@@ -153,6 +153,9 @@ func (a *App) createBillingQuote(r *http.Request, p *principal, in billingQuoteI
 	if a.ctx.Err() != nil {
 		return BillingQuote{}, failure(503, "SHUTTING_DOWN", "服务正在停止")
 	}
+	if err := a.checkGenerationAccessLocked(p.Workspace.ID); err != nil {
+		return BillingQuote{}, err
+	}
 	row := ledgerQuoteRow{ID: newID("quo"), WorkspaceID: p.Workspace.ID, PriceVersion: a.pricing.Version}
 	var model catalogEntry
 	var err error
@@ -260,6 +263,9 @@ func (a *App) createBillingQuote(r *http.Request, p *principal, in billingQuoteI
 			return e
 		}
 		defer tx.Rollback(ctx)
+		if e = checkWorkspaceGenerationSQL(ctx, tx, p.Workspace.ID); e != nil {
+			return e
+		}
 		if conversation != nil {
 			c, e := readConversationSQL(ctx, tx, p.Workspace.ID, row.ProjectID, in.ConversationID, false)
 			if e != nil {

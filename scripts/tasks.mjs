@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = 'docs/planning/tasks.json';
-const target = 'TODO.md';
+const target = 'docs/planning/TODO.md';
 const labels = { todo: '待开始', in_progress: '进行中', blocked: '待外部条件', done: '已验收' };
 const clean = value => String(value).replaceAll('|', '\\|').replaceAll('\n', ' ');
 const link = (file, title = file) => `[${clean(title)}](${file})`;
@@ -61,6 +61,7 @@ export function validatePlan(plan, exists = file => fs.existsSync(path.resolve(r
 }
 
 export function renderPlan(plan) {
+  const link = (file, title = file) => `[${clean(title)}](${path.posix.relative(path.posix.dirname(target), file)})`;
   const done = plan.batches.filter(batch => batch.status === 'done').length;
   const lines = ['# 开发 TODO · 按模块横切、按业务纵切', '', `更新时间：${plan.updated_on}。已验收 **${done}/${plan.batches.length} 个批次**。这是批次数量，不是工时或整体产品完成百分比；各批工作量不同。`, '',
     `本文件由 ${link(source)} 生成，请修改唯一任务源后运行 \`npm run todo:sync\`。状态与勾选不能脱离验收证据；规则见 ${link('AGENTS.md')} 和 ${link('docs/planning/README.md', '任务维护说明')}。`, '',
@@ -85,15 +86,26 @@ export function renderPlan(plan) {
   return lines.join('\n');
 }
 
+export function renderEntry(plan) {
+  const done = plan.batches.filter(batch => batch.status === 'done').length;
+  return ['# 开发 TODO · 导航', '',
+    `更新时间：${plan.updated_on}。已验收 **${done}/${plan.batches.length} 个批次**，不代表整体完成百分比。`, '',
+    `完整范围、依赖、验收与证据统一在 ${link(target, '开发 TODO')}。唯一状态源为 ${link(source)}；运行 \`npm run todo:sync\` 同步本入口与完整清单，不直接勾选。`, '',
+    ...plan.batches.map(batch => `- [${batch.status === 'done' ? 'x' : ' '}] **${batch.id} ${batch.title}** — ${labels[batch.status]}`), '',
+  ].join('\n');
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const plan = JSON.parse(fs.readFileSync(path.join(repository, source), 'utf8'));
     const errors = validatePlan(plan);
     if (errors.length) throw new Error(errors.join('\n'));
-    const generated = renderPlan(plan);
-    if (process.argv[2] === '--write') { fs.writeFileSync(path.join(repository, target), generated); console.log(`[todo] 已生成 ${target}`); }
+    const outputs = [[target, renderPlan(plan)], ['TODO.md', renderEntry(plan)]];
+    if (process.argv[2] === '--write') { for (const [file, generated] of outputs) fs.writeFileSync(path.join(repository, file), generated); console.log(`[todo] 已生成 ${outputs.map(([file]) => file).join('、')}`); }
     else {
-      if (!fs.existsSync(path.join(repository, target)) || fs.readFileSync(path.join(repository, target), 'utf8') !== generated) throw new Error('TODO.md与任务源不一致，请运行npm run todo:sync；不要直接勾选生成文件。');
+      for (const [file, generated] of outputs) {
+        if (!fs.existsSync(path.join(repository, file)) || fs.readFileSync(path.join(repository, file), 'utf8') !== generated) throw new Error(`${file}与任务源不一致，请运行npm run todo:sync；不要直接勾选生成文件。`);
+      }
       console.log(`[todo] 通过：${plan.modules.length}模块、${plan.batches.length}批次、${plan.batches.filter(batch => batch.status === 'done').length}批已验收；依赖与完成证据有效。`);
     }
   } catch (error) { console.error(`[todo] ${error.message}`); process.exitCode = 1; }

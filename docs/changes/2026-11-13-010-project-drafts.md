@@ -12,7 +12,7 @@
 
 - [internal/studio/drafts.go](../../internal/studio/drafts.go)：范围授权、专用请求解码、版本读写、CAS 和幂等事务。
 - [internal/studio/drafts_test.go](../../internal/studio/drafts_test.go)：普通输入/模式测试与四组真实 PostgreSQL 测试。
-- [internal/studio/migrations/003_drafts.sql](../../internal/studio/migrations/003_drafts.sql)：当前版本、不可变历史、幂等表及防改删触发器。
+- [internal/studio/migrations/003_drafts.sql](../../db/migrations/003_drafts.sql)：当前版本、不可变历史、幂等表及防改删触发器。
 - [docs/wiki/drafts.md](../wiki/drafts.md)：当前契约、约束、恢复步骤与验证边界。
 - 本台账；集成人同步根 README、Wiki 导航、台账索引、任务源和生成 TODO。
 - `internal/studio/http.go` 四路由、`persistence.go` 迁移加载与 `docs/api/openapi.yaml` 由后端集成人统一接线，归属本轮审计/集成记录，避免并行覆盖。

@@ -27,7 +27,7 @@
 
 ## PostgreSQL 原子性
 
-新增 [002 审计迁移](../../internal/studio/migrations/002_audit.sql) 建立 `studio_audit_events`。工作区/项目复合外键保证所属关系，动作和资源类型有数据库约束，索引覆盖工作区/项目与 `(created_at DESC,id DESC)` 分页。
+新增 [002 审计迁移](../../db/migrations/002_audit.sql) 建立 `studio_audit_events`。工作区/项目复合外键保证所属关系，动作和资源类型有数据库约束，索引覆盖工作区/项目与 `(created_at DESC,id DESC)` 分页。
 
 状态或资源变更与审计 INSERT 在**同一个 pgx 事务**中完成：
 

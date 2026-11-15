@@ -32,11 +32,7 @@ func run() error {
 	if dir == "" {
 		dir = ".runtime/assets"
 	}
-	lease, err := studio.AcquireStorageLease(dir)
-	if err != nil {
-		return err
-	}
-	defer lease.Close()
+	var err error
 	pathStyle := false
 	if value := os.Getenv("S3_FORCE_PATH_STYLE"); value != "" {
 		pathStyle, err = strconv.ParseBool(value)
@@ -47,7 +43,7 @@ func run() error {
 	config := studio.AssetStorageConfig{Backend: os.Getenv("ASSET_STORAGE_BACKEND"), Endpoint: os.Getenv("S3_ENDPOINT"), Region: os.Getenv("S3_REGION"), Bucket: os.Getenv("S3_BUCKET"), Prefix: os.Getenv("S3_PREFIX"), AccessKeyID: os.Getenv("S3_ACCESS_KEY_ID"), SecretAccessKey: os.Getenv("S3_SECRET_ACCESS_KEY"), SessionToken: os.Getenv("S3_SESSION_TOKEN"), ForcePathStyle: pathStyle}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
-	report, err := studio.MigrateAssets(ctx, config, dir, *apply, *limit, *after)
+	report, err := studio.MigrateOwnedAssets(ctx, studio.AssetMigrationConfig{Storage: config, Directory: dir, DatabaseURL: os.Getenv("DATABASE_URL"), Apply: *apply, Limit: *limit, After: *after})
 	// Partial success is reviewable and reentrant. Do not print raw SDK errors,
 	// endpoints, access keys, bucket names, object locators or source prompts.
 	if encodeErr := json.NewEncoder(os.Stdout).Encode(report); encodeErr != nil {

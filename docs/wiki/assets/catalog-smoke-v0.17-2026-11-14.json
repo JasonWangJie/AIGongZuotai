@@ -1,0 +1,13 @@
+{
+  "version": "0.17.0",
+  "binary_sha256": "535bf0dfe9bbf94c54c7b819f5a148dd968196f08b9eedc0182cb3cbf76acdaf",
+  "verified_at": "2026-11-14T14:15:34.859Z",
+  "duration_ms": 562,
+  "scope": "Isolated memory/demo catalog process; PostgreSQL historical replay is covered by the separate database tests. No paid provider or production capacity claim.",
+  "checks": [
+    "versioned public catalog, private mappings, bootstrap consistency and ETag revalidation",
+    "custom model execution identities, exact parameter combinations, version rejection, idempotency and dynamic capacity",
+    "immutable running configuration, restart activation, changed ETag and retired model rejection"
+  ],
+  "status": "passed"
+}

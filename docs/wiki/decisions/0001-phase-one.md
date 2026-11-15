@@ -2,7 +2,7 @@
 
 - 日期：2026-11-13
 - 状态：第一阶段采用；仅适用于本地开发与链路验证
-- 关联：[总体开发方案](../../../deliverables/Go与NewAPI高性能AI工作台开发方案.html)、[001 台账](../../changes/2026-11-13-001-foundation.md)
+- 关联：[总体开发方案](../../deliverables/Go与NewAPI高性能AI工作台开发方案.html)、[001 台账](../../changes/2026-11-13-001-foundation.md)
 
 ## 背景
 

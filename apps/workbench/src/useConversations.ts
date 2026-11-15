@@ -11,7 +11,7 @@ import { moderationAllowsText } from './moderation';
 import type { Branch, ChatDraft, ChatOperation, Conversation, MessageNode } from './conversationState';
 import { modelCapability, promptBytes } from './modelCatalog';
 
-type Options = { bootstrap: Bootstrap; recovery: ConversationRecovery; runs: Run[]; refreshVersion: number; visible: boolean; onRun: (run: Run) => void; onWatch: (id: string | null) => void; onAuthExpired: () => void };
+type Options = { bootstrap: Bootstrap; recovery: ConversationRecovery; runs: Run[]; refreshVersion: number; visible: boolean; generationAllowed?: boolean; onRun: (run: Run) => void; onWatch: (id: string | null) => void; onAuthExpired: () => void };
 export function useConversations(options: Options) {
   const { bootstrap, recovery, runs, refreshVersion, visible } = options, owner = bootstrap.user?.id || 'demo', project = bootstrap.project.id;
   const callbacks = useRef(options); callbacks.current = options;
@@ -100,6 +100,7 @@ export function useConversations(options: Options) {
   }
   function create(title: string) { if (pending || busy) return; void submitOperation({ kind: 'conversation', owner, project, key: crypto.randomUUID(), body: { project_id: project, ...(title.trim() ? { title: title.trim() } : {}) } }); }
   function send(model?: Model, quoted?: QuotedRequest) {
+    if (callbacks.current.generationAllowed === false) { setNotice('工作区生成权限尚未开放；输入仍保留，原请求可继续核对。'); return; }
     const value = currentConversation.current, next = draftRef.current, cap = modelCapability(bootstrap, model);
     if (!value || !model || !cap.enabled || pending || busy || activeRun || ['CONVERSATION_VERSION_CONFLICT', 'CONVERSATION_BUSY'].includes(issue?.code || '') || next.baseVersion !== value.version || !validTurnTarget(next, projected) || next.mode === 'reply' && (!next.text.trim() || promptBytes(next.text.trim()) > cap.max_prompt_bytes)) return;
     const body = buildTurn(next, model), request: QuoteRequest = { resource_type: 'conversation_run', conversation_id: value.id, conversation_input: body };

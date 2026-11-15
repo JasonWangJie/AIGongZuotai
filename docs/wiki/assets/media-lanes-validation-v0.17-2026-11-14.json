@@ -1,0 +1,103 @@
+{
+  "version": "0.17.0",
+  "batch": "V16-A2",
+  "verified_on": "2026-11-14",
+  "status": "passed_local",
+  "binary_sha256": "535bf0dfe9bbf94c54c7b819f5a148dd968196f08b9eedc0182cb3cbf76acdaf",
+  "database_format": "017 (unchanged)",
+  "scope": "Single control writer; real local PostgreSQL and loopback HTTP with controlled providers. No real AI, email, moderation or payment service.",
+  "checks": [
+    {
+      "command": "node .runtime/v16-check.mjs check",
+      "equivalent": "npm run check with real-channel isolation and TEST_DATABASE_URL unset",
+      "status": "passed",
+      "go_studio_seconds": 28.921,
+      "frontend_tests": 301,
+      "frontend_files": 29,
+      "governance_tests": 10,
+      "frontend_build_seconds": 14.17
+    },
+    {
+      "command": "node .runtime/v16-check.mjs db",
+      "equivalent": "npm run test:db with isolated channels and a separate local test cluster; final sequential run",
+      "status": "passed",
+      "go_studio_seconds": 318.88
+    },
+    {
+      "command": "node .runtime/v16a2-smokes.mjs --smokes-only",
+      "status": "passed",
+      "smokes": 6,
+      "invalid_parent_scheduling_variables": 7
+    },
+    {
+      "command": "node .runtime/v16a2-smokes.mjs --performance-only",
+      "status": "passed",
+      "report": "docs/wiki/assets/performance-local-v0.17-2026-11-14.json"
+    },
+    {
+      "command": "Python YAML/local reference resolution and SHA256 verification against ledger 064",
+      "status": "passed",
+      "sql_files": 17,
+      "sql_bytes": 55486,
+      "sql_unchanged": true,
+      "api_version": "0.17.0",
+      "paths": 71,
+      "operations": 83,
+      "schemas": 95,
+      "refs": 411
+    },
+    {
+      "command": "node scripts/tasks.mjs --write; --check; node --test scripts/tasks.test.mjs; node scripts/check-docs.mjs --changed; git diff --check",
+      "status": "passed",
+      "governance_tests": 10,
+      "documents": 155,
+      "ledgers": 71,
+      "changed_paths_including_prior_work": 279
+    }
+  ],
+  "targeted_evidence": {
+    "core_lease_and_media_moderation_pg_functions": 20,
+    "core_pg_seconds": 37.077,
+    "independent_functions": 5,
+    "independent_plus_metrics_seconds": 6.255,
+    "http_regression_functions": 20,
+    "http_seconds": 0.852,
+    "strict_environment_cmd_seconds": 0.068,
+    "metrics_studio_seconds": 0.063,
+    "unchanged_account_functions_recheck_seconds": 8.06
+  },
+  "assets": [
+    "docs/wiki/assets/runtime-smoke-v0.17-2026-11-14.json",
+    "docs/wiki/assets/catalog-smoke-v0.17-2026-11-14.json",
+    "docs/wiki/assets/reference-smoke-v0.17-2026-11-14.json",
+    "docs/wiki/assets/library-smoke-v0.17-2026-11-14.json",
+    "docs/wiki/assets/conversation-smoke-v0.17-2026-11-14.json",
+    "docs/wiki/assets/performance-local-v0.17-2026-11-14.json"
+  ],
+  "frontend_build": {
+    "main_js_kb": 495.68,
+    "main_js_gzip_kb": 157.13
+  },
+  "media_lanes": {
+    "submit_workers": 2,
+    "query_workers": 2,
+    "query_includes": "download, import, moderation and persistence",
+    "measurement": "create plus cancel only; not media execution throughput"
+  },
+  "corrections": [
+    "Parallel test schemas initially competed for the database-level control-writer lock; all subsequent PG runs serialized without weakening lock checks.",
+    "A bare App fault-injection fixture bypassed New and created a zero-capacity lane pool; initTaskLeases now applies the same configuration normalization and initializes missing lane budgets. All ACK assertions retained.",
+    "First full PG run failed in two existing account-security tests at five-second HTTP/database deadlines (402.844s total). A simultaneous project build and other host tasks were observed, but causation was not proven. Without changing code, assertions or timeouts, the original two tests passed in 8.060s and the full sequential rerun passed in 318.880s.",
+    "Transport test helper name collision fixed only in the new helper. Ledger index completed before the root check; module intermediate documentation failure remains recorded."
+  ],
+  "limitations": [
+    "Query still includes download/import/moderation and persistence; A3.1/A3.2/A3.3 remain pending.",
+    "Mixed due index has no demonstrated scan-cost isolation; no large-backlog EXPLAIN acceptance.",
+    "No cross-instance scheduling, durable token log or production-capacity acceptance.",
+    "Go race not executed: no available local GCC/Clang. No remote CI execution claimed.",
+    "No browser visual reacceptance: no UI layout or frontend source change in this batch.",
+    "Original development PostgreSQL is unavailable in this environment; separate fresh test cluster is not a recovery of original developer data.",
+    "Performance ran after this project PG finished, on a nonexclusive host; memory/demo, same workspace concurrency2/client4, no CPU/RSS/FD profile, and create+cancel is not media execution throughput."
+  ],
+  "next": "V16-A3.1 Query to private durable delivery, frozen encrypted manifest and item receipts, GC and backup boundaries; A3.2 initial review dispatch, A3.3 fairness/backoff, B and C retained."
+}

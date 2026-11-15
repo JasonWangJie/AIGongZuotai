@@ -1,0 +1,14 @@
+{
+  "sql_files": 18,
+  "original_sql_files": 17,
+  "original_sql_bytes": 55486,
+  "original_sql_unchanged": true,
+  "new_migration": "018_media_delivery.sql",
+  "new_sql_bytes": 3320,
+  "new_sql_sha256": "e3899b65a7a66b3ac1e3b136a40eabc08dce550b675fd251bec7dda976143294",
+  "api_version": "0.18.0",
+  "paths": 71,
+  "operations": 83,
+  "schemas": 95,
+  "refs": 411
+}

@@ -1,0 +1,16 @@
+{
+  "version": "0.17.0",
+  "binary_sha256": "535bf0dfe9bbf94c54c7b819f5a148dd968196f08b9eedc0182cb3cbf76acdaf",
+  "verified_at": "2026-11-14T14:15:49.968Z",
+  "duration_ms": 505,
+  "scope": "Isolated built Go service, memory store and real loopback HTTP chat fixture; no paid upstream or developer database. PostgreSQL durability is tested separately.",
+  "provider_requests": 7,
+  "checks": [
+    "real structured multi-turn messages and explicit output budget reach the loopback gateway; private model bindings remain server-side",
+    "immutable edit branches, branch-bound pagination, stable conversation keysets, parent isolation, CAS and original-key replay without extra generation",
+    "one active run per conversation, partial stop retained and explicit continuation starts one new request using the original partial answer",
+    "whole old turns are omitted with an explicit estimate; newest-input overflow is rejected before upstream calls or conversation mutation",
+    "conversation audit redaction and fixed route labels omit titles, message text, resource identifiers and provider credentials"
+  ],
+  "status": "passed"
+}

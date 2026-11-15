@@ -2,6 +2,23 @@ package main
 
 import "testing"
 
+func TestMediaModerationEnvironmentStrict(t *testing.T) {
+	for _, value := range []string{"", "rules", "FIXTURES", " http", "disabled ", "true"} {
+		if _, err := mediaModerationFromEnv(func(key string) (string, bool) { return value, key == "MEDIA_MODERATION_MODE" }); err == nil {
+			t.Fatal("invalid mode accepted")
+		}
+	}
+	config, err := mediaModerationFromEnv(func(string) (string, bool) { return "", false })
+	if err != nil || config.Mode != "disabled" {
+		t.Fatal("missing mode must disable media moderation")
+	}
+	values := map[string]string{"MEDIA_MODERATION_MODE": "http", "MEDIA_MODERATION_POLICY_FILE": "fixture-policy.json", "MEDIA_MODERATION_ENDPOINT": "https://review.example.invalid/media", "MEDIA_MODERATION_API_KEY": "fixture-not-a-real-key", "MEDIA_MODERATION_CREDENTIAL_ID": "media-fixture-v1"}
+	config, err = mediaModerationFromEnv(func(key string) (string, bool) { v, ok := values[key]; return v, ok })
+	if err != nil || config.Mode != "http" || config.PolicyFile != values["MEDIA_MODERATION_POLICY_FILE"] || config.Endpoint != values["MEDIA_MODERATION_ENDPOINT"] || config.APIKey != values["MEDIA_MODERATION_API_KEY"] || config.CredentialID != values["MEDIA_MODERATION_CREDENTIAL_ID"] {
+		t.Fatal("media moderation environment mapping changed")
+	}
+}
+
 func TestModerationEnvironmentStrict(t *testing.T) {
 	for _, value := range []string{"", "true", "RULES", " http", "disabled ", "custom"} {
 		_, err := moderationFromEnv(func(key string) (string, bool) { return value, key == "MODERATION_MODE" })

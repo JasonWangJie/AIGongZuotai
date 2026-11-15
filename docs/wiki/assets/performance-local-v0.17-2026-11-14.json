@@ -1,0 +1,84 @@
+{
+  "measured_at": "2026-11-14T14:32:50.845Z",
+  "build": {
+    "version": "0.17.0",
+    "binary_sha256": "535bf0dfe9bbf94c54c7b819f5a148dd968196f08b9eedc0182cb3cbf76acdaf",
+    "go": "go version go1.26.11 windows/amd64"
+  },
+  "scope": "Isolated loopback HTTP/1.1, memory storage, authentication disabled, demo providers; server and load client share this machine.",
+  "limitations": [
+    "Not a gateway, database, TLS, cluster, 10000-stream or production SLO test.",
+    "Latency includes Node fetch and same-machine client scheduling; no CPU/RSS/FD profiling included.",
+    "Task case measures create plus cancel; demo stream duration is deliberately paced.",
+    "All demo chat requests share one workspace. First delta includes execution queue wait; workspace concurrency is now 2 while client concurrency is 4, so this is not comparable with the previous 4-active-chat baseline."
+  ],
+  "chat_scheduler": {
+    "workers": 4,
+    "queue_size": 32,
+    "workspace_concurrency": 2,
+    "model_concurrency": 4,
+    "workspace_queue_size": 8
+  },
+  "media_lanes": {
+    "submit_workers": 2,
+    "query_workers": 2,
+    "query_includes": "download, import, moderation and persistence",
+    "measurement": "create plus cancel only; not media execution throughput"
+  },
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26100",
+    "arch": "x64",
+    "logical_cpus": 6,
+    "cpu": "AMD Ryzen 5 3500X 6-Core Processor             ",
+    "memory_bytes": 17107918848,
+    "node": "v22.18.0"
+  },
+  "results": [
+    {
+      "name": "bootstrap-http",
+      "concurrency": 32,
+      "elapsed_ms": 477.11,
+      "operations_per_second": 2095.97,
+      "samples": 1000,
+      "min_ms": 3.74,
+      "p50_ms": 13.85,
+      "p95_ms": 23.55,
+      "p99_ms": 31.52,
+      "max_ms": 43.56
+    },
+    {
+      "name": "task-create-and-cancel",
+      "concurrency": 8,
+      "elapsed_ms": 116.05,
+      "operations_per_second": 861.72,
+      "samples": 100,
+      "min_ms": 4.6,
+      "p50_ms": 7.89,
+      "p95_ms": 13.42,
+      "p99_ms": 16.12,
+      "max_ms": 16.83
+    },
+    {
+      "name": "llm-full-demo-stream",
+      "concurrency": 4,
+      "elapsed_ms": 10346.24,
+      "operations_per_second": 1.16,
+      "samples": 12,
+      "min_ms": 1819.38,
+      "p50_ms": 3409.46,
+      "p95_ms": 3525.43,
+      "p99_ms": 3525.43,
+      "max_ms": 3525.43
+    },
+    {
+      "name": "llm-first-delta-including-submit",
+      "samples": 12,
+      "min_ms": 57.76,
+      "p50_ms": 1759.27,
+      "p95_ms": 1874.61,
+      "p99_ms": 1874.61,
+      "max_ms": 1874.61
+    }
+  ]
+}

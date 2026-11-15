@@ -85,7 +85,7 @@ func validateOperationsAdmin(c OperationsAdminConfig) error {
 		return nil
 	}
 	if len(operationsRolePermissions(c.Role)) == 0 {
-		return errors.New("role must be observer, operator or finance")
+		return errors.New("role must be observer, operator, finance or moderator")
 	}
 	if !validOperationsOpaque(c.OperationKey) || !validOperationsOpaque(c.Reason) || !validOperationsOpaque(c.EvidenceRef) {
 		return errors.New("role changes require bounded opaque operation-key, reason and evidence; no URLs or private content")
@@ -100,7 +100,7 @@ func validateOperationsAdmin(c OperationsAdminConfig) error {
 }
 
 func AdministerOperations(ctx context.Context, c OperationsAdminConfig) (OperationsAdminReport, error) {
-	report := OperationsAdminReport{Action: c.Action, SchemaVersion: 15, Grants: []OperationsRoleGrant{}}
+	report := OperationsAdminReport{Action: c.Action, SchemaVersion: 20, Grants: []OperationsRoleGrant{}}
 	if err := validateOperationsAdmin(c); err != nil {
 		return report, err
 	}
@@ -121,8 +121,8 @@ func AdministerOperations(ctx context.Context, c OperationsAdminConfig) (Operati
 		return report, errors.New("stop the workbench before operations administration; writer lock unavailable")
 	}
 	var versions []int32
-	if err = conn.QueryRow(ctx, "SELECT array_agg(version ORDER BY version) FROM studio_schema_versions").Scan(&versions); err != nil || len(versions) != 15 {
-		return report, errors.New("operations administration requires exactly schema versions 001..015; it does not migrate")
+	if err = conn.QueryRow(ctx, "SELECT array_agg(version ORDER BY version) FROM studio_schema_versions").Scan(&versions); err != nil || len(versions) != 20 {
+		return report, errors.New("operations administration requires exactly schema versions 001..020; it does not migrate")
 	}
 	for i, v := range versions {
 		if int(v) != i+1 {

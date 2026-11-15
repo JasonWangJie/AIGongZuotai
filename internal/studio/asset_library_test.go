@@ -499,6 +499,7 @@ func TestPostgresLibraryRegistrationFailureRollsBackSourceTransaction(t *testing
 					t.Fatal(err)
 				}
 				app.executeTaskStep(task.ID)
+				advanceMediaScheduleDue(t, app, task.ID)
 				app.executeTaskStep(task.ID)
 				var document []byte
 				if err = admin.QueryRow(ctx, "SELECT document FROM studio_tasks WHERE id=$1", task.ID).Scan(&document); err != nil {

@@ -16,7 +16,7 @@
 
 | 动作 | 权限 | 效果 |
 | --- | --- | --- |
-| reconcile | investigate | 有原handle的SUBMIT_UNKNOWN/RECONCILE_REQUIRED恢复为QUEUED，后续只查询原受理任务 |
+| reconcile | investigate | 有原handle、尚无审核候选且满足核对条件的SUBMIT_UNKNOWN/RECONCILE_REQUIRED恢复为QUEUED，后续只Query原受理任务 |
 | charge | finance | 对REVIEW按冻结价格及明确token/交付数量结算，不能任意填写金额 |
 | release | finance | 外部证据确认后释放REVIEW剩余冻结，不根据取消推断免费 |
 | no_action | investigate | 关闭工单并保留审计，不改变任务、输出、供应商或余额 |
@@ -39,6 +39,8 @@ reason固定为`provider_unknown/delivery_issue/usage_missing/billing_review/man
 
 no_action只关闭工单，甚至不会用数据库旧检查点覆盖内存中尚未checkpoint的输出。财务处置沿用[账本政策](ledger.md)：仅终态或停驻REVIEW可人工决定，自动查询中的PROVIDER_STATE_UNKNOWN不能提前释放。人工release是原冻结最终决定，之后用户重新核对取得作品也不重新收费。
 
+V14-B2的MODERATING是正在审核的执行状态，不可提前人工结算或释放。已持久媒体候选、BLOCKED/REVIEW最终决定均不通过reconcile重新审核；只有原handle且尚无候选、仍符合上述状态限制的任务继续核对。charge/release只处理账务，no_action只结案，均不改变审核决定、恢复下载或删除候选。图片/视频未公开不证明供应商没有执行，具体见[媒体审核](media-moderation.md)与[权益操作](billing-operations.md)。
+
 GET工单返回当前安全资源快照；receipt包含计划、动作、工单/资源/Billing版本和执行时间。case events展示`case.created/previewed/executed`等闭集结构事件、短原因/证据、版本与时间；不展示邮箱、密码、供应商原始错误正文。审计失败、Outbox背压或业务失败整体回滚，不能只关闭工单而遗漏账务。
 
 ## 容量、版本与实际边界
@@ -48,3 +50,5 @@ GET工单返回当前安全资源快照；receipt包含计划、动作、工单/
 当前仍为单控制写者，权限锁顺序先用户/会话/grant，再业务资源；预演和执行在应用锁内完成有限事务，未引入多实例分布式运营权限。游标是有界实时列表，不是跨多页的一致性快照；资源状态更新后前端仍须按资源版本合并。
 
 013权限与014工单为新格式。升级前联备PG、私有资产/参考目录及启用邮件时的独立队列密钥；回退恢复升级前独立库/目录，不能删除迁移登记或owner绕过栅栏。没有真实供应商、SMTP或支付调用；PG和模拟器验证不代表生产审核、投诉处理或支付合规已验收。
+
+后续015文本审核的历史验收保留在[054](../changes/2026-11-14-054-text-review-integration.md)；当前016增加媒体政策、候选与决定，账本、角色和存储维护CLI都要求精确001—016。联备与回退还必须保留媒体私有候选、S3对象/版本及本地收据；所有审核终态仍受GC可达性保护。本批联合证据见[058](../changes/2026-11-14-058-media-review-integration.md)，真实审核渠道、人工放行、申诉及封禁未因此完成。

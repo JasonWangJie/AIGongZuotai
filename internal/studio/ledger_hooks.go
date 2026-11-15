@@ -29,10 +29,27 @@ func (a *App) validateBillingAdmission(quoteID string, chat bool) error {
 }
 
 func saveBilledTaskSQL(ctx context.Context, tx pgx.Tx, t *taskRecord) error {
+	if t.ScheduleReconcile {
+		if err := checkMediaReconcileScheduleSQL(ctx, tx, t); err != nil {
+			return err
+		}
+	}
 	// Fence first. Any subsequent journal, asset, audit or outbox error rolls the
 	// entire business update back; no charge can survive a stale worker result.
 	if err := saveTaskSQL(ctx, tx, t); err != nil {
 		return err
+	}
+	if err := saveTaskMediaDeliverySQL(ctx, tx, t); err != nil {
+		return err
+	}
+	if err := saveTaskReviewAndModerationSQL(ctx, tx, t); err != nil {
+		return err
+	}
+	if err := saveMediaScheduleSQL(ctx, tx, t, t.ScheduleOutcome); err != nil {
+		return err
+	}
+	if !taskArtifactsReleased(t.Task) {
+		t.Task.Artifacts = []Artifact{}
 	}
 	if err := registerTaskLibrarySQL(ctx, tx, t.Task); err != nil {
 		return err

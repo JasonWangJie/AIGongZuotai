@@ -25,13 +25,15 @@ func validOperationsID(id, prefix string) bool {
 func operationsRoles(permission string) []string {
 	switch permission {
 	case "read":
-		return []string{"observer", "operator", "finance"}
+		return []string{"observer", "operator", "finance", "moderator"}
 	case "case_open":
 		return []string{"operator", "finance"}
 	case "investigate":
 		return []string{"operator"}
 	case "finance":
 		return []string{"finance"}
+	case "generation_restrict", "appeal_resolve":
+		return []string{"moderator"}
 	default:
 		return nil
 	}
@@ -45,6 +47,8 @@ func operationsRolePermissions(role string) []string {
 		return []string{"read", "case_open", "investigate"}
 	case "finance":
 		return []string{"read", "case_open", "finance"}
+	case "moderator":
+		return []string{"read", "generation_restrict", "appeal_resolve"}
 	default:
 		return nil
 	}
@@ -303,8 +307,8 @@ type OperationsAuditRecord struct {
 
 func insertOperationsAuditRecordSQL(ctx context.Context, tx pgx.Tx, event OperationsAuditEvent) (OperationsAuditRecord, error) {
 	result := OperationsAuditRecord{OperationsAuditEvent: event}
-	actions := map[string]bool{"role.granted": true, "role.revoked": true, "case.created": true, "case.updated": true, "case.previewed": true, "case.executed": true, "case.reconciled": true, "case.resolved": true, "case.refunded": true}
-	kinds := map[string]bool{"": true, "run": true, "task": true, "reservation": true, "grant": true, "case": true}
+	actions := map[string]bool{"role.granted": true, "role.revoked": true, "case.created": true, "case.updated": true, "case.previewed": true, "case.executed": true, "case.reconciled": true, "case.resolved": true, "case.refunded": true, "generation.previewed": true, "generation.restricted": true, "generation.lifted": true, "appeal.created": true, "appeal.upheld": true, "appeal.lifted": true}
+	kinds := map[string]bool{"": true, "run": true, "task": true, "reservation": true, "grant": true, "case": true, "restriction": true, "appeal": true}
 	if !validOperationsID(event.WorkspaceID, "ws") || event.ActorUserID != "" && !validOperationsID(event.ActorUserID, "usr") || !actions[event.Action] || !kinds[event.ResourceType] || event.Version > 9007199254740991 {
 		return result, failure(422, "INVALID_OPERATIONS_AUDIT", "运营审计字段无效")
 	}

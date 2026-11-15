@@ -27,32 +27,34 @@ import (
 )
 
 type AssetInfo struct {
-	ID              string     `json:"id"`
-	ContentType     string     `json:"content_type"`
-	ByteSize        int64      `json:"byte_size"`
-	SHA256          string     `json:"sha256"`
-	CreatedAt       time.Time  `json:"created_at"`
-	StorageBackend  string     `json:"storage_backend,omitempty"`
-	StorageIdentity string     `json:"storage_identity,omitempty"`
-	ObjectKey       string     `json:"object_key,omitempty"`
-	ObjectVersion   string     `json:"object_version,omitempty"`
-	ObjectETag      string     `json:"object_etag,omitempty"`
-	Thumbnail       *AssetInfo `json:"thumbnail,omitempty"`
+	ID              string                `json:"id"`
+	ContentType     string                `json:"content_type"`
+	ByteSize        int64                 `json:"byte_size"`
+	SHA256          string                `json:"sha256"`
+	CreatedAt       time.Time             `json:"created_at"`
+	StorageBackend  string                `json:"storage_backend,omitempty"`
+	StorageIdentity string                `json:"storage_identity,omitempty"`
+	ObjectKey       string                `json:"object_key,omitempty"`
+	ObjectVersion   string                `json:"object_version,omitempty"`
+	ObjectETag      string                `json:"object_etag,omitempty"`
+	Thumbnail       *AssetInfo            `json:"thumbnail,omitempty"`
+	Delivery        *AssetDeliveryReceipt `json:"delivery,omitempty"`
 }
 
 // LocalAssetStore stores private files. Download authorization is deliberately
 // delegated to the application's task ownership check, before ServeAsset.
 type LocalAssetStore struct {
-	root        *os.Root
-	base        *url.URL
-	hosts       map[string]bool
-	client      *http.Client
-	allowLocal  bool
-	slots       chan struct{}
-	publishMu   sync.Mutex
-	imageLimit  int64
-	videoLimit  int64
-	destination *S3AssetStorage
+	root          *os.Root
+	base          *url.URL
+	hosts         map[string]bool
+	client        *http.Client
+	allowLocal    bool
+	slots         chan struct{}
+	publishMu     sync.Mutex
+	deliveryLocks [64]sync.Mutex
+	imageLimit    int64
+	videoLimit    int64
+	destination   *S3AssetStorage
 }
 
 type assetPolicyError struct{ message string }
@@ -127,6 +129,26 @@ func newLocalAssetStore(directory, baseURL string, allowedHosts []string, allowL
 }
 
 func canonicalAssetHost(host string) string { return strings.TrimSuffix(strings.ToLower(host), ".") }
+
+// Resolve once at query time so a frozen relative result cannot be redirected
+// by a later gateway configuration change. DNS policy is checked at download.
+func (store *LocalAssetStore) deliveryURL(raw string) (*url.URL, error) {
+	if len(raw) == 0 || len(raw) > 8192 || strings.ContainsAny(raw, "\x00\r\n") {
+		return nil, &assetPolicyError{"invalid media delivery URL"}
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return nil, &assetPolicyError{"invalid media delivery URL"}
+	}
+	u = store.base.ResolveReference(u)
+	if len(u.String()) > 8192 {
+		return nil, &assetPolicyError{"invalid media delivery URL"}
+	}
+	if err = store.validateURL(u); err != nil {
+		return nil, err
+	}
+	return u, nil
+}
 
 func (store *LocalAssetStore) validateURL(u *url.URL) error {
 	if u.User != nil || u.Fragment != "" || u.Host == "" || !store.hosts[canonicalAssetHost(u.Hostname())] {
@@ -207,12 +229,23 @@ func (store *LocalAssetStore) dialPublicAddress(ctx context.Context, network, ad
 	return nil, errors.New("media connection failed")
 }
 
-func (store *LocalAssetStore) importLocal(ctx context.Context, identity, sourceURL, kind string) (AssetInfo, error) {
+func (store *LocalAssetStore) importLocal(ctx context.Context, identity, sourceURL, kind string) (out AssetInfo, outErr error) {
+	defer func() {
+		if outErr != nil {
+			outErr = mediaErrorObservation(outErr, "source", "protocol")
+		}
+	}()
 	if store.client == nil {
 		return AssetInfo{}, &MediaProviderError{Code: "ASSET_STORE_READ_ONLY", Message: "this asset reader does not allow downloads or writes", ReconcileRequired: true}
 	}
 	sum := sha256.Sum256([]byte(identity))
 	id := "asset_" + hex.EncodeToString(sum[:])
+	if saved, err := readAssetManifest(store.root, id); err == nil && saved.Delivery != nil {
+		if err = store.verifyDeliveryInfo(ctx, saved, kind, true); err != nil {
+			return AssetInfo{}, err
+		}
+		return saved, nil
+	}
 	if file, metadata, err := store.OpenAsset(id); err == nil {
 		file.Close()
 		return metadata, nil
@@ -232,7 +265,7 @@ func (store *LocalAssetStore) importLocal(ctx context.Context, identity, sourceU
 	case store.slots <- struct{}{}:
 		defer func() { <-store.slots }()
 	case <-ctx.Done():
-		return AssetInfo{}, &MediaProviderError{Code: "ASSET_DOWNLOAD_TEMPORARY", Message: "asset import deadline elapsed before admission", Retryable: true, RetryAfter: 3 * time.Second}
+		return AssetInfo{}, &MediaProviderError{Code: "ASSET_DOWNLOAD_TEMPORARY", Message: "asset import deadline elapsed before admission", Retryable: true, RetryAfter: 3 * time.Second, Observation: mediaNetworkObservation("source", ctx)}
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
@@ -247,14 +280,15 @@ func (store *LocalAssetStore) importLocal(ctx context.Context, identity, sourceU
 		if errors.As(err, &policy) {
 			return AssetInfo{}, &MediaProviderError{Code: "ASSET_SOURCE_NOT_ALLOWED", Message: "result URL or network destination violates the import policy", ReconcileRequired: true}
 		}
-		return AssetInfo{}, &MediaProviderError{Code: "ASSET_DOWNLOAD_TEMPORARY", Message: "result download temporarily failed; retain the accepted task", Retryable: true, RetryAfter: 3 * time.Second}
+		return AssetInfo{}, &MediaProviderError{Code: "ASSET_DOWNLOAD_TEMPORARY", Message: "result download temporarily failed; retain the accepted task", Retryable: true, RetryAfter: 3 * time.Second, Observation: mediaNetworkObservation("source", ctx)}
 	}
 	defer response.Body.Close()
+	receivedAt := time.Now()
 	if response.StatusCode != http.StatusOK {
 		if response.StatusCode == 429 || response.StatusCode >= 500 {
-			return AssetInfo{}, &MediaProviderError{Code: "ASSET_DOWNLOAD_TEMPORARY", Message: fmt.Sprintf("result download temporarily unavailable (HTTP %d)", response.StatusCode), Retryable: true, RetryAfter: retryAfterDuration(response.Header.Get("Retry-After"), time.Now())}
+			return AssetInfo{}, &MediaProviderError{Code: "ASSET_DOWNLOAD_TEMPORARY", Message: fmt.Sprintf("result download temporarily unavailable (HTTP %d)", response.StatusCode), Retryable: true, RetryAfter: retryAfterDuration(response.Header.Get("Retry-After"), time.Now()), Observation: mediaResponseObservation("source", response, time.Now())}
 		}
-		return AssetInfo{}, &MediaProviderError{Code: "ASSET_UNAVAILABLE", Message: "original result is expired or unavailable; generation must not be resubmitted", ReconcileRequired: true}
+		return AssetInfo{}, &MediaProviderError{Code: "ASSET_UNAVAILABLE", Message: "original result is expired or unavailable; generation must not be resubmitted", ReconcileRequired: true, Observation: mediaResponseObservation("source", response, time.Now())}
 	}
 	limit := store.imageLimit
 	if kind == "video" {
@@ -270,9 +304,13 @@ func (store *LocalAssetStore) importLocal(ctx context.Context, identity, sourceU
 	}
 	defer func() { file.Close(); store.root.Remove(part) }()
 	hash := sha256.New()
-	size, err := io.Copy(io.MultiWriter(file, hash), io.LimitReader(response.Body, limit+1))
+	size, err := io.Copy(io.MultiWriter(mediaScheduleStorageWriter{file}, hash), io.LimitReader(response.Body, limit+1))
 	if err != nil {
-		return AssetInfo{}, &MediaProviderError{Code: "ASSET_DOWNLOAD_TEMPORARY", Message: "result transfer was interrupted; retry the original result", Retryable: true, RetryAfter: 3 * time.Second}
+		var writeErr *mediaScheduleStorageWriteError
+		if errors.As(err, &writeErr) {
+			return AssetInfo{}, assetStorageError()
+		}
+		return AssetInfo{}, &MediaProviderError{Code: "ASSET_DOWNLOAD_TEMPORARY", Message: "result transfer was interrupted; retry the original result", Retryable: true, RetryAfter: 3 * time.Second, Observation: mediaNetworkObservation("source", ctx)}
 	}
 	if size == 0 || size > limit {
 		return AssetInfo{}, &MediaProviderError{Code: "ASSET_TOO_LARGE", Message: "result is empty or exceeds the local import limit", ReconcileRequired: true}
@@ -284,6 +322,10 @@ func (store *LocalAssetStore) importLocal(ctx context.Context, identity, sourceU
 	if err != nil {
 		return AssetInfo{}, &MediaProviderError{Code: "ASSET_FORMAT_UNSUPPORTED", Message: "result content failed image header/dimension or MP4 container validation", ReconcileRequired: true}
 	}
+	// Only a completed, decoded source response counts as successful network
+	// evidence. The observed adapter returns it only after the full receipt is
+	// verified; any subsequent storage failure retains its own error category.
+	recordMediaSourceSuccess(ctx, response, receivedAt)
 	metadata := AssetInfo{ID: id, ContentType: contentType, ByteSize: size, SHA256: hex.EncodeToString(hash.Sum(nil)), CreatedAt: time.Now().UTC()}
 	if err := file.Sync(); err != nil {
 		return AssetInfo{}, assetStorageError()
@@ -323,7 +365,7 @@ func (store *LocalAssetStore) importLocal(ctx context.Context, identity, sourceU
 }
 
 func assetStorageError() error {
-	return &MediaProviderError{Code: "ASSET_STORAGE_TEMPORARY", Message: "local asset storage needs recovery; retain the original gateway task", Retryable: true, RetryAfter: 3 * time.Second}
+	return &MediaProviderError{Code: "ASSET_STORAGE_TEMPORARY", Message: "local asset storage needs recovery; retain the original gateway task", Retryable: true, RetryAfter: 3 * time.Second, Observation: &MediaScheduleObservation{Scope: "storage", Class: "temporary"}}
 }
 
 func validateAssetEncoding(reader io.ReadSeeker, kind string, byteSize int64) (string, error) {

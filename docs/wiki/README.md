@@ -1,21 +1,73 @@
 # AI 工作台 Wiki
 
-这里记录仓库当前实现、开发方式和后续路线。总体设计来自[Go 与 New API 高性能开发方案](../../deliverables/Go与NewAPI高性能AI工作台开发方案.html)，方案中的吞吐、可靠性和完整产品能力是目标，不代表当前代码已经实现或通过压测。
+这里记录仓库当前实现、开发方式和后续路线。总体设计来自[Go 与 New API 高性能开发方案](../deliverables/Go与NewAPI高性能AI工作台开发方案.html)，方案中的吞吐、可靠性和完整产品能力是目标，不代表当前代码已经实现或通过压测。
 
 ## 当前状态
 
-截至2026-11-14，当前为v0.13.0：V14-B1文本审核本地链路已验收，V14-A运营异常核实与V12权益继续保留。真实审核商尚未选型，B2图片/视频审核、C申诉封禁及风控待办，完整V14仍进行中。V11真实邮件按用户安排后续配置。数据库账户模式使用`npm run dev:db`，默认demo，不发真实收费请求；权益与文本审核均默认关闭。
+[A3.3实施契约](../planning/v16a33-contract.md) · [083集成台账](../changes/2026-11-15-083-media-scheduler-integration.md)。工作区公平、持久冷却/退避与十万积压预选已按本批独立证据验收；完整V16继续进行。
+
+截至2026-11-15，当前为v0.20.0（A3.3/A3.2/A3.1/A1/A2本地已验收）：聊天新增单写者有界公平执行；C1工作区新生成限制与复核本地闭环已验收；V14-B2媒体本地闭环已验收，V14-B1文本审核、V14-A运营核实与V12权益继续保留。真实审核商未选型，C2账户/内容申诉及C3自动额度风控待办，完整V14仍进行中；V11真实邮件后续配置。默认demo不发真实收费请求，审核、权益及运营均默认关闭。
 
 V00—V06、V08—V10和V12共11/23批已验收；状态以[TODO](../../TODO.md)为准。V07本地链路已验收，真实供应商环节与V15仍待条件。V11真实邮件渠道、真实支付、完整审核风控、全站多实例和万级容量/灾备未完成，不能直接作为对外收费版本上线。
 
+## v0.20 本地验收
+
+020公平调度与持久退避已验：完整check、全PG 443.228s、301前端、10治理及六smoke；真实本机版本化S3与冷却/候选联备恢复通过。180SQL计划、48完整预选及20万旧任务迁移独立测量，不能当完整App恢复或生产容量。见[联合证据](assets/media-scheduler-validation-v0.20-2026-11-15.json)、[原始计划](assets/media-scheduler-plans-v0.20-2026-11-15.json)和[083](../changes/2026-11-15-083-media-scheduler-integration.md)。B持久流及恢复/综合测量继续推进，仍单控制写者。
+
+## v0.19 历史验收
+
+四通道和019首次审核已验收：全PG368.160s、301前端、10治理、构建及六smoke通过；真实本机版本化S3和READY/STARTED联备恢复保留原身份/收据/幂等。见[079](../changes/2026-11-14-079-media-review-dispatch-integration.md)和[联合JSON](assets/media-review-dispatch-validation-v0.19-2026-11-15.json)。仍单控制写者、无真实审核商或云灾备/生产容量结论；下一项A3.3公平退避与B/C继续推进。
+
+## v0.18 历史验收
+
+原生查询与持久delivery分离，018加密清单/计划身份/完整收据、三通道预算和九项固定指标；全PG301.345s、301前端、10治理、六smoke与同构建回归通过。真实本机S3、017→018及local/S3保留对象的dump/restore已验；远端服务灾备、版本化S3和生产容量未验。详见[075](../changes/2026-11-14-075-media-delivery-integration.md)、[汇总证据](assets/media-delivery-validation-v0.18-2026-11-14.json)和[交付说明](media-delivery.md)。A3.2/A3.3、B/C继续推进，完整V16未完成。
+
+## v0.17 历史验收
+
+v0.17/A2历史验收：独立submit/query工作线程、PG连接与HTTP池，固定指标及严格配置；全PG318.880s、301前端、10治理、六smoke与同构建性能回归通过。[071台账](../changes/2026-11-14-071-media-lane-integration.md)和[汇总证据](assets/media-lanes-validation-v0.17-2026-11-14.json)保留首轮失败与复验。query仍含导入审核，A3.1/A3.2/A3.3、B/C未完成；以下v0.14截图与成绩仅为历史验收。
+
+## v0.14 历史验收
+
+270项前端/26文件、8项治理、Go vet/构建、PG全量192.482s、PARTIAL补测1.675s、六smoke及61路径/73操作/347引用通过。015→016停写联备保留旧数据。浏览器验证私有图片、真实一秒MP4播放、参考拒绝/允许编辑、隔离不下载/不自动结算、刷新与390手机布局；发现空参考报价白屏已修并补6项App渲染回归。
+
+![批准与隔离结果](assets/media-moderation-phase14.jpg)
+
+[完整证据](assets/media-moderation-validation-v0.14-2026-11-14.json) · [浏览器](assets/media-moderation-browser-v0.14-2026-11-14.json) · [016升级](assets/media-moderation-upgrade-v0.14-2026-11-14.json) · [视频播放](assets/media-video-phase14.jpg) · [手机隔离](assets/mobile-media-blocked-phase14.jpg) · [058台账](../changes/2026-11-14-058-media-review-integration.md)。真实审核商与V14-C另验，主JS505.19kB仍有分包提示；没有生产容量或公开收费放行。
+
 ## 导航
+
+[A3.3公平调度契约](../planning/v16a33-contract.md) · [调度状态与事务](media-scheduler.md) · [HTTP事实与审核许可](media-schedule-transport.md) · [大积压与维护验收](media-scheduler-validation.md) · [ADR0018](decisions/0018-media-fair-scheduling.md)。当前验收状态以[083](../changes/2026-11-15-083-media-scheduler-integration.md)为准。
+
+[A3.2首次审核分派](../planning/v16a32-contract.md)已本地验收；[079](../changes/2026-11-14-079-media-review-dispatch-integration.md)记录独立证据及修正，不沿用v0.18成绩。
+
+设计选择与替代项见[ADR0017](decisions/0017-media-review-dispatch.md)。
+
+实现说明：[首次审核分派](media-review-dispatch.md) · [共享审核许可](media-review-permits.md) · [独立验收及019维护](media-review-dispatch-validation.md)。
 
 | 页面 | 内容 |
 | --- | --- |
 | [架构与实施边界](architecture.md) | 本地链路、数据所有权、规划与当前差异 |
+| [统一文档与目录](repository-layout.md) | docs文档、db SQL及根入口规则 |
+| [数据库迁移](database-migrations.md) | 嵌入路径与版本兼容，不变SQL字节 |
+| [ADR0014：聊天公平执行](decisions/0014-chat-execution-scheduling.md) | 选择、替代方案、事务边界和测量口径 |
+| [聊天公平执行](execution-scheduler.md) | 单写者workspace轮转、预算、原键与取消 |
+| [V16-A2媒体通道契约](../planning/v16a2-contract.md) | 提交与查询交付隔离，当前实现与验收边界 |
+| [媒体执行通道](media-execution-lanes.md) | 先留预算再领取、PG连接与内存attempt保护 |
+| [媒体HTTP通道](media-transport-lanes.md) | submit/query连接隔离及真实HTTP边界 |
+| [ADR0015：媒体资源预留](decisions/0015-media-execution-lanes.md) | 先取得预算再claim、替代项与A3阶段边界 |
+| [V16分批契约](../planning/v16-contract.md) | A1聊天公平执行、后续媒体隔离与持久流边界 |
+| [持续推进](../planning/progress.md) | 完成、当前工作、外部条件与下一批 |
 | [开发与交付](development.md) | 环境、运行、验证、文档治理规则 |
 | [开发 TODO](../../TODO.md) | 10 个横向模块、23 个纵向批次，验收后逐批勾选 |
 | [任务维护](../planning/README.md) | 唯一任务源、生成命令、依赖与完成证据校验 |
+| [生成权限与复核](generation-controls.md) | 工作区限制、申诉、预演、公开答复与017 |
+| [生成受理门禁](generation-admission.md) | 原幂等优先、最终事务、旧任务继续与moderator |
+| [复核工作台](generation-controls-workbench.md) | 用户申请、运营密码确认与未知响应核对 |
+| [ADR0013：工作区生成限制](decisions/0013-workspace-generation-controls.md) | 稳定工作区锁、独立角色和复核边界 |
+| [媒体审核引擎](media-moderation.md) | 完整私有字节、独立策略、media-v1协议和016 |
+| [媒体审核执行](media-moderation-execution.md) | 同步参考、私有候选、整组事务放行和恢复 |
+| [媒体审核工作台](media-moderation-workbench.md) | 审核状态、乱序保护、原查询恢复与内容门禁 |
+| [ADR0012：媒体批准后交付](decisions/0012-media-review-gate.md) | 私有候选、交付事务、存储与结算边界 |
 | [文本审核引擎](moderation.md) | 冻结策略、demo规则、私有text-v1协议与015 |
 | [文本审核执行](moderation-execution.md) | 输入准入、候选隔离、事务放行与恢复 |
 | [文本审核工作台](moderation-workbench.md) | 全文审核提示、乱序保护与隔离回复 |
@@ -188,6 +240,19 @@ Go31个测试函数及子用例、真实PostgreSQL18.7集成、Go vet、前端36
 
 ## 最近变更
 
+- [086 · 分页恢复与先行generation栅栏（实施/待验）](../changes/2026-11-15-086-paged-recovery.md)
+- [087 · 完整启动分页恢复独立验收（实施/待验）](../changes/2026-11-15-087-recovery-validation.md)
+- [088 · 完整启动恢复故障验收（实施/待验）](../changes/2026-11-15-088-recovery-faults.md)
+- [085 · 恢复私有阶段批读](../changes/2026-11-15-085-recovery-private-phases.md) · [专项](recovery-private-phases.md) · [ADR 0019](decisions/0019-recovery-private-snapshot.md)
+- [059：生成权限与复核核心](../changes/2026-11-14-059-generation-controls.md)
+- [060：新生成准入与角色](../changes/2026-11-14-060-generation-admission.md)
+- [061：复核工作台与恢复保护](../changes/2026-11-14-061-generation-controls-workbench.md)
+- [062：V14-C1联合验收](../changes/2026-11-14-062-generation-controls-integration.md)
+- [055：媒体策略与私有字节](../changes/2026-11-14-055-media-moderation-engine.md)
+- [056：媒体执行与交付事务](../changes/2026-11-14-056-media-moderation-execution.md)
+- [057：媒体审核工作台](../changes/2026-11-14-057-media-moderation-workbench.md)
+- [058：V14-B2联合验收](../changes/2026-11-14-058-media-review-integration.md)
+
 - [047 · 运营权限与角色治理](../changes/2026-11-14-047-operations-access.md)
 - [048 · 异常工单与预演处置](../changes/2026-11-14-048-operations-cases.md)
 - [049 · 运营异常核实工作台](../changes/2026-11-14-049-operations-workbench.md)
@@ -244,3 +309,21 @@ Go31个测试函数及子用例、真实PostgreSQL18.7集成、Go vet、前端36
 - [001：工程基础、Wiki 与文档治理](../changes/2026-11-13-001-foundation.md)
 - [002：Go API 与 Provider 链路](../changes/2026-11-13-002-go-core.md)
 - [003：React 工作台与接口集成](../changes/2026-11-13-003-workbench.md)
+
+## v0.15 / V14-C1 本地验收
+
+[C1范围与契约](../planning/v14c1-contract.md) · [062联合台账](../changes/2026-11-14-062-generation-controls-integration.md)。普通用户与moderator的复核路径独立于既有财务工单，限制仅约束新生成。
+
+297项前端/28文件、8治理、Go vet/构建、真实PG全量282.020s、六套隔离smoke与OpenAPI71路径/83操作/411引用通过。016→017联备保旧，限制→申请→授权预演→解除及答复→手动新生成在桌面/390手机验证。详情见[验证汇总](assets/generation-controls-validation-v0.15-2026-11-14.json)、[浏览器](assets/generation-controls-browser-v0.15-2026-11-14.json)、[升级](assets/generation-controls-upgrade-v0.15-2026-11-14.json)和[062](../changes/2026-11-14-062-generation-controls-integration.md)。
+
+![用户复核答复](assets/generation-reply-phase15.jpg)
+
+C1只是未来生成限制；C2账户/内容申诉与C3自动额度风控待办，真实渠道另验。首页JS494.93kB已拆出用户/运营页面，无500kB提示；仍无生产容量结论。
+
+## v0.16执行调度验收
+
+301项前端/29文件、10项治理、Go vet/构建、PG全量238.022s、五项独立PG8.777s、六套隔离冒烟通过；11固定指标不含私有身份，媒体lane/持久流留后续。见[067](../changes/2026-11-14-067-execution-integration.md)与[完整证据](assets/execution-validation-v0.16-2026-11-14.json)。代码与历史状态保留，文档统一docs、SQL统一db；当前完整TODO在[规划目录](../planning/TODO.md)。
+
+## 当前后续执行
+
+[A4恢复与缓存契约](../planning/v16a4-contract.md) · [084设计台账](../changes/2026-11-15-084-recovery-plan.md)。085已接入有界私有阶段批读并通过专项；A4.1整体分页/背压、A4.2有界缓存仍待验收，B持久流继续保留。v0.20历史完整验收证据不冒充当前A4联合验收。

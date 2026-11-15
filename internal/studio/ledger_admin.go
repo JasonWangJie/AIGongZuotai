@@ -36,7 +36,7 @@ type LedgerAdminReport struct {
 }
 
 func AdministerLedger(ctx context.Context, c LedgerAdminConfig) (LedgerAdminReport, error) {
-	r := LedgerAdminReport{Action: c.Action, SchemaVersion: 15}
+	r := LedgerAdminReport{Action: c.Action, SchemaVersion: 20}
 	if c.DatabaseURL == "" {
 		return r, errors.New("ledger administration requires DATABASE_URL")
 	}
@@ -63,8 +63,8 @@ func AdministerLedger(ctx context.Context, c LedgerAdminConfig) (LedgerAdminRepo
 		return r, errors.New("stop the workbench before ledger administration; writer lock unavailable")
 	}
 	var versions []int32
-	if err = conn.QueryRow(ctx, "SELECT array_agg(version ORDER BY version) FROM studio_schema_versions").Scan(&versions); err != nil || len(versions) != 15 {
-		return r, errors.New("ledger administration requires exactly schema versions 001..015; it does not migrate")
+	if err = conn.QueryRow(ctx, "SELECT array_agg(version ORDER BY version) FROM studio_schema_versions").Scan(&versions); err != nil || len(versions) != 20 {
+		return r, errors.New("ledger administration requires exactly schema versions 001..020; it does not migrate")
 	}
 	for i, v := range versions {
 		if int(v) != i+1 {

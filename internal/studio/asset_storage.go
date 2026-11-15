@@ -1,6 +1,7 @@
 package studio
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -99,7 +100,7 @@ func readAssetManifest(root *os.Root, id string) (AssetInfo, error) {
 	if err = json.NewDecoder(io.LimitReader(f, 8192)).Decode(&info); err != nil || !validAssetInfo(info, id) {
 		return AssetInfo{}, os.ErrNotExist
 	}
-	if thumb := info.Thumbnail; thumb != nil && (!validAssetInfo(*thumb, id) || thumb.ContentType != "image/png" || thumb.ByteSize > 2<<20 || thumb.Thumbnail != nil) {
+	if thumb := info.Thumbnail; thumb != nil && (!validAssetInfo(*thumb, id) || thumb.ContentType != "image/png" || thumb.ByteSize > 2<<20 || thumb.Thumbnail != nil || thumb.Delivery != nil) {
 		return AssetInfo{}, os.ErrNotExist
 	}
 	return info, nil
@@ -112,6 +113,9 @@ func validAssetInfo(info AssetInfo, id string) bool {
 	if info.ID != id || info.ByteSize < 1 || info.ByteSize > 256<<20 || len(info.SHA256) != 64 {
 		return false
 	}
+	if !validDeliveryMarker(info.Delivery, id) {
+		return false
+	}
 	if _, err := hex.DecodeString(info.SHA256); err != nil {
 		return false
 	}
@@ -121,6 +125,14 @@ func validAssetInfo(info AssetInfo, id string) bool {
 func writeAssetManifest(root *os.Root, info AssetInfo) error {
 	if !validAssetInfo(info, info.ID) || !localAssetID.MatchString(info.ID) {
 		return errors.New("invalid asset metadata")
+	}
+	if current, err := readAssetManifest(root, info.ID); err == nil && current.Delivery != nil {
+		before, _ := json.Marshal(current)
+		after, _ := json.Marshal(info)
+		if !bytes.Equal(before, after) {
+			return deliveryIdentityError()
+		}
+		return nil
 	}
 	tmp := newID("asset_manifest") + ".tmp"
 	f, err := root.OpenFile(tmp, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)

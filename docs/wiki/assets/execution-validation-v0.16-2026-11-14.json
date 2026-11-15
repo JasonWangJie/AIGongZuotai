@@ -1,0 +1,95 @@
+{
+  "version": "0.16.0",
+  "batch": "V16-A1",
+  "verified_on": "2026-11-14",
+  "status": "passed_local",
+  "binary_sha256": "4f8b5002a97548bda126abccb6fcf29a5674b435f91273135f3a729367b173c5",
+  "database_format": "017 (unchanged)",
+  "scope": "Single control writer; real local PostgreSQL and loopback HTTP, controlled providers; no real AI, email, moderation or payments.",
+  "checks": [
+    {
+      "command": "node .runtime/v16-check.mjs check",
+      "equivalent": "npm run check with isolated channel environment and TEST_DATABASE_URL unset",
+      "status": "passed",
+      "go_studio_seconds": 8.821,
+      "frontend_tests": 301,
+      "frontend_files": 29,
+      "governance_tests": 10,
+      "frontend_build_seconds": 1.79
+    },
+    {
+      "command": "node .runtime/v16-check.mjs db",
+      "equivalent": "npm run test:db with isolated channel environment and independent local test database",
+      "status": "passed",
+      "go_studio_seconds": 238.022
+    },
+    {
+      "command": "node .runtime/v16-a1-smokes.mjs",
+      "equivalent": "six smoke scripts and npm run perf:local; intentionally invalid parent channel/scheduling config",
+      "status": "passed",
+      "binary_sha256": "4f8b5002a97548bda126abccb6fcf29a5674b435f91273135f3a729367b173c5"
+    },
+    {
+      "command": "Python YAML parser and local reference resolution",
+      "status": "passed",
+      "paths": 71,
+      "operations": 83,
+      "schemas": 95,
+      "refs": 411
+    },
+    {
+      "command": "Root SHA256 verification against migration move ledger",
+      "status": "passed",
+      "sql_files": 17,
+      "sql_bytes": 55486,
+      "unchanged": true
+    },
+    {
+      "command": "Three moved HTML reports: byte hashes and local-link resolution",
+      "status": "passed",
+      "reports": 3
+    },
+    {
+      "command": "node scripts/tasks.mjs --write; --check; node --test scripts/tasks.test.mjs; node scripts/check-docs.mjs --changed; git diff --check",
+      "status": "passed",
+      "governance_tests": 10,
+      "documents": 147,
+      "ledgers": 67,
+      "changed_paths_including_prior_uncommitted_work": 252
+    }
+  ],
+  "targeted_evidence": {
+    "sql_migrations_pg_seconds": 5.324,
+    "scheduler_and_metrics_seconds": 0.054,
+    "independent_app_pg_seconds": 8.777,
+    "independent_pg_test_functions": 5
+  },
+  "assets": [
+    "docs/wiki/assets/runtime-smoke-v0.16-2026-11-14.json",
+    "docs/wiki/assets/catalog-smoke-v0.16-2026-11-14.json",
+    "docs/wiki/assets/reference-smoke-v0.16-2026-11-14.json",
+    "docs/wiki/assets/library-smoke-v0.16-2026-11-14.json",
+    "docs/wiki/assets/conversation-smoke-v0.16-2026-11-14.json",
+    "docs/wiki/assets/performance-local-v0.16-2026-11-14.json"
+  ],
+  "frontend_build": {
+    "main_js_kb": 495.68,
+    "main_js_gzip_kb": 157.13,
+    "lazy_generation_page_kb": 10.8,
+    "lazy_operations_page_kb": 42.06
+  },
+  "corrections": [
+    "Initial test PG connection unavailable; independent test-only PostgreSQL initialized on port 55433 without replacing original config/backups.",
+    "Parallel metrics filename collision restored original execution metrics and moved chat metrics to a distinct file; full compilation and regressions passed.",
+    "First full check passed code/tests/build but failed a not-yet-indexed parallel ledger; indexed and reran full check successfully.",
+    "Independent billing rollback fixture initially lacked metered ChatUsageProvider; completed fixture contract and all five final PG tests passed without relaxing production gates."
+  ],
+  "limitations": [
+    "V16 A2/A3/B/C still pending; no distributed quota or durable token log.",
+    "Go race not executed: no local GCC/Clang; CI configuration does not count as executed evidence.",
+    "No browser visual reacceptance: UI layout unchanged; protocol tests and production build covered new queue feedback.",
+    "Old LocalAppData development PG unavailable in current environment; tests used a separate fresh cluster. No claim of restoring latest development data.",
+    "Performance is memory/demo; one workspace has concurrency2 versus client4. First delta includes queue wait and is not comparable with the prior four-active-chat measurement."
+  ],
+  "next": "V16-A2 submit versus query-and-delivery execution/PG-connection/HTTP pool isolation; reserve lane before claiming lease."
+}

@@ -51,7 +51,7 @@ type MediaEditSource struct {
 var mediaContentHash = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
 func submissionIdentityError() *MediaProviderError {
-	return &MediaProviderError{Code: "SUBMISSION_IDENTITY_CHANGED", Message: "saved submission identity or bytes do not match this provider", ReconcileRequired: true}
+	return &MediaProviderError{Code: "SUBMISSION_IDENTITY_CHANGED", Message: "saved submission identity or bytes do not match this provider", ReconcileRequired: true, Observation: &MediaScheduleObservation{Scope: "gateway", Class: "identity"}}
 }
 
 func referencePreparationError() *MediaProviderError {

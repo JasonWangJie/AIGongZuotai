@@ -1,0 +1,137 @@
+{
+  "version": "0.19.0",
+  "batch": "V16-A3.2",
+  "verified_on": "2026-11-15",
+  "status": "passed_local",
+  "binary_sha256": "02b6628b211ae1efc13e48050419dd98cb0fcada10588be43c38b6b22c2c5f41",
+  "database_format": "019",
+  "scope": "Single control writer; real isolated PostgreSQL, loopback HTTP fixtures and actual loopback versioned S3. No paid AI, real moderation/email/payment or public launch.",
+  "checks": [
+    {
+      "command": "node .runtime/v16a32-check.mjs check",
+      "equivalent": "npm run check with real-channel isolation and no TEST_DATABASE_URL/TEST_S3_*",
+      "status": "passed",
+      "go_studio_seconds": 9.952,
+      "frontend_tests": 301,
+      "frontend_files": 29,
+      "governance_tests": 10,
+      "vite_seconds": 1.67
+    },
+    {
+      "command": "node .runtime/v16a32-check.mjs db --s3",
+      "equivalent": "npm run test:db with isolated PG, actual versioned S3 and real pg_dump/pg_restore enabled; root-exclusive execution",
+      "status": "passed",
+      "go_studio_seconds": 368.16,
+      "log": "v16-a32-db-full.log"
+    },
+    {
+      "command": "node .runtime/v16a32-smokes.mjs --smokes-only",
+      "status": "passed",
+      "smokes": 6,
+      "invalid_parent_execution_variables": 10
+    },
+    {
+      "command": "node .runtime/v16a32-smokes.mjs --performance-only",
+      "status": "passed",
+      "scope": "After root PG and owned S3 service ended; memory/demo, no production performance claim"
+    },
+    {
+      "command": "python .runtime/v16-a32-schema-check.py",
+      "status": "passed",
+      "result": {
+        "sql_files": 19,
+        "original_sql_files": 18,
+        "original_sql_bytes": 58806,
+        "original_sql_unchanged": true,
+        "new_migration": "019_media_review_dispatch.sql",
+        "new_sql_bytes": 2512,
+        "new_sql_sha256": "4b438ba07ed1d3d991d0b45582a47b7e24ef18313f3d78ca0afe36ad73787864",
+        "api_version": "0.19.0",
+        "paths": 71,
+        "operations": 83,
+        "schemas": 95,
+        "refs": 411
+      }
+    }
+  ],
+  "targeted_evidence": {
+    "strict_four_lane_config_seconds": 0.03,
+    "shared_permit_new10_existing9_functions_seconds": 0.31,
+    "core_old_b2_three_functions_ten_subcases_seconds": 8.835,
+    "independent_six_pg_functions_seconds": 15.003,
+    "root_prior_phased_tests_two_functions_five_subcases_seconds": 8.714,
+    "root_ack_rollback_and_local_dump_restore_seconds": 16.763,
+    "final_commit_backpressure_seconds": 1.97,
+    "seventeen_to_current_upgrade_seconds": 1.51,
+    "complete_receipt_tamper_five_subcases_seconds": 7.46,
+    "review_ready_started_and_versioned_s3_dump_restore_seconds": 11.55,
+    "prior_partial_delivery_local_s3_dump_restore_seconds": 8.77,
+    "actual_s3_image_video_and_provider_disabled_download_seconds": 1.99,
+    "versioned_delete_marker_and_actual_version_loss_recheck_seconds": 0.2
+  },
+  "execution": {
+    "submit_workers": 2,
+    "query_workers": 2,
+    "delivery_workers": 2,
+    "review_workers": 2,
+    "shared_input_output_review_permits": 2,
+    "fixed_media_metric_series": 12,
+    "persisted_dispatch": "READY -> STARTED -> FINISHED; no backfill for old candidates",
+    "review_permission": "Only confirmed never-started READY may run once; STARTED recovery/unknown acknowledgement is quarantined.",
+    "permit_lifetime": "Conservatively retained through final save/cleanup; lane budget retained until true execution exit; no fairness claim."
+  },
+  "storage_and_recovery": {
+    "new_format": 19,
+    "prior_18_sql_files_unchanged": true,
+    "full_candidate_receipt_and_thumbnail_checked_before_http": true,
+    "ready_restore_can_review_without_generation_provider": true,
+    "started_restore_does_not_review_again": true,
+    "wrong_delivery_key_rejected": true,
+    "database_uuid_candidates_receipts_and_original_key_preserved": true,
+    "actual_versioned_s3_receipts_preserved": "4/4 original and thumbnail versions in review restore",
+    "remote_s3_objects_retained_not_backed_up_or_restored": true
+  },
+  "assets": [
+    "docs/wiki/assets/runtime-smoke-v0.19-2026-11-15.json",
+    "docs/wiki/assets/catalog-smoke-v0.19-2026-11-15.json",
+    "docs/wiki/assets/reference-smoke-v0.19-2026-11-15.json",
+    "docs/wiki/assets/library-smoke-v0.19-2026-11-15.json",
+    "docs/wiki/assets/conversation-smoke-v0.19-2026-11-15.json",
+    "docs/wiki/assets/performance-local-v0.19-2026-11-15.json",
+    "docs/wiki/assets/media-review-dispatch-schema-v0.19-2026-11-15.json",
+    "docs/wiki/assets/media-review-dispatch-s3-v0.19-2026-11-15.json"
+  ],
+  "frontend_build": {
+    "main_js_kb": 495.68,
+    "main_js_gzip_kb": 157.13
+  },
+  "corrections": [
+    "First ordinary run failed only because a new test tried to enable moderation in memory mode (9.914s). Kept production PG/auth gate and moved full test logic to genuine PG.",
+    "First independent PG run (23.693s) exposed reflect.DeepEqual on timestamps with different Location. Replaced with nullable Time.Equal semantics; actual microsecond changes still rejected.",
+    "Two intermediate agent PG authorizations crossed in messages; exact process overlap could not be inferred and neither run reported writer-lock contention. All later PG tests, including the final full run, were launched solely by root after prior termination.",
+    "Read-only review found READY manifest/thumbnail identity could change while original hash remained unchanged. Added full frozen-receipt and thumbnail byte verification before HTTP; all five tamper cases passed.",
+    "The first new tamper fixture accidentally blocked download slot zero (35.776s group failure). Changed only its fixture to nonblocking -1; kept deadlines and assertions.",
+    "The versioned-S3 group (30.086s) failed one existing unversioned-loss fixture: ordinary DeleteObject now creates a marker and the bound old version remains available. Kept loss assertions, added marker/readback check and deleted only the exact fixture-created version to simulate actual loss; recheck passed in 0.200s.",
+    "New S3 bucket initially exhausted prior four-volume limit; increased bounded local capacity without deleting old objects. First initialization probe timed out and the next explicit bounded probe passed.",
+    "Initial helper assumed a root package-lock that does not exist; corrected to apps/workbench/package-lock.json and synchronized metadata without dependency changes. Intermediate compile/HTTP test sequencing failures are preserved in 076/077."
+  ],
+  "limitations": [
+    "Still single control writer and OS-private-directory ownership; not whole-site multi-instance or durable token streaming.",
+    "A3.3 workspace/channel fairness, permit starvation, Retry-After/cooldown and large-backlog EXPLAIN remain pending; no throughput or production SLO claims.",
+    "Actual versioned storage and restored receipt identities were verified only on a loopback service; its remote database/objects were retained, not backed up/restored. No cloud DR/RPO/RTO acceptance.",
+    "Original development PostgreSQL remains unavailable; the separate test cluster and restores are not recovery of user development data.",
+    "No local GCC/Clang/CGO race acceptance, remote CI, new browser visuals or LCP/INP tests.",
+    "Frontend unchanged apart from version metadata; 301 tests and build do not substitute for production semantic moderation.",
+    "Frozen URLs without upstream versions still cannot establish unchanged bytes before their first validated import."
+  ],
+  "next": "V16-A3.3 workspace/channel fairness, persistent bounded retry/cooldown, adaptive query scheduling and measured backlog plans; full V16 and public paid launch remain unfinished.",
+  "final_governance": {
+    "todo_sync": "passed",
+    "todo_check": "10 modules, 23 batches, 11 complete",
+    "todo_tests": 10,
+    "docs": 172,
+    "ledgers": 79,
+    "changed_paths": 348,
+    "git_diff_check": "passed with existing LF-to-CRLF notices"
+  }
+}

@@ -49,6 +49,9 @@ func TestDurableProcessChild(t *testing.T) {
 	config := Config{DatabaseURL: fixture.DatabaseURL, AuthMode: "required", Mode: "live", ReferenceDir: fixture.ReferenceDir,
 		AssetDir: fixture.AssetDir, AsyncImageBaseURL: fixture.GatewayURL, AsyncImageAPIKey: fixtureMediaKey,
 		AsyncImageModel: "fixture-image-model", AsyncImageCredentialID: "fixture-credential", PollInterval: 20 * time.Millisecond, Heartbeat: 100 * time.Millisecond}
+	// Each restart uses the same test-only independent delivery key; production
+	// still rejects absent keys before touching an asynchronous PG deployment.
+	config.MediaDelivery = MediaDeliveryConfig{EncryptionKey: coreDeliveryKey()}
 	if fixture.ChatGatewayURL != "" {
 		config.BaseURL, config.APIKey, config.ChatModel = fixture.ChatGatewayURL, "local-chat-process-fixture", "fixture-chat-model"
 	}

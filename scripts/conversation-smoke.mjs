@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import net from 'node:net';
 import { resolve } from 'node:path';
-import { binary, root, start, stopOwnedProcess, isolatedReferenceDirectory, isolatedMailEnvironment, isolatedBillingEnvironment, isolatedOperationsEnvironment, isolatedModerationEnvironment } from './lib/process.mjs';
+import { binary, root, start, stopOwnedProcess, isolatedReferenceDirectory, isolatedMailEnvironment, isolatedBillingEnvironment, isolatedOperationsEnvironment, isolatedModerationEnvironment, isolatedExecutionEnvironment } from './lib/process.mjs';
 
 // Real built Go server and real loopback HTTP fixture. No developer database,
 // configured upstream, paid model, or browser automation participates.
@@ -58,7 +58,7 @@ const conversation = id => request(`/api/v1/conversations/${id}`).then(json);
 const pathMessages = (id, leaf, suffix = '') => request(`/api/v1/conversations/${id}/messages?leaf_id=${leaf}${suffix}`).then(json);
 try {
   writeFileSync(catalogPath, JSON.stringify({ schema_version: 1, models: [{ id: 'fixture-chat', name: '上下文验收模型', kind: 'chat', description: '本机fixture，无付费调用', enabled: true, upstream_model: 'private-fixture-model', chat_output_limit_field: 'max_completion_tokens', capabilities: { max_count: 1, max_prompt_bytes: 16000, parameter_presets: [], context_window_tokens: 2048, max_output_tokens: 256 } }] }));
-  server = start(binary, [], { env: { ...process.env, ...isolatedMailEnvironment,...isolatedBillingEnvironment,...isolatedOperationsEnvironment,...isolatedModerationEnvironment, APP_ADDR: `127.0.0.1:${port}`, APP_WEB_DIR: resolve(root, 'apps/workbench/dist'), MODEL_CATALOG_FILE: catalogPath, REFERENCE_DIR: directories.directory, ASSET_DIR: directories.assetDirectory, ASSET_STORAGE_BACKEND: 'local', S3_FORCE_PATH_STYLE: 'false',
+  server = start(binary, [], { env: { ...process.env, ...isolatedMailEnvironment,...isolatedBillingEnvironment,...isolatedOperationsEnvironment,...isolatedModerationEnvironment,...isolatedExecutionEnvironment, APP_ADDR: `127.0.0.1:${port}`, APP_WEB_DIR: resolve(root, 'apps/workbench/dist'), MODEL_CATALOG_FILE: catalogPath, REFERENCE_DIR: directories.directory, ASSET_DIR: directories.assetDirectory, ASSET_STORAGE_BACKEND: 'local', S3_FORCE_PATH_STYLE: 'false',
     DATABASE_URL: '', AUTH_MODE: 'disabled', PROVIDER_MODE: 'live', METRICS_TOKEN: metricToken, NEWAPI_BASE_URL: `${fixtureBase}/v1`, NEWAPI_API_KEY: fixtureKey, NEWAPI_CHAT_MODEL: '', ASYNC_IMAGE_BASE_URL: '', ASYNC_IMAGE_API_KEY: '', ASYNC_IMAGE_MODEL: '', ASYNC_VIDEO_MODEL: '',
     ADMISSION_WORKSPACE_RUNS: '64', ADMISSION_MODEL_RUNS: '32', ADMISSION_WORKSPACE_TASKS: '128', ADMISSION_MODEL_TASKS: '64', ADMISSION_WORKSPACE_STREAMS: '32', TASK_LEASE_SECONDS: '30' }, stdio: ['ignore', 'ignore', 'pipe'] });
   server.once('error', error => { startError = error; }); server.stderr.on('data', () => {});

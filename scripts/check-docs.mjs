@@ -9,6 +9,9 @@ const requiredDocs = [
   'AGENTS.md',
   'README.md',
   'TODO.md',
+  'docs/README.md',
+  'docs/planning/TODO.md',
+  'docs/wiki/repository-layout.md',
   'docs/planning/README.md',
   'docs/planning/tasks.json',
   'docs/wiki/README.md',
@@ -116,6 +119,7 @@ export function evaluateChangedPaths(changedPaths) {
   if (!files.includes('README.md')) missing.push('根 README.md');
   if (!files.includes('docs/planning/tasks.json')) missing.push('任务源 docs/planning/tasks.json');
   if (!files.includes('TODO.md')) missing.push('生成的 TODO.md');
+  if (!files.includes('docs/planning/TODO.md')) missing.push('生成的完整 docs/planning/TODO.md');
   if (!files.some(file => file.startsWith('docs/wiki/') && file.endsWith('.md'))) {
     missing.push('至少一份 docs/wiki/*.md');
   }
@@ -168,6 +172,18 @@ function changedFiles(root, options) {
   return null;
 }
 
+// Source-controlled documentation has one home; these three root discovery
+// entrypoints and the application's HTML entry are intentional exceptions.
+export function validateRepositoryLayout(files) {
+  const entries = new Set(['README.md', 'AGENTS.md', 'TODO.md']);
+  return [...new Set(files.map(normalizePath))].flatMap(file => {
+    if (/\.sql$/i.test(file) && !file.startsWith('db/')) return [`SQL 必须位于 db/：${file}`];
+    if (/\.(?:md|markdown|mdx|rst|adoc)$/i.test(file) && !file.startsWith('docs/') && !entries.has(file)) return [`项目文档必须位于 docs/：${file}`];
+    if (/\.html$/i.test(file) && !file.startsWith('docs/') && file !== 'apps/workbench/index.html') return [`报告必须位于 docs/：${file}`];
+    return [];
+  });
+}
+
 export function checkDocumentation(root = repositoryRoot, options = {}) {
   const errors = [];
   for (const file of requiredDocs) {
@@ -176,7 +192,7 @@ export function checkDocumentation(root = repositoryRoot, options = {}) {
     }
   }
   const files = [path.join(root, 'README.md'), path.join(root, 'AGENTS.md'), path.join(root, 'TODO.md'),
-    ...listMarkdown(path.join(root, 'docs/wiki')), ...listMarkdown(path.join(root, 'docs/changes')), ...listMarkdown(path.join(root, 'docs/planning'))]
+    ...listMarkdown(path.join(root, 'docs'))]
     .filter(file => fs.existsSync(file) && fs.statSync(file).isFile());
   const linksByFile = new Map();
   for (const file of files) {
@@ -219,6 +235,9 @@ export function checkDocumentation(root = repositoryRoot, options = {}) {
   }
   let changes = null;
   try {
+    const sourceFiles = git(root, ['ls-files', '--cached', '--others', '--exclude-standard', '-z']).split('\0')
+      .filter(file => file && fs.existsSync(path.join(root, file)) && fs.statSync(path.join(root, file)).isFile());
+    errors.push(...validateRepositoryLayout(sourceFiles));
     changes = changedFiles(root, options);
     if (changes !== null) errors.push(...evaluateChangedPaths(changes));
   } catch (error) {

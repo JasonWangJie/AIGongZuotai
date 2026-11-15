@@ -1,0 +1,13 @@
+{
+  "version": "0.19.0",
+  "binary_sha256": "02b6628b211ae1efc13e48050419dd98cb0fcada10588be43c38b6b22c2c5f41",
+  "verified_at": "2026-11-14T16:40:45.688Z",
+  "duration_ms": 6663,
+  "scope": "Isolated loopback memory/demo service. PostgreSQL and real local S3-compatible service are verified separately. No paid model calls.",
+  "checks": [
+    "independent keyset library, filter-bound cursors, private Range content and project isolation",
+    "CAS and immutable metadata revisions, original replay, trash blocks old URLs/new edits, restore and accepted-task continuity",
+    "automatic generated-asset registration, visible demo provenance, atomic audit deduplication and fixed private-safe metrics"
+  ],
+  "status": "passed"
+}

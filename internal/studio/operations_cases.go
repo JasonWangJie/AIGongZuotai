@@ -185,6 +185,22 @@ func (a *App) readOperationsResourceSQL(ctx context.Context, tx pgx.Tx, workspac
 				}
 			}
 		}
+		if t.Task.Moderation != nil {
+			var err error
+			t.MediaModeration, err = loadTaskMediaModerationSQL(ctx, tx, t.Task.ID)
+			if err != nil {
+				return out, err
+			}
+		}
+		var deliveryErr error
+		t.Delivery, deliveryErr = loadMediaDeliverySQL(ctx, tx, t.Task.ID)
+		if deliveryErr != nil {
+			return out, deliveryErr
+		}
+		t.ReviewDispatch, deliveryErr = loadMediaReviewDispatchSQL(ctx, tx, t.Task.ID)
+		if deliveryErr != nil {
+			return out, deliveryErr
+		}
 		out.Task = t
 		v := t.Task
 		out.Summary = OperationsException{ID: v.ID, WorkspaceID: v.WorkspaceID, ProjectID: v.ProjectID, ResourceType: "task", ModelID: v.ModelID, ProviderMode: v.ProviderMode, Status: v.Status, ResourceVersion: v.Version, Billing: copyBilling(v.Billing), CanReconcile: a.canReconcileTask(t) && (v.Status == "SUBMIT_UNKNOWN" || v.Status == "RECONCILE_REQUIRED"), UpdatedAt: v.UpdatedAt}
@@ -313,6 +329,7 @@ func (a *App) applyOperationsActionSQL(ctx context.Context, tx pgx.Tx, p *princi
 			return effect, failure(409, "RECONCILE_UNAVAILABLE", "仅能核对有原受理记录的停驻媒体任务")
 		}
 		t := resource.Task
+		t.ScheduleReconcile = true
 		if t.Task.Version >= 9007199254740991 {
 			return effect, failure(409, "OPERATIONS_VERSION_LIMIT", "资源版本已达上限")
 		}
@@ -588,6 +605,9 @@ func (a *App) cacheOperationsResourceLocked(resource operationsResource) {
 		t := resource.Task
 		if cached := a.tasks[t.Task.ID]; cached != nil {
 			cached.Task = copyTask(t.Task)
+			cached.Delivery = cloneMediaDelivery(t.Delivery)
+			cached.ReviewDispatch = cloneMediaReviewDispatch(t.ReviewDispatch)
+			a.cancelMediaReviewLocked(t.Task.ID)
 			cached.Handle = t.Handle
 			cached.Submission = t.Submission
 			cached.NextPoll = t.NextPoll

@@ -1,0 +1,67 @@
+import { useEffect, useRef, useState } from 'react';
+import { api, ApiError } from './api';
+import { GenerationStateCard } from './GenerationStatus';
+import { RequestDetails } from './RequestDetails';
+import { useCountdown } from './useCountdown';
+import { appealMatches, appealMatchesSubmission, appealReasons, freshAppealAttempt, generationBytes, generationQuery, mergeAppeals, publicTextError, safeGenerationError } from './generationControls';
+import type { AppealDraft, AppealReason, GenerationAppeal, GenerationRecovery } from './generationControls';
+import type { GenerationAccessController } from './useGenerationAccess';
+import './generation-controls.css';
+import { GenerationReadLane } from './generationReads';
+
+export const appealOutcome = (value: GenerationAppeal) => value.state === 'OPEN' ? '等待复核' : value.outcome === 'LIFTED' ? '本次限制已解除' : '维持本次限制';
+export function GenerationAppealDetail({ value }: { value: GenerationAppeal }) { return <section className="generation-detail" aria-label="申请详情"><span className="eyebrow">REVIEW / RECORD</span><h3>{appealOutcome(value)}</h3><p><code>{value.id}</code> · v{value.version}</p><dl><dt>申请原因</dt><dd>{appealReasons[value.reason_code]}</dd><dt>申请说明</dt><dd className="generation-public-text">{value.statement || '未填写补充说明'}</dd><dt>站内答复</dt><dd className="generation-public-text">{value.state === 'OPEN' ? '复核完成后会在这里显示答复。' : value.public_reply || '本次复核已结束。'}</dd></dl><p className="generation-note">这是本次限制的历史记录。当前能否新生成，请以上方工作区状态为准；解除不会重新生成或放行旧审核内容。</p></section>; }
+
+export function GenerationAccessPage({ owner, workspace, controller, recovery, onExpired, onBusy }: { owner: string; workspace: string; controller: GenerationAccessController; recovery: GenerationRecovery; onExpired: () => void; onBusy: (value: boolean) => void }) {
+  const empty = (): AppealDraft => ({ restrictionID: controller.data?.restriction?.id || '', reason: 'request_review', statement: '', pending: null });
+  const [draft, setDraftState] = useState<AppealDraft>(() => recovery.appeal(owner, workspace) || empty());
+  const [items, setItems] = useState<GenerationAppeal[]>([]), [filter, setFilter] = useState('all'), [cursor, setCursor] = useState<string | null>(null), [detail, setDetail] = useState<GenerationAppeal | null>(null);
+  const [loading, setLoading] = useState(false), [busy, setBusy] = useState(false), [issue, setIssue] = useState<ApiError | null>(null), [message, setMessage] = useState(''), [version, refresh] = useState(0);
+  const alive = useRef(true), mutating = useRef(false), reads = useRef(new GenerationReadLane()), detailTicket = useRef(0), callbacks = useRef({ controller, onExpired, onBusy }); callbacks.current = { controller, onExpired, onBusy };
+  const draftRef = useRef(draft); draftRef.current = draft;
+  const seconds = useCountdown(issue?.retryAt || 0), currentID = controller.data?.restriction?.id || '', inputError = publicTextError(draft.statement);
+  function cancelRead() { reads.current.cancel(); if (alive.current) setLoading(false); }
+  function remember(value: AppealDraft) { recovery.rememberAppeal(owner, workspace, value); draftRef.current = value; setDraftState(value); }
+  function fail(cause: unknown) { const error = safeGenerationError(cause); setIssue(error); if (error.status === 401 && error.code !== 'INVALID_CREDENTIALS') callbacks.current.onExpired(); return error; }
+  useEffect(() => { alive.current = true; return () => { alive.current = false; cancelRead(); detailTicket.current++; callbacks.current.onBusy(false); }; }, []);
+  useEffect(() => { if (!draftRef.current.pending && !draftRef.current.statement && draftRef.current.restrictionID !== currentID) setDraftState(old => ({ ...old, restrictionID: currentID })); }, [currentID]);
+  async function inspect(id: string, checking = false) {
+    if (mutating.current || seconds) return;
+    const ticket = ++detailTicket.current, pending = recovery.appeal(owner, workspace); setIssue(null);
+    try { const value = await api.generationAppeal(id); if (!alive.current || ticket !== detailTicket.current) return; if (!appealMatches(value, workspace, id)) throw new ApiError('申请响应无法核对。'); setDetail(value); setItems(old => mergeAppeals(old, [value], workspace));
+      if (checking && pending?.pending && appealMatchesSubmission(value, pending.restrictionID, pending.pending.body) && recovery.clearAppeal(owner, workspace, pending.pending.attempt)) { setDraftState(empty()); setMessage('已找到本次限制下的申请记录。没有重复创建，请核对原申请和答复。'); callbacks.current.controller.refresh(); }
+      else if (checking && pending?.pending && value.restriction_id === pending.restrictionID) setMessage('同一次限制已有不同说明的申请，可能来自另一标签页。本页原输入与操作键仍保留，不能据此认定本次请求已受理。');
+    } catch (cause) { if (alive.current && ticket === detailTicket.current) fail(cause); }
+  }
+  async function load(more = false, checking = false) {
+    if (mutating.current || reads.current.busy || seconds || more && (!cursor || items.length >= 200)) return;
+    const attempt = reads.current.begin(); if (!attempt) return; setLoading(true);
+    try { const page = await api.generationAppeals(generationQuery(null, checking ? 'all' : filter, more ? cursor : null), attempt.controller.signal); if (!alive.current || !reads.current.current(attempt)) return;
+      if (!Array.isArray(page.items) || page.items.length > 50 || page.items.some(value => !appealMatches(value, workspace)) || page.next_cursor !== null && typeof page.next_cursor !== 'string') throw new ApiError('申请列表范围无法核对。');
+      setItems(old => mergeAppeals(more ? old : [], page.items, workspace)); setCursor(page.next_cursor); setIssue(null);
+      const pending = recovery.appeal(owner, workspace), found = checking && pending?.pending ? page.items.find(value => value.restriction_id === pending.restrictionID) : undefined;
+      if (found) void inspect(found.id, true); else if (checking) setMessage('当前页尚未找到本次申请，不能据此认定未受理。可继续读更早记录，或显式用原键核对。');
+    } catch (cause) { if (alive.current && reads.current.current(attempt)) fail(cause); }
+    finally { if (reads.current.finish(attempt) && alive.current) setLoading(false); }
+  }
+  const loadRef = useRef(load); loadRef.current = load;
+  useEffect(() => { const abort = new AbortController(); let timer: number | undefined; const read = () => { window.clearTimeout(timer); if (document.visibilityState === 'hidden') return; void loadRef.current(false, false).finally(() => { if (!abort.signal.aborted) timer = window.setTimeout(read, 15000); }); }; read(); const wake = () => { if (document.visibilityState !== 'hidden') { window.clearTimeout(timer); timer = window.setTimeout(read, 3000); } }; window.addEventListener('focus', wake); document.addEventListener('visibilitychange', wake); return () => { abort.abort(); window.clearTimeout(timer); cancelRead(); window.removeEventListener('focus', wake); document.removeEventListener('visibilitychange', wake); }; }, [filter, version]);
+  async function submit() {
+    if (mutating.current || seconds) return; const restored = recovery.appeal(owner, workspace), prior = restored?.pending || draftRef.current.pending; let value = restored?.pending ? restored : draftRef.current;
+    if (!prior && (!controller.data?.can_appeal || controller.data.state !== 'RESTRICTED' || currentID !== value.restrictionID || inputError)) return;
+    if (!prior) value = { ...value, pending: { key: crypto.randomUUID(), body: { reason_code: value.reason, statement: value.statement }, attempt: Symbol('appeal') } };
+    value = freshAppealAttempt(value); const pending = value.pending; if (!pending) return;
+    try { remember(value); } catch (cause) { fail(cause); return; }
+    cancelRead(); detailTicket.current++; mutating.current = true; setBusy(true); callbacks.current.onBusy(true); setIssue(null); setMessage('');
+    try { const result = await api.createGenerationAppeal(value.restrictionID, pending.body, pending.key); if (!appealMatches(result, workspace) || !appealMatchesSubmission(result, value.restrictionID, pending.body)) throw new ApiError('申请受理响应无法确认。', 200, true);
+      const cleared = recovery.clearAppeal(owner, workspace, pending.attempt); if (!alive.current || !cleared) return; setDraftState(empty()); setDetail(result); setItems(old => mergeAppeals([result, ...old], [], workspace)); setMessage('申请已保存。复核答复将在本页提供，不会自动重新生成。'); callbacks.current.controller.refresh();
+    } catch (cause) { const error = safeGenerationError(cause); if (!prior && !error.uncertain && recovery.clearAppeal(owner, workspace, pending.attempt)) { const editable = { ...value, pending: null }; recovery.rememberAppeal(owner, workspace, editable); if (alive.current) setDraftState(editable); } if (alive.current) fail(error); }
+    finally { mutating.current = false; if (alive.current) { setBusy(false); callbacks.current.onBusy(false); } }
+  }
+  const pending = draft.pending, canNew = controller.data?.state === 'RESTRICTED' && controller.data.can_appeal && currentID === draft.restrictionID;
+  return <section className="generation-page" aria-label="生成权限与复核"><header className="generation-heading"><span className="eyebrow">WORKSPACE / GENERATION ACCESS</span><h1>让下一次创作，<br/>有清楚的起点。</h1><p>查看当前工作区的新生成权限、申请复核，并读回站内答复。这里不修改内容审核决定。</p></header><GenerationStateCard value={controller.data} loading={controller.loading} onRefresh={controller.refresh}/>{controller.error && <p className="generation-alert" role="alert">{controller.error.message}</p>}
+    <div className="generation-layout"><section className="generation-panel"><span className="eyebrow">01 / REQUEST REVIEW</span><h2>申请复核</h2>{pending ? <div className="generation-alert" role="status"><strong>原申请的受理结果待核对</strong><p>保留原说明和操作键。先读取记录；若仍需核对，可显式发送同一个原请求。不会自动创建新申请。</p><div className="generation-actions"><button className="button secondary" disabled={busy || loading || seconds > 0} onClick={() => { setFilter('all'); void load(false, true); }}>读取原申请</button><button className="button secondary" disabled={busy || seconds > 0} onClick={() => void submit()}>按原键核对申请</button></div></div> : !canNew && <p className="generation-note">{controller.data?.state === 'OPEN' ? '当前未限制新生成，无需提交申请。' : currentID !== draft.restrictionID && draft.statement ? '本页说明属于上一轮限制。请先复制或清空，再对当前限制申请。' : '本次限制下的申请已存在，或权限正在核对。请查看申请记录。'}</p>}
+      <form onSubmit={event => { event.preventDefault(); void submit(); }}><label className="generation-field">申请原因<select aria-label="申请原因" disabled={!!pending || busy || !canNew} value={draft.reason} onChange={event => remember({ ...draft, reason: event.target.value as AppealReason })}>{Object.entries(appealReasons).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label><label className="generation-field">补充说明（选填）<textarea aria-label="复核说明" maxLength={1024} disabled={!!pending || busy || !canNew} value={draft.statement} onChange={event => remember({ ...draft, statement: event.target.value })} placeholder="说明希望复核的原因。请勿粘贴密码、密钥、原提示词或受限内容。"/></label><p className="generation-note">{generationBytes(draft.statement)} / 1,024 UTF-8 字节 · 说明仅供本次复核。本页内存保留，刷新或关闭会丢失未提交输入。</p>{inputError && <p role="alert">{inputError}</p>}<div className="generation-actions"><button className="button primary" disabled={busy || !!pending || !canNew || !!inputError || seconds > 0}>{busy ? '正在提交…' : seconds ? `等待 ${seconds} 秒` : '提交复核申请'}</button>{!pending && draft.statement && <button type="button" className="button secondary" disabled={busy} onClick={() => { recovery.clearAppeal(owner, workspace); setDraftState(empty()); }}>清空未提交说明</button>}</div></form>
+      {issue && <div className="generation-alert" role="alert"><p>{issue.message}</p><RequestDetails error={issue} unknown={!!pending}/></div>}{message && <p className="generation-note" role="status">{message}</p>}</section>
+      <section className="generation-panel"><div className="generation-list-heading"><div><span className="eyebrow">02 / YOUR RECORDS</span><h2>我的申请记录</h2></div><button className="text-button" disabled={loading || busy || seconds > 0} onClick={() => refresh(value => value + 1)}>刷新记录</button></div><label className="generation-field">记录状态<select value={filter} disabled={busy} onChange={event => { setItems([]); setCursor(null); setFilter(event.target.value); }}>{['all', 'OPEN', 'RESOLVED'].map(value => <option key={value} value={value}>{value === 'all' ? '全部' : value === 'OPEN' ? '等待复核' : '已答复'}</option>)}</select></label><div className="generation-list">{items.map(value => <button className={'generation-list-row ' + (detail?.id === value.id ? 'selected' : '')} disabled={busy} key={value.id} onClick={() => void inspect(value.id, !!pending)}><span><strong>{appealReasons[value.reason_code]}</strong><small>{value.id}</small></span><span>{appealOutcome(value)}</span></button>)}</div>{!items.length && <p className="generation-note">{loading ? '正在读取…' : '当前筛选没有申请记录。'}</p>}{cursor && <button className="button secondary" disabled={loading || busy || items.length >= 200} onClick={() => void load(true)}>加载更早记录</button>}<p className="generation-note">仅显示你自己的申请；页面可见时约每 15 秒读取列表，详情需点开核对。不是实时推送。</p>{detail && <GenerationAppealDetail value={detail}/>}</section></div></section>;
+}

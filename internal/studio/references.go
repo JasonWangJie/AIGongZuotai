@@ -20,24 +20,29 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+const referenceModerationProjection = `(SELECT jsonb_build_object('policy_id',m.policy_id,'policy_version',m.policy_version,'phase','input','state',m.state,'version',m.version,'reason_code',m.reason_code) FROM studio_reference_media_moderation m WHERE m.reference_id=studio_references.id)`
+
 const maxWorkspaceReferenceBytes = int64(128 << 20)
 const maxWorkspaceReferenceFiles = 100
 
 var referenceAssetID = regexp.MustCompile(`^ref_[a-f0-9]{32}$`)
 
 type ReferenceAsset struct {
-	ID           string    `json:"id"`
-	ProjectID    string    `json:"project_id"`
-	Name         string    `json:"name"`
-	ContentType  string    `json:"content_type"`
-	ByteSize     int64     `json:"byte_size"`
-	Width        int       `json:"width"`
-	Height       int       `json:"height"`
-	CreatedAt    time.Time `json:"created_at"`
-	URL          string    `json:"url"`
-	ThumbnailURL string    `json:"thumbnail_url"`
+	Moderation   *ModerationSummary `json:"moderation,omitempty"`
+	ID           string             `json:"id"`
+	ProjectID    string             `json:"project_id"`
+	Name         string             `json:"name"`
+	ContentType  string             `json:"content_type"`
+	ByteSize     int64              `json:"byte_size"`
+	Width        int                `json:"width"`
+	Height       int                `json:"height"`
+	CreatedAt    time.Time          `json:"created_at"`
+	URL          string             `json:"url"`
+	ThumbnailURL string             `json:"thumbnail_url"`
 }
 type referenceRecord struct {
+	ModerationPolicy                 *MediaModerationPolicy
+	Moderation                       *ModerationSummary
 	ID, WorkspaceID, ProjectID, Name string
 	Blob                             ReferenceBlob
 	StoredBytes                      int64
@@ -47,7 +52,11 @@ type referenceRecord struct {
 func (r referenceRecord) public() ReferenceAsset {
 	base := "/api/v1/references/" + url.PathEscape(r.ID)
 	query := "?project_id=" + url.QueryEscape(r.ProjectID)
-	return ReferenceAsset{ID: r.ID, ProjectID: r.ProjectID, Name: r.Name, ContentType: r.Blob.ContentType, ByteSize: r.Blob.ByteSize, Width: r.Blob.Width, Height: r.Blob.Height, CreatedAt: r.CreatedAt, URL: base + "/content" + query, ThumbnailURL: base + "/thumbnail" + query}
+	asset := ReferenceAsset{Moderation: copyRunModeration(r.Moderation), ID: r.ID, ProjectID: r.ProjectID, Name: r.Name, ContentType: r.Blob.ContentType, ByteSize: r.Blob.ByteSize, Width: r.Blob.Width, Height: r.Blob.Height, CreatedAt: r.CreatedAt, URL: base + "/content" + query, ThumbnailURL: base + "/thumbnail" + query}
+	if r.Moderation != nil && r.Moderation.State != "ALLOWED" {
+		asset.URL, asset.ThumbnailURL = "", ""
+	}
+	return asset
 }
 func referenceLimits() map[string]any {
 	return map[string]any{"max_file_bytes": MaxReferenceBytes, "max_pixels": MaxReferencePixels, "max_dimension": MaxReferenceDimension, "max_reference_images": MaxReferenceFiles, "allowed_content_types": []string{"image/png", "image/jpeg", "image/webp"}, "workspace_max_bytes": maxWorkspaceReferenceBytes, "workspace_max_files": maxWorkspaceReferenceFiles}
@@ -152,7 +161,7 @@ func (a *App) postReference(w http.ResponseWriter, r *http.Request) {
 		writeError(w, failure(503, "REFERENCE_UPLOAD_INTERRUPTED", "上传请求中断，请保留原文件和幂等键核对"))
 		return
 	}
-	asset, replayed, err := a.acceptReference(p.Workspace.ID, p.Project.ID, name, index, blob, auditActorID(r))
+	asset, replayed, err := a.acceptReferenceContext(r.Context(), p.Workspace.ID, p.Project.ID, name, index, blob, auditActorID(r))
 	if err != nil {
 		writeError(w, err)
 		return
@@ -164,6 +173,10 @@ func (a *App) postReference(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) acceptReference(workspaceID, projectID, name, index string, blob ReferenceBlob, actorID string) (ReferenceAsset, bool, error) {
+	return a.acceptReferenceContext(a.ctx, workspaceID, projectID, name, index, blob, actorID)
+}
+
+func (a *App) acceptReferenceContext(ctx context.Context, workspaceID, projectID, name, index string, blob ReferenceBlob, actorID string) (ReferenceAsset, bool, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.ctx.Err() != nil {
@@ -188,6 +201,62 @@ func (a *App) acceptReference(workspaceID, projectID, name, index string, blob R
 		}
 		return record.public(), true, nil
 	}
+	var policy *MediaModerationPolicy
+	var summary *ModerationSummary
+	if a.mediaModeration != nil {
+		policy = a.mediaModeration.Snapshot()
+		var checkErr error
+		a.mu.Unlock()
+		func() {
+			defer a.mu.Lock()
+			permit, permitErr := a.mediaModeration.acquireInputPermit(ctx, workspaceID)
+			if permitErr != nil {
+				checkErr = permitErr
+				return
+			}
+			defer permit.Close()
+			file, openErr := a.references.OpenVerified(ctx, blob)
+			if openErr != nil {
+				checkErr = referenceStorageError(openErr)
+				return
+			}
+			defer file.Close()
+			decision := permit.Check(ctx, policy, "input", MediaModerationContent{Kind: "image", ContentType: blob.ContentType, ByteSize: blob.ByteSize, SHA256: blob.SHA256}, file)
+			if decision.State != "ALLOWED" {
+				checkErr = mediaModerationInputError(decision)
+			}
+		}()
+		// Original acceptance wins over a later policy result or full capacity.
+		old, found, lookupErr := a.referenceIdempotencyLocked(index)
+		if lookupErr != nil {
+			return ReferenceAsset{}, false, lookupErr
+		}
+		if found {
+			if old.Hash != hash {
+				return ReferenceAsset{}, false, failure(409, "IDEMPOTENCY_CONFLICT", "同一上传幂等键已用于其他文件或项目")
+			}
+			record, err := a.loadReferenceLocked(old.ID, workspaceID, projectID)
+			if err != nil {
+				return ReferenceAsset{}, false, err
+			}
+			return record.public(), true, nil
+		}
+		if checkErr != nil {
+			if errors.Is(checkErr, context.Canceled) || errors.Is(checkErr, context.DeadlineExceeded) {
+				return ReferenceAsset{}, false, failure(503, "MEDIA_MODERATION_UNAVAILABLE", "本次素材审核等待已中断，尚未受理；请保留原文件和幂等键核对")
+			}
+			return ReferenceAsset{}, false, checkErr
+		}
+		if a.ctx.Err() != nil || ctx.Err() != nil {
+			return ReferenceAsset{}, false, failure(503, "MEDIA_MODERATION_UNAVAILABLE", "本次素材尚未受理，请保留原文件核对")
+		}
+		project, ok = a.projects[projectID]
+		if !ok || project.WorkspaceID != workspaceID {
+			return ReferenceAsset{}, false, failure(404, "PROJECT_NOT_FOUND", "项目不存在")
+		}
+		summary = InitialMediaModerationSummary(policy, "input")
+		summary.State, summary.Version, summary.ReasonCode = "ALLOWED", 2, "allowed"
+	}
 	stored := blob.ByteSize
 	if blob.Thumbnail != nil {
 		stored += blob.Thumbnail.ByteSize
@@ -199,6 +268,7 @@ func (a *App) acceptReference(workspaceID, projectID, name, index string, blob R
 		return ReferenceAsset{}, false, err
 	}
 	record := referenceRecord{ID: newID("ref"), WorkspaceID: workspaceID, ProjectID: projectID, Name: name, Blob: blob, StoredBytes: stored, CreatedAt: time.Now().UTC()}
+	record.ModerationPolicy, record.Moderation = policy, summary
 	audit := newAuditEvent(workspaceID, projectID, actorID, "reference.uploaded", "reference", record.ID, AuditDetails{Kind: "image"})
 	if a.store != nil {
 		if err := a.store.createReference(record, index, hash, audit); err != nil {
@@ -271,7 +341,11 @@ func (a *App) loadReferenceLocked(id, workspaceID, projectID string) (referenceR
 		if err != nil {
 			return err
 		}
-		return json.Unmarshal(blob, &record.Blob)
+		if err = json.Unmarshal(blob, &record.Blob); err != nil {
+			return err
+		}
+		record.ModerationPolicy, record.Moderation, err = loadReferenceMediaModerationSQL(ctx, conn, record.ID)
+		return err
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = failure(404, "REFERENCE_NOT_FOUND", "参考素材不存在或不属于当前项目")
@@ -287,6 +361,11 @@ func (s *postgresStore) createReference(record referenceRecord, index string, ha
 		_, err := tx.Exec(ctx, "INSERT INTO studio_reference_idempotency(scope_key,payload_hash,reference_id) VALUES($1,$2,$3)", index, hash[:], record.ID)
 		if err != nil {
 			return err
+		}
+		if record.Moderation != nil {
+			if err := insertReferenceMediaModerationSQL(ctx, tx, record.ID, record.WorkspaceID, record.ProjectID, record.ModerationPolicy, record.Moderation); err != nil {
+				return err
+			}
 		}
 		return insertLibrarySQL(ctx, tx, libraryFromReference(record))
 	}, []AuditEvent{audit})
@@ -309,19 +388,24 @@ func (a *App) listReferences(w http.ResponseWriter, r *http.Request) {
 	var err error
 	if a.store != nil {
 		err = a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
-			rows, err := conn.Query(ctx, "SELECT id,workspace_id,project_id,name,blob,stored_bytes,created_at FROM studio_references WHERE workspace_id=$1 AND project_id=$2 AND EXISTS(SELECT 1 FROM studio_library_entries l WHERE l.reference_id=studio_references.id AND l.state='active') ORDER BY created_at DESC,id DESC LIMIT $3 OFFSET $4", p.Workspace.ID, p.Project.ID, limit+1, offset)
+			rows, err := conn.Query(ctx, "SELECT id,workspace_id,project_id,name,blob,stored_bytes,created_at,"+referenceModerationProjection+" FROM studio_references WHERE workspace_id=$1 AND project_id=$2 AND EXISTS(SELECT 1 FROM studio_library_entries l WHERE l.reference_id=studio_references.id AND l.state='active') ORDER BY created_at DESC,id DESC LIMIT $3 OFFSET $4", p.Workspace.ID, p.Project.ID, limit+1, offset)
 			if err != nil {
 				return err
 			}
 			defer rows.Close()
 			for rows.Next() {
 				var record referenceRecord
-				var blob []byte
-				if err := rows.Scan(&record.ID, &record.WorkspaceID, &record.ProjectID, &record.Name, &blob, &record.StoredBytes, &record.CreatedAt); err != nil {
+				var blob, moderation []byte
+				if err := rows.Scan(&record.ID, &record.WorkspaceID, &record.ProjectID, &record.Name, &blob, &record.StoredBytes, &record.CreatedAt, &moderation); err != nil {
 					return err
 				}
 				if err := json.Unmarshal(blob, &record.Blob); err != nil {
 					return err
+				}
+				if len(moderation) > 0 {
+					if err := json.Unmarshal(moderation, &record.Moderation); err != nil {
+						return err
+					}
 				}
 				items = append(items, record)
 			}
@@ -369,6 +453,9 @@ func (a *App) serveReference(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		err = a.referenceActiveLocked(record.ID, p.Workspace.ID, p.Project.ID)
 	}
+	if err == nil && record.Moderation != nil && record.Moderation.State != "ALLOWED" {
+		err = failure(404, "REFERENCE_UNAVAILABLE", "素材尚未开放")
+	}
 	a.mu.Unlock()
 	if err != nil {
 		writeError(w, err)
@@ -414,6 +501,9 @@ func (a *App) resolveReferencesLocked(workspaceID, projectID string, ids []strin
 		}
 		if err := a.referenceActiveLocked(id, workspaceID, projectID); err != nil {
 			return nil, err
+		}
+		if record.Moderation != nil && record.Moderation.State != "ALLOWED" {
+			return nil, failure(422, "MEDIA_MODERATION_INPUT_REVIEW", "参考素材尚未开放，未创建本次生成")
 		}
 		result = append(result, record)
 	}

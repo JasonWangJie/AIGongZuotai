@@ -29,6 +29,16 @@ func (a *App) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/runtime", a.runtimeHTTP)
 	mux.HandleFunc("GET /api/v1/bootstrap", a.bootstrap)
 	mux.HandleFunc("GET /api/v1/models", a.modelsHTTP)
+	mux.HandleFunc("GET /api/v1/workspace/generation-access", a.generationAccessHTTP)
+	mux.HandleFunc("POST /api/v1/restrictions/{id}/appeals", a.generationAppealCreateHTTP)
+	mux.HandleFunc("GET /api/v1/appeals", a.generationAppealsHTTP)
+	mux.HandleFunc("GET /api/v1/appeals/{id}", a.generationAppealHTTP)
+	mux.HandleFunc("GET /api/v1/operations/generation-access", a.operationsGenerationAccessHTTP)
+	mux.HandleFunc("GET /api/v1/operations/appeals", a.operationsGenerationAppealsHTTP)
+	mux.HandleFunc("GET /api/v1/operations/appeals/{id}", a.operationsGenerationAppealHTTP)
+	mux.HandleFunc("POST /api/v1/operations/generation-plans", a.operationsGenerationPlanHTTP)
+	mux.HandleFunc("POST /api/v1/operations/generation-executions", a.operationsGenerationExecuteHTTP)
+	mux.HandleFunc("GET /api/v1/operations/generation-plans/{id}/receipt", a.operationsGenerationReceiptHTTP)
 	mux.HandleFunc("GET /api/v1/operations/access", a.operationsAccessHTTP)
 	mux.HandleFunc("GET /api/v1/operations/exceptions", a.operationsExceptionsHTTP)
 	mux.HandleFunc("GET /api/v1/operations/cases", a.operationsCasesHTTP)
@@ -215,7 +225,7 @@ func (a *App) bootstrap(w http.ResponseWriter, r *http.Request) {
 	result["storage"] = a.storageMode()
 	result["capabilities"] = a.legacyCapabilities()
 	result["billing"] = a.billingCapabilities()
-	result["moderation"] = moderationCapabilities(a.moderation)
+	result["moderation"] = moderationCapabilities(a.moderation, a.mediaModeration)
 	writeJSON(w, 200, result)
 }
 
@@ -612,7 +622,7 @@ func writeError(w http.ResponseWriter, err error) {
 	}
 	markObservedError(w, operation.code)
 	switch operation.code {
-	case "ADMISSION_WORKSPACE_LIMIT", "ADMISSION_MODEL_LIMIT", "ADMISSION_STREAM_LIMIT", "STREAM_LIMIT", "REFERENCE_UPLOAD_BUSY", "REFERENCE_PREPARATION_BUSY":
+	case "ADMISSION_WORKSPACE_LIMIT", "ADMISSION_MODEL_LIMIT", "ADMISSION_STREAM_LIMIT", "STREAM_LIMIT", "REFERENCE_UPLOAD_BUSY", "REFERENCE_PREPARATION_BUSY", "RUN_QUEUE_FULL", "EXECUTION_WORKSPACE_QUEUE_LIMIT":
 		w.Header().Set("Retry-After", "3")
 	}
 	writeJSON(w, operation.status, map[string]any{"error": map[string]string{"code": operation.code, "message": operation.message, "request_id": w.Header().Get("X-Request-ID")}})

@@ -46,6 +46,16 @@ func main() {
 		slog.Error("configuration rejected", "error", err)
 		os.Exit(1)
 	}
+	chatScheduling, err := chatSchedulingFromEnv(os.LookupEnv)
+	if err != nil {
+		slog.Error("configuration rejected", "error", err)
+		os.Exit(1)
+	}
+	mediaScheduling, err := mediaSchedulingFromEnv(os.LookupEnv)
+	if err != nil {
+		slog.Error("configuration rejected", "error", err)
+		os.Exit(1)
+	}
 	assetStorage, err := assetStorageFromEnv(os.LookupEnv)
 	if err != nil {
 		slog.Error("configuration rejected", "error", err)
@@ -71,7 +81,16 @@ func main() {
 		slog.Error("configuration rejected", "error", err)
 		os.Exit(1)
 	}
+	mediaModeration, err := mediaModerationFromEnv(os.LookupEnv)
+	if err != nil {
+		slog.Error("configuration rejected", "error", err)
+		os.Exit(1)
+	}
 	app, err := studio.New(studio.Config{Mode: os.Getenv("PROVIDER_MODE"), BaseURL: os.Getenv("NEWAPI_BASE_URL"), APIKey: os.Getenv("NEWAPI_API_KEY"), ChatModel: os.Getenv("NEWAPI_CHAT_MODEL"), WebDir: os.Getenv("APP_WEB_DIR"),
+		ChatScheduling:    chatScheduling,
+		MediaScheduling:   mediaScheduling,
+		MediaDelivery:     studio.MediaDeliveryConfig{EncryptionKey: os.Getenv("MEDIA_DELIVERY_KEY")},
+		MediaModeration:   mediaModeration,
 		Moderation:        moderation,
 		OperationsEnabled: operations,
 		BillingMode:       os.Getenv("BILLING_MODE"), BillingPriceFile: os.Getenv("BILLING_PRICE_FILE"), Mail: mail, Admission: admission, AssetStorage: assetStorage, TaskLeaseDuration: taskLease, MetricsToken: os.Getenv("METRICS_TOKEN"), ModelCatalogFile: os.Getenv("MODEL_CATALOG_FILE"), ReferenceDir: os.Getenv("REFERENCE_DIR"),
@@ -108,6 +127,38 @@ func main() {
 	}
 }
 
+// Unset fields are defaulted together by Config; explicit invalid values must
+// never quietly disable scheduling protection. Errors contain no raw values.
+func chatSchedulingFromEnv(lookup func(string) (string, bool)) (studio.ChatSchedulingConfig, error) {
+	var config studio.ChatSchedulingConfig
+	for _, setting := range []struct {
+		name   string
+		target *int
+		max    int
+	}{
+		{"CHAT_WORKERS", &config.Workers, 64},
+		{"CHAT_QUEUE_SIZE", &config.QueueSize, 4096},
+		{"CHAT_WORKSPACE_CONCURRENCY", &config.WorkspaceConcurrency, 64},
+		{"CHAT_MODEL_CONCURRENCY", &config.ModelConcurrency, 64},
+		{"CHAT_WORKSPACE_QUEUE_SIZE", &config.WorkspaceQueueSize, 4096},
+	} {
+		raw, present := lookup(setting.name)
+		if !present {
+			continue
+		}
+		valid := len(raw) > 0 && len(raw) <= 4
+		for _, ch := range raw {
+			valid = valid && ch >= '0' && ch <= '9'
+		}
+		value, err := strconv.Atoi(raw)
+		if !valid || err != nil || value < 1 || value > setting.max {
+			return studio.ChatSchedulingConfig{}, fmt.Errorf("%s must be decimal digits between 1 and %d", setting.name, setting.max)
+		}
+		*setting.target = value
+	}
+	return config, nil
+}
+
 func moderationFromEnv(lookup func(string) (string, bool)) (studio.ModerationConfig, error) {
 	get := func(name string) string { value, _ := lookup(name); return value }
 	mode, present := lookup("MODERATION_MODE")
@@ -118,6 +169,18 @@ func moderationFromEnv(lookup func(string) (string, bool)) (studio.ModerationCon
 		return studio.ModerationConfig{}, errors.New("MODERATION_MODE must be disabled, rules or http")
 	}
 	return studio.ModerationConfig{Mode: mode, PolicyFile: get("MODERATION_POLICY_FILE"), Endpoint: get("MODERATION_ENDPOINT"), APIKey: get("MODERATION_API_KEY"), CredentialID: get("MODERATION_CREDENTIAL_ID")}, nil
+}
+
+func mediaModerationFromEnv(lookup func(string) (string, bool)) (studio.MediaModerationConfig, error) {
+	get := func(name string) string { value, _ := lookup(name); return value }
+	mode, present := lookup("MEDIA_MODERATION_MODE")
+	if !present {
+		mode = "disabled"
+	}
+	if mode != "disabled" && mode != "fixtures" && mode != "http" {
+		return studio.MediaModerationConfig{}, errors.New("MEDIA_MODERATION_MODE must be disabled, fixtures or http")
+	}
+	return studio.MediaModerationConfig{Mode: mode, PolicyFile: get("MEDIA_MODERATION_POLICY_FILE"), Endpoint: get("MEDIA_MODERATION_ENDPOINT"), APIKey: get("MEDIA_MODERATION_API_KEY"), CredentialID: get("MEDIA_MODERATION_CREDENTIAL_ID")}, nil
 }
 
 func operationsFromEnv(lookup func(string) (string, bool)) (bool, error) {

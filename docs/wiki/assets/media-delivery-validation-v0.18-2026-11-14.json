@@ -1,0 +1,129 @@
+{
+  "version": "0.18.0",
+  "batch": "V16-A3.1",
+  "verified_on": "2026-11-14",
+  "status": "passed_local",
+  "binary_sha256": "16be6a7150c294b41a40bbe4a4257dc164e94232d5a5d371e3dde616543a9935",
+  "database_format": "018",
+  "scope": "Single control writer, real isolated PostgreSQL, real loopback S3 service, controlled HTTP AI/moderation fixtures; no actual paid providers.",
+  "checks": [
+    {
+      "command": "node .runtime/v16a31-check.mjs check",
+      "equivalent": "npm run check with isolated channels and no TEST_DATABASE_URL",
+      "status": "passed",
+      "go_studio_seconds": 9.666,
+      "frontend_tests": 301,
+      "frontend_files": 29,
+      "governance_tests": 10,
+      "vite_seconds": 1.71,
+      "note": "Production source frozen; subsequent test-only compatibility and restore/upgrade additions included in final full PG and vet."
+    },
+    {
+      "command": "node .runtime/v16a31-check.mjs db",
+      "equivalent": "npm run test:db, isolated channels, TEST_S3_* and TEST_POSTGRES_BIN_DIR enabled, serial database window",
+      "status": "passed",
+      "go_studio_seconds": 301.345
+    },
+    {
+      "command": "node .runtime/v16a31-smokes.mjs --smokes-only",
+      "status": "passed",
+      "smokes": 6,
+      "invalid_parent_execution_variables": 9
+    },
+    {
+      "command": "node .runtime/v16a31-smokes.mjs --performance-only",
+      "status": "passed",
+      "scope": "Same binary, memory/demo, after PG completion; media create+cancel only, not delivery throughput"
+    },
+    {
+      "command": "python .runtime/v16-a31-schema-check.py",
+      "status": "passed",
+      "result": {
+        "sql_files": 18,
+        "original_sql_files": 17,
+        "original_sql_bytes": 55486,
+        "original_sql_unchanged": true,
+        "new_migration": "018_media_delivery.sql",
+        "new_sql_bytes": 3320,
+        "new_sql_sha256": "e3899b65a7a66b3ac1e3b136a40eabc08dce550b675fd251bec7dda976143294",
+        "api_version": "0.18.0",
+        "paths": 71,
+        "operations": 83,
+        "schemas": 95,
+        "refs": 411
+      }
+    },
+    {
+      "command": "npm run todo:sync; npm run check:todo; npm run test:todo; npm run check:changes; git diff --check",
+      "status": "passed",
+      "governance_tests": 10,
+      "documents": 163,
+      "ledgers": 75,
+      "changed_paths_including_prior_work": 315
+    }
+  ],
+  "targeted_evidence": {
+    "strict_config_seconds": 0.042,
+    "memory_http_and_actual_metrics_seconds": 0.113,
+    "http_pg_restart_tamper_slow_review_2_functions_3_subcases_seconds": 5.439,
+    "whole_group_billing_and_initial_local_restore_2_functions_5_subcases_seconds": 10.743,
+    "actual_s3_3_functions_seconds": 1.965,
+    "real_dump_restore_local_and_retained_s3_plus_upgrade_seconds": 19.417,
+    "old_fixture_compatibility_4_functions_seconds": 9.73,
+    "upgrade_017_to_018_initial_seconds": 1.364,
+    "actual_commit_ack_loss_4_boundaries_seconds": 5.97,
+    "atomic_rollback_lease_and_immutable_evidence_seconds": 1.268,
+    "maintenance_pg_5_functions_seconds": 9.614,
+    "http_provider_compatibility_31_functions_seconds": 1.718,
+    "additional_s3_lost_put_ack_seconds": 0.149
+  },
+  "media_lanes": {
+    "submit_workers": 2,
+    "query_workers": 2,
+    "delivery_workers": 2,
+    "fixed_metric_series": 9,
+    "query_status_downloads": false,
+    "delivery_includes": "download, complete receipts, synchronous B2 review and final transactional publication"
+  },
+  "recovery": {
+    "encrypted_manifest": true,
+    "per_item_immutable_receipt": true,
+    "restore_storage_uuid_preserved": true,
+    "wrong_key_rejected": true,
+    "remote_s3_service_backed_up_or_restored": false,
+    "s3_returned_version_ids_in_restore": 0,
+    "rollback_boundary": "An actually rolled-back manifest with no durable delivery/candidate and zero downloads may query the same original handle again. A committed manifest never switches result sets."
+  },
+  "assets": [
+    "docs/wiki/assets/runtime-smoke-v0.18-2026-11-14.json",
+    "docs/wiki/assets/catalog-smoke-v0.18-2026-11-14.json",
+    "docs/wiki/assets/reference-smoke-v0.18-2026-11-14.json",
+    "docs/wiki/assets/library-smoke-v0.18-2026-11-14.json",
+    "docs/wiki/assets/conversation-smoke-v0.18-2026-11-14.json",
+    "docs/wiki/assets/performance-local-v0.18-2026-11-14.json",
+    "docs/wiki/assets/media-delivery-schema-v0.18-2026-11-14.json",
+    "docs/wiki/assets/media-delivery-s3-v0.18-2026-11-14.json"
+  ],
+  "frontend_build": {
+    "main_js_kb": 495.68,
+    "main_js_gzip_kb": 157.13
+  },
+  "corrections": [
+    "Initial ordinary check failed during Windows TempDir cleanup after PG skip because a new provider opened os.Root first; moved PG prerequisite before provider creation and added provider cleanup. No product gate/assertion removed.",
+    "Old real-S3 lifecycle fixture assumed two steps. Retained all assertions, added INGESTING/no-artifact assertion and explicit delivery step; final 3 actual-service tests passed.",
+    "First full PG run failed in 4 existing fixtures missing the new independent delivery key (289.854s). Added stable test-only config to shared child process and reference-edit fixture; 4 original tests passed in 9.730s, followed by final full PG.",
+    "Initial combined S3 setup/start command was rejected before execution by automatic approval (blocked by policy); separately prepared config and minimal hidden start succeeded.",
+    "Parallel integration initially lacked not-yet-landed fields/methods and ledger index entries; retained failures in 072-074 and reran after integration."
+  ],
+  "limitations": [
+    "A3.2 initial review dispatch and A3.3 fairness/backoff/large-backlog EXPLAIN remain pending; synchronous review still uses delivery.",
+    "No cross-instance whole-site scheduling, durable token log, production capacity or real supplier/moderation accuracy acceptance.",
+    "The original development PostgreSQL remains unavailable; this separate test cluster and restore databases are not recovery of user data.",
+    "S3 retained-object restore did not back up or restore the remote service; no VersionId was returned. ETag plus complete original/thumbnail hashes were verified, not production cloud DR.",
+    "No local GCC/Clang: Go race not run. No remote CI, new browser visual or LCP/INP acceptance.",
+    "No actual AI/mail/moderation/payment external service, public deployment or paid action.",
+    "Unversioned upstream URLs cannot prove unchanged bytes before first validated import; existing manifests are not refreshed by requery.",
+    "Completed delivery storage locators cannot migrate in place; all registered plans/receipts remain reachable, including terminal/parked tasks."
+  ],
+  "next": "V16-A3.2 durable first-review READY/STARTED handoff; do not reinterpret old candidates as never reviewed."
+}

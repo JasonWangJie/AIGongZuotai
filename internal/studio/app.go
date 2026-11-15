@@ -19,6 +19,10 @@ import (
 )
 
 type Config struct {
+	MediaDelivery                                                                                           MediaDeliveryConfig
+	MediaScheduling                                                                                         MediaSchedulingConfig
+	ChatScheduling                                                                                          ChatSchedulingConfig
+	MediaModeration                                                                                         MediaModerationConfig
 	Moderation                                                                                              ModerationConfig
 	OperationsEnabled                                                                                       bool
 	BillingMode, BillingPriceFile                                                                           string
@@ -109,15 +113,22 @@ type runRecord struct {
 	Cancel         context.CancelFunc
 }
 type taskRecord struct {
-	Lease         *TaskLease
-	LeaseComplete bool
-	LeaseStatus   string
-	Submission    *MediaSubmission
-	Task          Task
-	Input         TaskInput
-	Handle        MediaHandle
-	NextPoll      time.Time
-	InFlight      bool
+	ScheduleReconcile bool
+	Schedule          *mediaTaskSchedule
+	ScheduleOutcome   *mediaScheduleOutcome
+	ScheduleClaim     *mediaScheduleCandidate
+	ReviewDispatch    *MediaReviewDispatch
+	Delivery          *MediaDeliveryRecord
+	MediaModeration   *MediaModerationRecord
+	Lease             *TaskLease
+	LeaseComplete     bool
+	LeaseStatus       string
+	Submission        *MediaSubmission
+	Task              Task
+	Input             TaskInput
+	Handle            MediaHandle
+	NextPoll          time.Time
+	InFlight          bool
 }
 type idemRecord struct {
 	Hash [32]byte
@@ -127,6 +138,10 @@ type idemRecord struct {
 // App owns all in-memory resources and a fixed number of execution workers.
 // HTTP subscribers never own or restart generation; disconnecting is harmless.
 type App struct {
+	recoveryStats        recoveryStats
+	activeReviews        map[string]mediaReviewCancellation
+	delivery             *mediaDeliveryCipher
+	mediaModeration      *mediaModerationEngine
 	moderation           *moderationEngine
 	pricing              *pricingCatalog
 	mail                 *mailDelivery
@@ -161,8 +176,9 @@ type App struct {
 	workspaceSeq         uint64
 	chat                 ChatProvider
 	media                MediaProvider
-	runQueue             chan string
-	taskQueue            chan string
+	execution            *executionScheduler
+	mediaExecution       *mediaExecutionLanes
+	mediaScheduler       *mediaScheduler
 	streamSlots          chan struct{}
 	auditEvents          []AuditEvent
 	auditStart           int
@@ -170,12 +186,27 @@ type App struct {
 
 func New(c Config) (*App, error) {
 	c.defaults()
+	if err := c.ChatScheduling.normalize(c.RunWorkers, c.QueueSize); err != nil {
+		return nil, err
+	}
+	c.RunWorkers = c.ChatScheduling.Workers
+	if err := c.MediaScheduling.normalize(c.TaskWorkers); err != nil {
+		return nil, err
+	}
+	c.TaskWorkers = c.MediaScheduling.SubmitWorkers + c.MediaScheduling.QueryWorkers + c.MediaScheduling.DeliveryWorkers + c.MediaScheduling.ReviewWorkers
 	moderation, err := newModerationEngine(c.Moderation, c.Mode)
 	if err != nil {
 		return nil, err
 	}
 	if moderation != nil && (c.DatabaseURL == "" || c.AuthMode != "required") {
 		return nil, errors.New("moderation requires PostgreSQL and AUTH_MODE=required")
+	}
+	mediaModeration, err := newMediaModerationEngine(c.MediaModeration, c.Mode)
+	if err != nil {
+		return nil, err
+	}
+	if mediaModeration != nil && (moderation == nil || c.DatabaseURL == "" || c.AuthMode != "required") {
+		return nil, errors.New("media moderation requires text moderation, PostgreSQL and AUTH_MODE=required")
 	}
 	if c.OperationsEnabled && (c.DatabaseURL == "" || c.AuthMode != "required") {
 		return nil, errors.New("OPERATIONS_ENABLED requires PostgreSQL and AUTH_MODE=required")
@@ -275,17 +306,23 @@ func New(c Config) (*App, error) {
 	}()
 	var chat ChatProvider = demoChat{delay: c.DemoTokenDelay}
 	var media MediaProvider = demoMedia{duration: c.DemoTaskDuration}
+	if c.Mode == "demo" && mediaModeration != nil && c.mediaProvider == nil {
+		media, err = newModeratedDemoMedia(c.DemoTaskDuration, assets)
+		if err != nil {
+			return nil, err
+		}
+	}
 	if c.Mode == "live" {
 		chat, media = nil, nil
 		if c.BaseURL != "" || c.APIKey != "" {
-			provider, err := newOpenAIChatGateway(c.BaseURL, c.APIKey)
+			provider, err := newOpenAIChatGatewayWithConcurrency(c.BaseURL, c.APIKey, c.ChatScheduling.Workers)
 			if err != nil {
 				return nil, err
 			}
 			chat = provider
 		}
 		if c.AsyncImageBaseURL != "" {
-			media, err = NewAsyncMediaProvider(AsyncMediaConfig{AssetStorage: c.AssetStorage, BodyStore: references, AllowNoDefaultModel: true, BaseURL: c.AsyncImageBaseURL, APIKey: c.AsyncImageAPIKey, ImageModel: c.AsyncImageModel, VideoModel: c.AsyncVideoModel, CredentialID: c.AsyncImageCredentialID, AssetDir: c.AssetDir, VideoSeconds: c.AsyncVideoSeconds, VideoResolution: c.AsyncVideoResolution, AllowedAssetHosts: c.AllowedAssetHosts})
+			media, err = NewAsyncMediaProvider(AsyncMediaConfig{SubmitConcurrency: c.MediaScheduling.SubmitWorkers, QueryConcurrency: c.MediaScheduling.QueryWorkers, DeliveryConcurrency: c.MediaScheduling.DeliveryWorkers, AssetStorage: c.AssetStorage, BodyStore: references, AllowNoDefaultModel: true, BaseURL: c.AsyncImageBaseURL, APIKey: c.AsyncImageAPIKey, ImageModel: c.AsyncImageModel, VideoModel: c.AsyncVideoModel, CredentialID: c.AsyncImageCredentialID, AssetDir: c.AssetDir, VideoSeconds: c.AsyncVideoSeconds, VideoResolution: c.AsyncVideoResolution, AllowedAssetHosts: c.AllowedAssetHosts})
 			if err != nil {
 				return nil, err
 			}
@@ -295,8 +332,23 @@ func New(c Config) (*App, error) {
 	if c.mediaProvider != nil {
 		media = c.mediaProvider
 	}
-	a := &App{config: c, ctx: ctx, cancel: cancel, runs: make(map[string]*runRecord), tasks: make(map[string]*taskRecord), idem: make(map[string]idemRecord), workspaceSubscribers: make(map[chan event]subscriptionScope), projects: make(map[string]Project), limiter: newLoginLimiter(), bcryptSlots: make(chan struct{}, 4), chat: chat, media: media, runQueue: make(chan string, c.QueueSize), taskQueue: make(chan string, c.QueueSize), streamSlots: make(chan struct{}, 128)}
+	_, phased := media.(MediaDeliveryProvider)
+	delivery, deliveryErr := newMediaDeliveryCipher(c.MediaDelivery.EncryptionKey, phased, c.DatabaseURL == "")
+	if deliveryErr == nil {
+		deliveryErr = validateMediaDeliveryKeyIndependence(c)
+	}
+	if deliveryErr != nil {
+		cancel()
+		if closer, ok := media.(interface{ Close() error }); ok {
+			_ = closer.Close()
+		}
+		return nil, deliveryErr
+	}
+	a := &App{config: c, ctx: ctx, cancel: cancel, runs: make(map[string]*runRecord), tasks: make(map[string]*taskRecord), idem: make(map[string]idemRecord), workspaceSubscribers: make(map[chan event]subscriptionScope), projects: make(map[string]Project), limiter: newLoginLimiter(), bcryptSlots: make(chan struct{}, 4), chat: chat, media: media, execution: newExecutionScheduler(c.ChatScheduling), mediaExecution: newMediaExecutionLanes(c.MediaScheduling), streamSlots: make(chan struct{}, 128)}
+	a.delivery = delivery
+	a.mediaScheduler = newMediaScheduler(c.MediaScheduling)
 	a.moderation = moderation
+	a.mediaModeration = mediaModeration
 	a.catalog = catalog
 	a.pricing = pricing
 	a.conversations = make(map[string]Conversation)
@@ -323,7 +375,17 @@ func New(c Config) (*App, error) {
 		a.store = store
 		store.onFailure = cancel
 		if err = store.do(func(ctx context.Context, conn *pgx.Conn) error {
-			return BindStorageOwnership(ctx, conn, c.ReferenceDir, assetDir)
+			if err := BindStorageOwnership(ctx, conn, c.ReferenceDir, assetDir); err != nil {
+				return err
+			}
+			if a.delivery != nil {
+				id, err := storageOwnerID(ctx, conn)
+				if err != nil {
+					return err
+				}
+				a.delivery.databaseID = id
+			}
+			return validateMediaDeliveryStore(ctx, conn, a.delivery, phased)
 		}); err != nil {
 			store.close()
 			if closer, ok := media.(interface{ Close() error }); ok {
@@ -332,11 +394,8 @@ func New(c Config) (*App, error) {
 			cancel()
 			return nil, err
 		}
-		if err = store.prepareOutbox(); err == nil {
+		if err = a.initTaskLeases(); err == nil {
 			err = store.restore(a)
-		}
-		if err == nil {
-			err = a.initTaskLeases()
 		}
 		if err == nil {
 			a.mail, err = newMailDelivery(c.Mail, store)
@@ -367,13 +426,23 @@ func New(c Config) (*App, error) {
 		a.wg.Add(1)
 		go a.runWorker()
 	}
-	for range c.TaskWorkers {
+	for range c.MediaScheduling.SubmitWorkers {
 		a.wg.Add(1)
-		go a.taskWorker()
+		go a.mediaTaskWorker(mediaSubmitLane)
 	}
-	if a.store == nil {
+	for range c.MediaScheduling.QueryWorkers {
 		a.wg.Add(1)
-		go a.scheduleTasks()
+		go a.mediaTaskWorker(mediaQueryLane)
+	}
+	for range c.MediaScheduling.DeliveryWorkers {
+		a.wg.Add(1)
+		go a.mediaTaskWorker(mediaDeliveryLane)
+	}
+	if a.store != nil {
+		for range c.MediaScheduling.ReviewWorkers {
+			a.wg.Add(1)
+			go a.mediaTaskWorker(mediaReviewLane)
+		}
 	}
 	if a.store != nil {
 		a.wg.Add(1)
@@ -480,6 +549,9 @@ func (a *App) createRunApproved(input RunInput, key string, approval *runModerat
 		}
 		return copyRun(record.Run), true, nil
 	}
+	if err := a.checkGenerationAccessLocked(project.WorkspaceID); err != nil {
+		return Run{}, false, err
+	}
 	model, err := a.resolveModel(input.ModelID, "chat", input.ModelVersion, input.Input)
 	if err != nil {
 		return Run{}, false, err
@@ -507,8 +579,8 @@ func (a *App) createRunApproved(input RunInput, key string, approval *runModerat
 	if len(a.runs) >= a.config.MaxRecords {
 		return Run{}, false, failure(503, "LOCAL_STORE_FULL", "本地演示运行记录已达上限；重启将清空内存")
 	}
-	if len(a.runQueue) >= cap(a.runQueue) {
-		return Run{}, false, failure(503, "RUN_QUEUE_FULL", "生成队列已满，请稍后重试同一幂等键")
+	if err := a.execution.checkLocked(project.WorkspaceID); err != nil {
+		return Run{}, false, err
 	}
 	now := time.Now().UTC()
 	run := Run{ID: newID("run"), ProviderMode: a.config.Mode, WorkspaceID: project.WorkspaceID, ProjectID: input.ProjectID, ModelID: input.ModelID, Prompt: input.Input, Status: "QUEUED", CreatedAt: now, UpdatedAt: now}
@@ -522,17 +594,12 @@ func (a *App) createRunApproved(input RunInput, key string, approval *runModerat
 		}
 	}
 	a.runs[run.ID] = &runRecord{Run: run, ChatExecution: billingExecution, UpstreamModel: model.UpstreamModel, Subscribers: make(map[chan event]bool)}
-	select {
-	case a.runQueue <- run.ID:
-		a.appendMemoryAuditLocked(audit)
-		if a.store == nil {
-			a.idem[index] = idemRecord{Hash: hash, ID: run.ID}
-		}
-		return copyRun(run), false, nil
-	default:
-		delete(a.runs, run.ID)
-		return Run{}, false, failure(503, "RUN_QUEUE_FULL", "生成队列已满，请稍后重试同一幂等键")
+	a.execution.enqueueLocked(executionJob{ID: run.ID, WorkspaceID: run.WorkspaceID, ModelKey: model.UpstreamModel, EnqueuedAt: time.Now()})
+	a.appendMemoryAuditLocked(audit)
+	if a.store == nil {
+		a.idem[index] = idemRecord{Hash: hash, ID: run.ID}
 	}
+	return copyRun(run), false, nil
 }
 
 func (a *App) createTask(input TaskInput, key string, actorIDs ...string) (Task, bool, error) {
@@ -540,6 +607,16 @@ func (a *App) createTask(input TaskInput, key string, actorIDs ...string) (Task,
 }
 
 func (a *App) createTaskContext(ctx context.Context, input TaskInput, key string, actorIDs ...string) (Task, bool, error) {
+	approval := &taskMediaModerationAdmission{}
+	task, replayed, err := a.createTaskApproved(ctx, input, key, approval, actorIDs...)
+	if !isMediaModerationPreparation(err) {
+		return task, replayed, err
+	}
+	approval.check(ctx, a)
+	return a.createTaskApproved(ctx, input, key, approval, actorIDs...)
+}
+
+func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key string, approval *taskMediaModerationAdmission, actorIDs ...string) (Task, bool, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.ctx.Err() != nil {
@@ -569,7 +646,10 @@ func (a *App) createTaskContext(ctx context.Context, input TaskInput, key string
 		}
 		return copyTask(record.Task), true, nil
 	}
-	if a.moderation != nil {
+	if err := a.checkGenerationAccessLocked(project.WorkspaceID); err != nil {
+		return Task{}, false, err
+	}
+	if a.moderation != nil && a.mediaModeration == nil {
 		return Task{}, false, failure(422, "MODERATION_MEDIA_UNSUPPORTED", "当前审核策略只支持文本，新媒体生成尚未开放")
 	}
 	if err := a.validateBillingAdmission(input.QuoteID, false); err != nil {
@@ -604,6 +684,12 @@ func (a *App) createTaskContext(ctx context.Context, input TaskInput, key string
 	if err != nil {
 		return Task{}, false, err
 	}
+	if a.mediaModeration != nil {
+		approval.workspaceID = project.WorkspaceID
+		if err := approval.prepare(input, parameters, model, refs); err != nil {
+			return Task{}, false, err
+		}
+	}
 	if err := a.checkMemoryLibraryCapacityLocked(parameters.Count); err != nil {
 		return Task{}, false, err
 	}
@@ -626,6 +712,8 @@ func (a *App) createTaskContext(ctx context.Context, input TaskInput, key string
 	input.Parameters = parameters // The idempotency hash above belongs to the original request, never this resolved execution copy.
 	input.Inputs.ReferenceAssetIDs = append([]string(nil), input.Inputs.ReferenceAssetIDs...)
 	record := &taskRecord{Task: task, Input: input, NextPoll: now}
+	approval.attach(record)
+	task = record.Task
 	if operation == "edit" {
 		var prepareErr error
 		a.mu.Unlock()
@@ -648,6 +736,9 @@ func (a *App) createTaskContext(ctx context.Context, input TaskInput, key string
 				return Task{}, false, err
 			}
 			return copyTask(existing.Task), true, nil
+		}
+		if err := a.checkGenerationAccessLocked(project.WorkspaceID); err != nil {
+			return Task{}, false, err
 		}
 		if a.ctx.Err() != nil || ctx.Err() != nil {
 			return Task{}, false, failure(503, "TASK_PREPARATION_INTERRUPTED", "任务准备已中断；请保留原请求和幂等键核对")
@@ -722,11 +813,25 @@ func (a *App) listTasks() []Task {
 func (a *App) runWorker() {
 	defer a.wg.Done()
 	for {
+		a.mu.Lock()
+		if a.ctx.Err() != nil {
+			a.mu.Unlock()
+			return
+		}
+		job, ok := a.execution.pickLocked(time.Now())
+		wake := a.execution.wake
+		a.mu.Unlock()
+		if ok {
+			func() {
+				defer func() { a.mu.Lock(); a.execution.releaseLocked(job.ID); a.mu.Unlock() }()
+				a.executeRun(job.ID)
+			}()
+			continue
+		}
 		select {
 		case <-a.ctx.Done():
 			return
-		case id := <-a.runQueue:
-			a.executeRun(id)
+		case <-wake:
 		}
 	}
 }
@@ -986,6 +1091,7 @@ func (a *App) cancelRun(id string, actorIDs ...string) (Run, error) {
 		if err := a.finishRunLocked(r, "CANCELLED", audit); err != nil {
 			return Run{}, err
 		}
+		a.execution.cancelLocked(id)
 		if r.Cancel != nil {
 			r.Cancel()
 		}
@@ -1005,9 +1111,10 @@ func (a *App) cancelTask(id string, actorIDs ...string) (Task, error) {
 			return Task{}, failure(409, "CANCEL_UNSUPPORTED", "当前媒体供应商未提供取消确认接口；任务保持原状态继续查询")
 		}
 		audit := newAuditEvent(t.Task.WorkspaceID, t.Task.ProjectID, firstActor(actorIDs), "task.cancelled", "task", t.Task.ID, AuditDetails{FromStatus: t.Task.Status, ToStatus: "CANCELLED", Kind: t.Task.Kind})
-		candidate := *t
+		candidate := *cloneLeasedRecord(t)
 		candidate.Lease, candidate.LeaseComplete, candidate.LeaseStatus = nil, false, ""
 		candidate.Task.Status = "CANCELLED"
+		quarantineMediaTask(&candidate, "cancelled")
 		candidate.Task.UpdatedAt = time.Now().UTC()
 		candidate.Task.Version++
 		candidate.Task.CanReconcile = false
@@ -1015,8 +1122,14 @@ func (a *App) cancelTask(id string, actorIDs ...string) (Task, error) {
 			if err := a.store.saveTask(&candidate, audit); err != nil {
 				return Task{}, err
 			}
+		} else if candidate.Delivery != nil && candidate.Delivery.State == "READY" {
+			candidate.Delivery.State = "PARKED"
+			candidate.Delivery.Version++
 		}
 		t.Task = candidate.Task
+		t.Delivery = cloneMediaDelivery(candidate.Delivery)
+		t.ReviewDispatch = cloneMediaReviewDispatch(candidate.ReviewDispatch)
+		a.cancelMediaReviewLocked(id)
 		t.Lease, t.LeaseComplete, t.LeaseStatus, t.InFlight = nil, false, "", false
 		a.appendMemoryAuditLocked(audit)
 		a.publishTaskLocked(t.Task)
@@ -1024,66 +1137,35 @@ func (a *App) cancelTask(id string, actorIDs ...string) (Task, error) {
 	return copyTask(t.Task), nil
 }
 
-// A single scheduler claims due tasks. Fixed workers perform one network
-// operation at a time; no goroutine sleeps per task and no task is polled twice.
-func (a *App) scheduleTasks() {
-	defer a.wg.Done()
-	ticker := time.NewTicker(a.config.PollInterval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-a.ctx.Done():
-			return
-		case now := <-ticker.C:
-			a.mu.Lock()
-			for id, t := range a.tasks {
-				if terminal(t.Task.Status) || t.Task.Status == "SUBMIT_UNKNOWN" || t.Task.Status == "RECONCILE_REQUIRED" || t.InFlight || now.Before(t.NextPoll) || a.media == nil {
-					continue
-				}
-				select {
-				case a.taskQueue <- id:
-					t.InFlight = true
-				default:
-				}
-			}
-			a.mu.Unlock()
-		}
-	}
-}
-
-func (a *App) taskWorker() {
-	defer a.wg.Done()
-	if a.store != nil {
-		a.runPersistentTaskWorker()
-		return
-	}
-	for {
-		select {
-		case <-a.ctx.Done():
-			return
-		case id := <-a.taskQueue:
-			a.executeTaskStep(id)
-		}
-	}
-}
-
 func (a *App) executeTaskStep(id string) {
 	if a.store != nil {
 		a.executePersistentTaskStep(id)
 		return
 	}
-	a.mu.Lock()
-	t := a.tasks[id]
-	if t == nil {
-		a.mu.Unlock()
-		return
+	if !a.executeMemoryTaskLane(mediaSubmitLane, id) {
+		if !a.executeMemoryTaskLane(mediaQueryLane, id) {
+			a.executeMemoryTaskLane(mediaDeliveryLane, id)
+		}
 	}
-	if terminal(t.Task.Status) || a.ctx.Err() != nil {
-		t.InFlight = false
+}
+
+func (a *App) executeMemoryTaskRecord(id string, t *taskRecord, attempt string) {
+	a.mu.Lock()
+	if a.tasks[id] != t || terminal(t.Task.Status) || a.ctx.Err() != nil || a.mediaExecution.memoryAttempts[id] != attempt {
 		a.mu.Unlock()
 		return
 	}
 	handle, input := t.Handle, t.Input
+	if handle.ID == "" && t.Task.Status == "SUBMITTING" {
+		t.Task.Status = "SUBMIT_UNKNOWN"
+		t.Task.Error = &APIError{Code: "SUBMISSION_UNKNOWN", Message: "上次提交没有确定受理结果，禁止自动重新提交"}
+		t.Task.Version++
+		t.Task.UpdatedAt = time.Now().UTC()
+		t.Task.CanReconcile = false
+		a.publishTaskLocked(t.Task)
+		a.mu.Unlock()
+		return
+	}
 	if handle.ID == "" {
 		if prepared, ok := a.media.(interface {
 			Prepare(TaskInput) (MediaSubmission, error)
@@ -1107,11 +1189,13 @@ func (a *App) executeTaskStep(id string) {
 		a.publishTaskLocked(t.Task)
 	}
 	submission := t.Submission
+	version := t.Task.Version
 	a.mu.Unlock()
 	ctx, cancel := context.WithTimeout(a.ctx, 2*time.Minute)
 	defer cancel()
 	var result MediaResult
 	var err error
+	var deliveryQuery *MediaQueryResult
 	if handle.ID == "" {
 		if prepared, ok := a.media.(interface {
 			SubmitPrepared(context.Context, MediaSubmission) (MediaHandle, error)
@@ -1120,15 +1204,47 @@ func (a *App) executeTaskStep(id string) {
 		} else {
 			handle, err = a.media.Submit(ctx, input)
 		}
-		result = MediaResult{Status: "QUEUED", RetryAfter: handle.RetryAfter}
+		result = MediaResult{Status: "QUEUED", RetryAfter: handle.RetryAfter, Observation: handle.Observation}
+	} else if provider, ok := a.media.(MediaDeliveryProvider); ok {
+		queried, queryErr := provider.QueryStatus(ctx, handle)
+		result, err = queried.Result, queryErr
+		if err == nil && (result.Status == "SUCCEEDED" || result.Status == "PARTIAL") {
+			if validMediaDeliverySources(handle, queried) {
+				deliveryQuery = &queried
+			} else {
+				err = mediaDeliveryFailure()
+			}
+		} else if err == nil && (len(queried.Items) != 0 || len(result.Artifacts) != 0) {
+			err = mediaDeliveryFailure()
+		}
 	} else {
 		result, err = a.media.Query(ctx, handle)
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	t.InFlight = false
-	if terminal(t.Task.Status) {
+	if a.tasks[id] != t || terminal(t.Task.Status) || t.Task.Version != version || a.mediaExecution.memoryAttempts[id] != attempt {
 		return
+	}
+	if deliveryQuery != nil {
+		a.observeMediaStep(t, result, nil)
+		r, e := a.delivery.seal(t, *deliveryQuery)
+		if e != nil {
+			err = mediaDeliveryFailure()
+		} else {
+			r.Version = 1
+			t.Delivery = r
+			t.Task.Status = "INGESTING"
+			t.Task.Progress = 99
+			t.Task.Artifacts = []Artifact{}
+			t.Task.CanReconcile = false
+			t.Task.Error = nil
+			t.Task.Version++
+			t.Task.UpdatedAt = time.Now().UTC()
+			t.NextPoll = time.Now()
+			a.applyMemoryMediaSchedule(t)
+			a.publishTaskLocked(t.Task)
+			return
+		}
 	}
 	if err != nil && a.ctx.Err() != nil {
 		// Process shutdown or writer loss is not a provider failure. Preserve the
@@ -1181,6 +1297,9 @@ func (a *App) executeTaskStep(id string) {
 		interval = providerError.RetryAfter
 	}
 	t.NextPoll = time.Now().Add(interval)
+	a.observeMediaStep(t, result, err)
+	applyMediaScheduleExceeded(t)
+	a.applyMemoryMediaSchedule(t)
 	a.registerMemoryTaskLibraryLocked(t.Task)
 	a.publishTaskLocked(t.Task)
 }
@@ -1228,6 +1347,18 @@ func (a *App) checkpointRuns() {
 type subscriptionScope struct{ WorkspaceID, ProjectID string }
 
 func (a *App) canReconcileTask(t *taskRecord) bool {
+	if _, err := mediaFrozenChannel(t, mediaLaneForTask(t)); err != nil {
+		return false
+	}
+	if t.Delivery != nil {
+		return false
+	}
+	if t.Task.Moderation != nil && t.Task.Moderation.State != "PENDING" {
+		return false
+	}
+	if t.MediaModeration != nil && len(t.MediaModeration.Candidates) > 0 {
+		return false
+	}
 	return a.media != nil && t.Handle.ID != "" && t.Task.ProviderMode == a.config.Mode && (t.Task.Status == "RECONCILE_REQUIRED" || t.Task.Status == "SUBMIT_UNKNOWN" || t.Task.Status == "PROVIDER_STATE_UNKNOWN")
 }
 func (a *App) reconcileTask(id string, actorIDs ...string) (Task, error) {
@@ -1241,11 +1372,12 @@ func (a *App) reconcileTask(id string, actorIDs ...string) (Task, error) {
 		return Task{}, failure(409, "RECONCILE_UNAVAILABLE", "此任务没有可安全查询的原受理记录，不能重新提交生成")
 	}
 	if t.Task.ReconcileAfter != nil && time.Now().Before(*t.Task.ReconcileAfter) {
-		return Task{}, failure(429, "RECONCILE_COOLDOWN", "请等待15秒核对冷却后再试")
+		return Task{}, failure(429, "RECONCILE_COOLDOWN", "请等待原核对冷却结束后再试")
 	}
 	audit := newAuditEvent(t.Task.WorkspaceID, t.Task.ProjectID, firstActor(actorIDs), "task.reconcile_requested", "task", t.Task.ID, AuditDetails{FromStatus: t.Task.Status, ToStatus: "QUEUED", Kind: t.Task.Kind})
 	after := time.Now().UTC().Add(15 * time.Second)
 	candidate := *t
+	candidate.ScheduleReconcile = true
 	candidate.Lease, candidate.LeaseComplete, candidate.LeaseStatus = nil, false, ""
 	candidate.Task.ReconcileAfter = &after
 	candidate.Task.CanReconcile = false
@@ -1258,8 +1390,11 @@ func (a *App) reconcileTask(id string, actorIDs ...string) (Task, error) {
 		if err := a.store.saveTask(&candidate, audit); err != nil {
 			return Task{}, err
 		}
+	} else if err := a.checkMemoryReconcileSchedule(&candidate); err != nil {
+		return Task{}, err
 	}
 	t.Task = candidate.Task
+	t.Schedule = cloneMediaTaskSchedule(candidate.Schedule)
 	t.NextPoll = candidate.NextPoll
 	t.Lease, t.LeaseComplete, t.LeaseStatus, t.InFlight = nil, false, "", false
 	a.appendMemoryAuditLocked(audit)

@@ -56,7 +56,7 @@ var referenceGCFile = regexp.MustCompile(`^(blob_[a-f0-9]{64}\.bin|reference_par
 var assetGCFile = regexp.MustCompile(`^(asset_[a-f0-9]{64}\.(bin|json|thumb\.png)|(part|meta|asset_thumb|asset_manifest)_[a-f0-9]{32}\.tmp)$`)
 
 const maintenanceEntryLimit = 100000
-const maintenanceSchemaVersion = 15
+const maintenanceSchemaVersion = 20
 
 // MaintainPrivateStorage is an offline, explicitly configured admin operation.
 // It acquires both OS directory locks and the application's PostgreSQL writer
@@ -117,10 +117,11 @@ func MaintainPrivateStorage(ctx context.Context, config StorageMaintenanceConfig
 	if err = conn.QueryRow(ctx, "SELECT pg_try_advisory_lock($1)", int64(0x53545544494F)).Scan(&locked); err != nil || !locked {
 		return report, errors.New("maintenance requires the workbench to be stopped; PostgreSQL writer lock unavailable")
 	}
-	refs, assets, err := maintenanceReachable(ctx, conn)
+	reachability, err := maintenanceReachableDetails(ctx, conn)
 	if err != nil {
 		return report, err
 	}
+	refs, assets := reachability.References, reachability.Assets
 	referenceRoot, err := os.OpenRoot(referenceDir)
 	if err != nil {
 		return report, errors.New("maintenance reference directory cannot be opened")
@@ -140,7 +141,7 @@ func MaintainPrivateStorage(ctx context.Context, config StorageMaintenanceConfig
 			return report, err
 		}
 	}
-	for id := range assets {
+	for id := range reachability.Required {
 		for _, suffix := range []string{".bin", ".json"} {
 			if err = maintenanceRequireFile(assetRoot, id+suffix); err != nil {
 				return report, err
@@ -154,6 +155,11 @@ func MaintainPrivateStorage(ctx context.Context, config StorageMaintenanceConfig
 			if err = maintenanceRequireFile(assetRoot, id+".thumb.png"); err != nil {
 				return report, err
 			}
+		}
+	}
+	for _, receipt := range reachability.Receipts {
+		if err = maintenanceCheckDeliveryReceipt(ctx, assetRoot, receipt); err != nil {
+			return report, err
 		}
 	}
 	report = StorageMaintenanceReport{SchemaVersion: maintenanceSchemaVersion, ReferenceDir: referenceDir, AssetDir: assetDir, MinAgeHours: config.MinAge.Hours(), Candidates: []MaintenanceFile{}}
@@ -184,8 +190,10 @@ func MaintainPrivateStorage(ctx context.Context, config StorageMaintenanceConfig
 		ReferenceDir, AssetDir string
 		MinAge                 time.Duration
 		Reachable              []string
+		Deliveries             []maintenanceDeliveryReference
+		ReviewDispatches       []maintenanceReviewDispatchReference
 		Files                  []MaintenanceFile
-	}{maintenanceSchemaVersion, referenceDir, assetDir, config.MinAge, reachable, report.Candidates})
+	}{maintenanceSchemaVersion, referenceDir, assetDir, config.MinAge, reachable, reachability.Deliveries, reachability.ReviewDispatches, report.Candidates})
 	digest := sha256.Sum256(identity)
 	report.PlanDigest = hex.EncodeToString(digest[:])
 	if !config.Apply {
@@ -235,11 +243,11 @@ func maintenanceRequireFile(root *os.Root, name string) error {
 	return nil
 }
 
-func maintenanceReachable(ctx context.Context, conn *pgx.Conn) (map[string]bool, map[string]bool, error) {
+func maintenanceBaseReachable(ctx context.Context, conn *pgx.Conn) (map[string]bool, map[string]bool, error) {
 	refs, assets := map[string]bool{}, map[string]bool{}
 	var versions []int32
 	if err := conn.QueryRow(ctx, "SELECT array_agg(version ORDER BY version) FROM studio_schema_versions").Scan(&versions); err != nil || len(versions) != maintenanceSchemaVersion {
-		return nil, nil, errors.New("maintenance requires exactly schema versions 001..015; it does not run migrations")
+		return nil, nil, errors.New("maintenance requires exactly schema versions 001..020; it does not run migrations")
 	}
 	for i, v := range versions {
 		if int(v) != i+1 {
@@ -321,6 +329,36 @@ func maintenanceReachable(ctx context.Context, conn *pgx.Conn) (map[string]bool,
 	rows.Close()
 	if err != nil {
 		return nil, nil, errors.New("task reachability query interrupted")
+	}
+	// Candidates remain durable references in every moderation/worker state.
+	// An upstream terminal state or a blocked decision never makes them orphaned.
+	rows, err = conn.Query(ctx, "SELECT candidates FROM studio_task_media_candidates")
+	if err != nil {
+		return nil, nil, errors.New("media candidate reachability could not be read")
+	}
+	for rows.Next() {
+		var raw []byte
+		if err = rows.Scan(&raw); err != nil {
+			rows.Close()
+			return nil, nil, errors.New("media candidate reachability could not be decoded")
+		}
+		candidates, decodeErr := decodeMediaCandidates(raw)
+		if decodeErr != nil || len(candidates) == 0 {
+			rows.Close()
+			return nil, nil, errors.New("invalid persisted media candidates; maintenance refused")
+		}
+		for _, candidate := range candidates {
+			assets[candidate.ID] = true
+		}
+		if len(refs)+len(assets) > maintenanceEntryLimit {
+			rows.Close()
+			return nil, nil, errors.New("maintenance reachability limit exceeded")
+		}
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return nil, nil, errors.New("media candidate reachability query interrupted")
 	}
 	return refs, assets, nil
 }

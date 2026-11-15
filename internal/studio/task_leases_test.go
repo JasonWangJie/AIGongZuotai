@@ -367,8 +367,12 @@ func TestPostgresTaskLeaseActualWorkersQueryUncachedRecord(t *testing.T) {
 	if got.Status != "SUCCEEDED" || provider.submits.Load() != 1 || provider.queries.Load() != 1 {
 		t.Fatalf("durable workers did not execute uncached row once: %s submits=%d query=%d", got.Status, provider.submits.Load(), provider.queries.Load())
 	}
-	if len(app.taskQueue) != 0 {
-		t.Fatal("PostgreSQL work depended on memory scheduler queue")
+	app.mu.Lock()
+	memoryAttempts := len(app.mediaExecution.memoryAttempts)
+	app.mu.Unlock()
+	snapshot := app.mediaExecution.snapshot()
+	if memoryAttempts != 0 || snapshot.SubmitSteps != 1 || snapshot.QuerySteps != 1 {
+		t.Fatal("PostgreSQL work did not use its two durable lanes independently of memory selection")
 	}
 }
 

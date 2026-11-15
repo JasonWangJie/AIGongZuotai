@@ -21,6 +21,7 @@ import (
 // MediaProviderError distinguishes an uncertain generation from a failed GET.
 // Callers must persist uncertainty and must never turn it into a fresh submit.
 type MediaProviderError struct {
+	Observation       *MediaScheduleObservation `json:"-"`
 	Code              string
 	Message           string
 	SubmissionUnknown bool
@@ -62,6 +63,11 @@ type AsyncMediaConfig struct {
 	AssetDir          string
 	AssetStorage      AssetStorageConfig
 	AllowedAssetHosts []string
+	// Each lane has its own HTTP connection pool. Zero uses the default of two;
+	// the application passes its corresponding worker budget (1..32).
+	SubmitConcurrency   int
+	QueryConcurrency    int
+	DeliveryConcurrency int
 	// The application owns this store's lifecycle; it contains immutable local
 	// multipart requests, not public asset URLs or provider credentials.
 	BodyStore MediaBodyStore
@@ -81,8 +87,9 @@ type AsyncMediaProvider struct {
 	videoModel       string
 	videoSeconds     int
 	videoRes         string
-	client           *http.Client
+	client           *http.Client // JSON submissions; editClient shares this pool.
 	editClient       *http.Client
+	queryClient      *http.Client
 	assets           *LocalAssetStore
 	bodies           MediaBodyStore
 }
@@ -97,6 +104,23 @@ const (
 var upstreamTaskID = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,255}$`)
 
 func NewAsyncMediaProvider(config AsyncMediaConfig) (*AsyncMediaProvider, error) {
+	submitConcurrency, queryConcurrency := config.SubmitConcurrency, config.QueryConcurrency
+	deliveryConcurrency := config.DeliveryConcurrency
+	if deliveryConcurrency == 0 {
+		deliveryConcurrency = 2
+	}
+	if deliveryConcurrency < 1 || deliveryConcurrency > 16 {
+		return nil, errors.New("asynchronous media delivery concurrency must be between 1 and 16")
+	}
+	if submitConcurrency == 0 {
+		submitConcurrency = 2
+	}
+	if queryConcurrency == 0 {
+		queryConcurrency = 2
+	}
+	if submitConcurrency < 1 || submitConcurrency > 32 || queryConcurrency < 1 || queryConcurrency > 32 {
+		return nil, errors.New("asynchronous media submit and query concurrency must each be between 1 and 32")
+	}
 	u, err := url.Parse(config.BaseURL)
 	if err != nil || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || (u.Path != "" && u.Path != "/") || (u.Scheme != "http" && u.Scheme != "https") {
 		return nil, errors.New("ASYNC_IMAGE_BASE_URL must be a service root HTTP(S) URL without /v1, credentials, query or fragment")
@@ -121,6 +145,11 @@ func NewAsyncMediaProvider(config AsyncMediaConfig) (*AsyncMediaProvider, error)
 	if err != nil {
 		return nil, err
 	}
+	assets.slots = make(chan struct{}, deliveryConcurrency)
+	assetTransport := assets.client.Transport.(*http.Transport)
+	assetTransport.MaxConnsPerHost = deliveryConcurrency
+	assetTransport.MaxIdleConnsPerHost = deliveryConcurrency
+	assetTransport.MaxIdleConns = deliveryConcurrency
 	if config.AssetStorage.Backend == "s3" {
 		destination, storageErr := newS3AssetStorage(config.AssetStorage, config.AssetDir)
 		if storageErr != nil {
@@ -132,23 +161,28 @@ func NewAsyncMediaProvider(config AsyncMediaConfig) (*AsyncMediaProvider, error)
 		_ = assets.Close()
 		return nil, errors.New("ASSET_STORAGE_BACKEND must be local or s3")
 	}
+	client := newMediaLaneClient(submitConcurrency)
+	queryClient := newMediaLaneClient(queryConcurrency)
+	identity := sha256.Sum256([]byte(base + "\x00" + config.CredentialID + "\x00" + config.APIKey))
+	editClient := *client
+	editClient.Timeout = 2 * time.Minute // Large uploads share only the submission pool.
+	return &AsyncMediaProvider{base: base, key: config.APIKey, credentialID: config.CredentialID, providerIdentity: hex.EncodeToString(identity[:]),
+		imageModel: config.ImageModel, videoModel: config.VideoModel, videoSeconds: config.VideoSeconds, videoRes: config.VideoResolution,
+		assets: assets, bodies: config.BodyStore, client: client, editClient: &editClient, queryClient: queryClient}, nil
+}
+
+func newMediaLaneClient(concurrency int) *http.Client {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Proxy = nil
 	transport.DialContext = (&net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}).DialContext
-	transport.MaxIdleConns = 32
-	transport.MaxIdleConnsPerHost = 16
-	transport.MaxConnsPerHost = 16
+	transport.MaxIdleConns = concurrency
+	transport.MaxIdleConnsPerHost = concurrency
+	transport.MaxConnsPerHost = concurrency
 	transport.TLSHandshakeTimeout = 10 * time.Second
 	transport.ResponseHeaderTimeout = 20 * time.Second
 	transport.IdleConnTimeout = 90 * time.Second
-	identity := sha256.Sum256([]byte(base + "\x00" + config.CredentialID + "\x00" + config.APIKey))
-	client := &http.Client{Transport: transport, Timeout: 30 * time.Second,
+	return &http.Client{Transport: transport, Timeout: 30 * time.Second,
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
-	editClient := *client
-	editClient.Timeout = 2 * time.Minute // Large uploads share the pool, with the worker context as the total deadline.
-	return &AsyncMediaProvider{base: base, key: config.APIKey, credentialID: config.CredentialID, providerIdentity: hex.EncodeToString(identity[:]),
-		imageModel: config.ImageModel, videoModel: config.VideoModel, videoSeconds: config.VideoSeconds, videoRes: config.VideoResolution,
-		assets: assets, bodies: config.BodyStore, client: client, editClient: &editClient}, nil
 }
 
 func isLoopbackHost(host string) bool {
@@ -229,7 +263,15 @@ func (p *AsyncMediaProvider) Submit(ctx context.Context, input TaskInput) (Media
 	return p.SubmitPrepared(ctx, submission)
 }
 
-func (p *AsyncMediaProvider) SubmitPrepared(ctx context.Context, submission MediaSubmission) (MediaHandle, error) {
+func (p *AsyncMediaProvider) SubmitPrepared(ctx context.Context, submission MediaSubmission) (handle MediaHandle, err error) {
+	var observation *MediaScheduleObservation
+	defer func() {
+		if err != nil {
+			err = attachMediaObservation(err, observation)
+		} else {
+			handle.Observation = observation
+		}
+	}()
 	expectedEndpoint := imageGenerationEndpoint
 	if submission.Kind == "video" {
 		expectedEndpoint = videoGenerationEndpoint
@@ -263,9 +305,11 @@ func (p *AsyncMediaProvider) SubmitPrepared(ctx context.Context, submission Medi
 	}
 	response, err := client.Do(req)
 	if err != nil {
+		observation = mediaNetworkObservation("gateway", ctx)
 		return MediaHandle{}, &MediaProviderError{Code: "SUBMIT_UNKNOWN", Message: "submission response was not received; retain the original request and key", SubmissionUnknown: true, ReconcileRequired: true}
 	}
 	defer response.Body.Close()
+	observation = mediaResponseObservation("gateway", response, time.Now())
 	if response.StatusCode != http.StatusAccepted {
 		return MediaHandle{}, mediaHTTPError(response, true)
 	}
@@ -294,7 +338,10 @@ func decodeMediaJSON(reader io.Reader, destination any) error {
 	return nil
 }
 
-func mediaHTTPError(response *http.Response, submitting bool) *MediaProviderError {
+func mediaHTTPError(response *http.Response, submitting bool) (failure *MediaProviderError) {
+	defer func() {
+		failure.Observation = mediaResponseObservation("gateway", response, time.Now())
+	}()
 	retry := retryAfterDuration(response.Header.Get("Retry-After"), time.Now())
 	if submitting {
 		switch response.StatusCode {
@@ -310,19 +357,6 @@ func mediaHTTPError(response *http.Response, submitting bool) *MediaProviderErro
 		return &MediaProviderError{Code: "QUERY_TEMPORARY", Message: fmt.Sprintf("task query temporarily unavailable (HTTP %d)", response.StatusCode), Retryable: true, RetryAfter: retry}
 	}
 	return &MediaProviderError{Code: "QUERY_REQUIRES_RECONCILIATION", Message: fmt.Sprintf("task query requires the original credential or operator review (HTTP %d)", response.StatusCode), ReconcileRequired: true, RetryAfter: retry}
-}
-
-func retryAfterDuration(value string, now time.Time) time.Duration {
-	if seconds, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64); err == nil && seconds >= 0 {
-		if seconds > 86400 {
-			seconds = 86400
-		}
-		return max(3*time.Second, time.Duration(seconds)*time.Second)
-	}
-	if date, err := http.ParseTime(value); err == nil {
-		return min(24*time.Hour, max(3*time.Second, date.Sub(now)))
-	}
-	return 3 * time.Second
 }
 
 type mediaTaskResponse struct {
@@ -344,74 +378,109 @@ type mediaTaskResponse struct {
 	} `json:"data"`
 }
 
+// Query is the compatibility adapter for older isolated callers. Application
+// workers use MediaDeliveryProvider so a committed manifest separates queries
+// from downloads. The compatibility path preserves legacy asset identities.
 func (p *AsyncMediaProvider) Query(ctx context.Context, handle MediaHandle) (MediaResult, error) {
-	if !upstreamTaskID.MatchString(handle.ID) || handle.CredentialID != p.credentialID || handle.ProviderIdentity != p.providerIdentity || (handle.Kind != "image" && handle.Kind != "video") {
-		return MediaResult{}, &MediaProviderError{Code: "QUERY_IDENTITY_CHANGED", Message: "task requires its original gateway credential identity", ReconcileRequired: true}
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.base+mediaQueryPrefix+url.PathEscape(handle.ID), nil)
+	queried, err := p.QueryStatus(ctx, handle)
 	if err != nil {
 		return MediaResult{}, err
 	}
+	out := queried.Result
+	for _, item := range queried.Items {
+		identity := p.base + "\n" + p.credentialID + "\n" + handle.ID + "\n" + strconv.Itoa(item.Slot)
+		stored, err := p.assets.Import(ctx, identity, item.SourceURL, item.Kind)
+		if err != nil {
+			return MediaResult{}, err
+		}
+		out.Artifacts = append(out.Artifacts, mediaDeliveryArtifact(item, stored))
+	}
+	return out, nil
+}
+
+func (p *AsyncMediaProvider) QueryStatus(ctx context.Context, handle MediaHandle) (MediaQueryResult, error) {
+	result, items, err := p.queryStatus(ctx, handle)
+	return MediaQueryResult{Result: result, Items: items}, err
+}
+
+func (p *AsyncMediaProvider) queryStatus(ctx context.Context, handle MediaHandle) (outResult MediaResult, outItems []MediaDeliveryItem, outErr error) {
+	var observation *MediaScheduleObservation
+	defer func() {
+		if outErr != nil {
+			outErr = attachMediaObservation(outErr, observation)
+		} else {
+			outResult.Observation = observation
+		}
+	}()
+	if !upstreamTaskID.MatchString(handle.ID) || handle.CredentialID != p.credentialID || handle.ProviderIdentity != p.providerIdentity || (handle.Kind != "image" && handle.Kind != "video") ||
+		handle.Count < 1 || handle.Count > 4 || handle.Kind == "video" && handle.Count != 1 {
+		return MediaResult{}, nil, &MediaProviderError{Code: "QUERY_IDENTITY_CHANGED", Message: "task requires its original gateway credential identity", ReconcileRequired: true}
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.base+mediaQueryPrefix+url.PathEscape(handle.ID), nil)
+	if err != nil {
+		return MediaResult{}, nil, err
+	}
 	req.Header.Set("Authorization", "Bearer "+p.key)
 	req.Header.Set("Accept", "application/json")
-	response, err := p.client.Do(req)
+	response, err := p.queryClient.Do(req)
 	if err != nil {
-		return MediaResult{}, &MediaProviderError{Code: "QUERY_TEMPORARY", Message: "task query failed; the accepted generation has not been resubmitted", Retryable: true, RetryAfter: 3 * time.Second}
+		observation = mediaNetworkObservation("gateway", ctx)
+		return MediaResult{}, nil, &MediaProviderError{Code: "QUERY_TEMPORARY", Message: "task query failed; the accepted generation has not been resubmitted", Retryable: true, RetryAfter: 3 * time.Second}
 	}
 	defer response.Body.Close()
+	observation = mediaResponseObservation("gateway", response, time.Now())
 	if response.StatusCode != http.StatusOK {
-		return MediaResult{}, mediaHTTPError(response, false)
+		return MediaResult{}, nil, mediaHTTPError(response, false)
 	}
 	var result mediaTaskResponse
 	if err := decodeMediaJSON(response.Body, &result); err != nil {
-		return MediaResult{}, &MediaProviderError{Code: "QUERY_PROTOCOL_ERROR", Message: "task query returned an invalid response", Retryable: true, RetryAfter: 3 * time.Second}
+		return MediaResult{}, nil, &MediaProviderError{Code: "QUERY_PROTOCOL_ERROR", Message: "task query returned an invalid response", Retryable: true, RetryAfter: 3 * time.Second}
 	}
 	if result.TaskID != handle.ID || result.MediaType != handle.Kind {
-		return MediaResult{}, &MediaProviderError{Code: "QUERY_IDENTITY_CHANGED", Message: "query response did not match the submitted task", ReconcileRequired: true}
+		return MediaResult{}, nil, &MediaProviderError{Code: "QUERY_IDENTITY_CHANGED", Message: "query response did not match the submitted task", ReconcileRequired: true}
 	}
 	errorCode := strings.Trim(string(result.ErrorCode), `"`)
 	stateDetails := strings.ToLower(result.Status + " " + result.FailReason + " " + result.ErrorMessage + " " + result.StorageStatus + " " + result.BillingStatus)
 	if errorCode == "608" || strings.Contains(stateDetails, "execution_unknown") {
-		return MediaResult{}, &MediaProviderError{Code: "EXECUTION_UNKNOWN", Message: "gateway cannot confirm execution; retain this task for reconciliation", ReconcileRequired: true}
+		return MediaResult{}, nil, &MediaProviderError{Code: "EXECUTION_UNKNOWN", Message: "gateway cannot confirm execution; retain this task for reconciliation", ReconcileRequired: true}
 	}
 	if errorCode == "609" || strings.Contains(stateDetails, "storage_failed") || strings.Contains(stateDetails, "billing_failed") {
-		return MediaResult{}, &MediaProviderError{Code: "POSTPROCESS_REQUIRES_RECONCILIATION", Message: "original task storage or billing needs recovery; do not generate again", ReconcileRequired: true}
+		return MediaResult{}, nil, &MediaProviderError{Code: "POSTPROCESS_REQUIRES_RECONCILIATION", Message: "original task storage or billing needs recovery; do not generate again", ReconcileRequired: true}
 	}
 	progress := max(0, min(result.Progress, 99))
 	pollAfter := retryAfterDuration(response.Header.Get("Retry-After"), time.Now())
 	switch result.Stage {
 	case "queued":
-		return MediaResult{Status: "QUEUED", Progress: progress, RetryAfter: pollAfter}, nil
+		return MediaResult{Status: "QUEUED", Progress: progress, RetryAfter: pollAfter}, nil, nil
 	case "generating":
-		return MediaResult{Status: "RUNNING", Progress: progress, RetryAfter: pollAfter}, nil
+		return MediaResult{Status: "RUNNING", Progress: progress, RetryAfter: pollAfter}, nil, nil
 	case "saving":
-		return MediaResult{Status: "INGESTING", Progress: progress, RetryAfter: pollAfter}, nil
+		return MediaResult{Status: "INGESTING", Progress: progress, RetryAfter: pollAfter}, nil, nil
 	case "failed":
-		return MediaResult{Status: "FAILED", Progress: progress, Error: &APIError{Code: "UPSTREAM_GENERATION_FAILED", Message: "gateway reported a terminal generation failure; no automatic resubmission was made"}}, nil
+		return MediaResult{Status: "FAILED", Progress: progress, Error: &APIError{Code: "UPSTREAM_GENERATION_FAILED", Message: "gateway reported a terminal generation failure; no automatic resubmission was made"}}, nil, nil
 	case "completed":
 		if result.ResultExpired || result.StorageStatus == "expired" {
-			return MediaResult{}, &MediaProviderError{Code: "RESULT_EXPIRED", Message: "generation previously completed but its upstream results expired", ReconcileRequired: true}
+			return MediaResult{}, nil, &MediaProviderError{Code: "RESULT_EXPIRED", Message: "generation previously completed but its upstream results expired", ReconcileRequired: true}
 		}
 		if result.Status != "succeeded" || len(result.Data) == 0 || len(result.Data) > handle.Count || handle.Count < 1 {
-			return MediaResult{}, &MediaProviderError{Code: "RESULT_REQUIRES_RECONCILIATION", Message: "completed task has no usable or consistent result set", ReconcileRequired: true}
+			return MediaResult{}, nil, &MediaProviderError{Code: "RESULT_REQUIRES_RECONCILIATION", Message: "completed task has no usable or consistent result set", ReconcileRequired: true}
 		}
 		out := MediaResult{Status: "SUCCEEDED", Progress: 100}
+		items := make([]MediaDeliveryItem, 0, len(result.Data))
 		for index, artifact := range result.Data {
-			identity := p.base + "\n" + p.credentialID + "\n" + handle.ID + "\n" + strconv.Itoa(index)
-			stored, err := p.assets.Import(ctx, identity, artifact.URL, handle.Kind)
-			if err != nil {
-				return MediaResult{}, err
+			u, err := p.assets.deliveryURL(artifact.URL)
+			if err != nil || len(artifact.ContentType) > 128 || strings.ContainsAny(artifact.ContentType, "\x00\r\n") || artifact.ByteSize < 0 || artifact.ByteSize > 256<<20 {
+				return MediaResult{}, nil, &MediaProviderError{Code: "ASSET_SOURCE_NOT_ALLOWED", Message: "result source or metadata is not allowed for safe delivery", ReconcileRequired: true}
 			}
-			out.Artifacts = append(out.Artifacts, Artifact{ID: stored.ID, URL: "/api/v1/assets/" + stored.ID, StorageInfo: &stored,
-				Kind: handle.Kind, Title: fmt.Sprintf("生成%s %d", map[string]string{"image": "图片", "video": "视频"}[handle.Kind], index+1)})
+			items = append(items, MediaDeliveryItem{Slot: index, Kind: handle.Kind, SourceURL: u.String(), ContentType: artifact.ContentType, ByteSize: artifact.ByteSize})
 		}
-		if len(out.Artifacts) < handle.Count {
+		if len(items) < handle.Count {
 			out.Status = "PARTIAL"
 			out.Error = &APIError{Code: "PARTIAL_OUTPUT", Message: "gateway completed with fewer usable results than requested"}
 		}
-		return out, nil
+		return out, items, nil
 	default:
-		return MediaResult{}, &MediaProviderError{Code: "UNKNOWN_TASK_STATE", Message: "gateway task state requires adapter review", ReconcileRequired: true}
+		return MediaResult{}, nil, &MediaProviderError{Code: "UNKNOWN_TASK_STATE", Message: "gateway task state requires adapter review", ReconcileRequired: true}
 	}
 }
 
@@ -431,5 +500,6 @@ func (p *AsyncMediaProvider) ServeAsset(w http.ResponseWriter, r *http.Request, 
 
 func (p *AsyncMediaProvider) Close() error {
 	p.client.CloseIdleConnections()
+	p.queryClient.CloseIdleConnections()
 	return p.assets.Close()
 }

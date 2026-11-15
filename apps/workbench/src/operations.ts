@@ -1,7 +1,7 @@
 import { ApiError } from './api';
 import type { BillingSummary } from './billing';
 
-export type OperationPermission = 'read' | 'investigate' | 'finance' | 'case_open';
+export type OperationPermission = 'read' | 'investigate' | 'finance' | 'case_open' | 'generation_restrict' | 'appeal_resolve';
 export type OperationAction = 'reconcile' | 'release' | 'charge' | 'no_action';
 export type OperationReason = 'provider_unknown' | 'delivery_issue' | 'usage_missing' | 'billing_review' | 'manual_review';
 export type OperationAccess = { enabled: boolean; access: { workspace_id: string; role: string; permissions: string[]; version: number }[]; reason?: string };
@@ -19,8 +19,8 @@ export type OperationEvent = { id: string; action: string; resource_type: string
 export function operationEventName(action: string) { return ({ 'case.created': '建立核实工单', 'case.previewed': '生成处置预演', 'case.executed': '提交处置结果' } as Record<string, string>)[action] || '运营核实记录'; }
 export const operationReasons: Record<OperationReason, string> = { provider_unknown: '上游状态不明', delivery_issue: '交付结果异常', usage_missing: '计量缺失或矛盾', billing_review: '冻结额度核实', manual_review: '人工复核' };
 export const operationActions: Record<OperationAction, string> = { reconcile: '核对原任务', release: '释放冻结额度', charge: '按证据结算', no_action: '仅关闭工单' };
-export const operationRoles: Record<string, string> = { observer: '只读观察', operator: '任务核对', finance: '财务核实' };
-const permissions: OperationPermission[] = ['read', 'investigate', 'finance', 'case_open'];
+export const operationRoles: Record<string, string> = { observer: '只读观察', operator: '任务核对', finance: '财务核实', moderator: '生成权限复核' };
+const permissions: OperationPermission[] = ['read', 'investigate', 'finance', 'case_open', 'generation_restrict', 'appeal_resolve'];
 const safeID = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(value);
 
 export function operationScopes(value: OperationAccess | null): OperationScope[] {

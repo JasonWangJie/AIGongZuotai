@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "policy_id": "demo-media-fixtures",
+  "policy_version": "demo-2026-11-14-v1",
+  "max_image_bytes": 33554432,
+  "max_video_bytes": 268435456,
+  "fixtures": [
+    {
+      "kind": "image",
+      "phase": "input",
+      "sha256": "fda65e848109e9f61725c6f1e343dfa0e3daccf1711127be14d34f909152f07d",
+      "byte_size": 4604,
+      "decision": "allow"
+    },
+    {
+      "kind": "image",
+      "phase": "output",
+      "sha256": "fda65e848109e9f61725c6f1e343dfa0e3daccf1711127be14d34f909152f07d",
+      "byte_size": 4604,
+      "decision": "allow"
+    },
+    {
+      "kind": "video",
+      "phase": "input",
+      "sha256": "e81d1231f96fb999155110d60cc8a41b69f9bb038a766e0ca263e5f11d489f50",
+      "byte_size": 5993,
+      "decision": "allow"
+    },
+    {
+      "kind": "video",
+      "phase": "output",
+      "sha256": "e81d1231f96fb999155110d60cc8a41b69f9bb038a766e0ca263e5f11d489f50",
+      "byte_size": 5993,
+      "decision": "allow"
+    },
+    {
+      "kind": "image",
+      "phase": "input",
+      "sha256": "10cfbb67137454b9ed7b8e7e11112edfa705a94a8c04258f687de9693054cbbb",
+      "byte_size": 4540,
+      "decision": "block"
+    },
+    {
+      "kind": "image",
+      "phase": "output",
+      "sha256": "10cfbb67137454b9ed7b8e7e11112edfa705a94a8c04258f687de9693054cbbb",
+      "byte_size": 4540,
+      "decision": "block"
+    },
+    {
+      "kind": "video",
+      "phase": "input",
+      "sha256": "d67e280902ef6c4fd3c322b5d6b9948d533c29bead997ee37a79bd58ad38d0a8",
+      "byte_size": 6330,
+      "decision": "block"
+    },
+    {
+      "kind": "video",
+      "phase": "output",
+      "sha256": "d67e280902ef6c4fd3c322b5d6b9948d533c29bead997ee37a79bd58ad38d0a8",
+      "byte_size": 6330,
+      "decision": "block"
+    },
+    {
+      "kind": "image",
+      "phase": "input",
+      "sha256": "ab5278460a783c8bb2cd5a17f24c584affeb7583cb8a08209e897975a4260ef1",
+      "byte_size": 4740,
+      "decision": "review"
+    },
+    {
+      "kind": "image",
+      "phase": "output",
+      "sha256": "ab5278460a783c8bb2cd5a17f24c584affeb7583cb8a08209e897975a4260ef1",
+      "byte_size": 4740,
+      "decision": "review"
+    },
+    {
+      "kind": "video",
+      "phase": "input",
+      "sha256": "03445effc00b26ab7e81197991094e16f6eeadcc400d0baac6ccb18f5bf3a501",
+      "byte_size": 6473,
+      "decision": "review"
+    },
+    {
+      "kind": "video",
+      "phase": "output",
+      "sha256": "03445effc00b26ab7e81197991094e16f6eeadcc400d0baac6ccb18f5bf3a501",
+      "byte_size": 6473,
+      "decision": "review"
+    }
+  ]
+}

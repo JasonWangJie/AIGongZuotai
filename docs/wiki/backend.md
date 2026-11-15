@@ -112,7 +112,7 @@ memory模式单个scheduler每500ms检查到期任务，4worker/32队列；PG模
 
 媒体在平台受理阶段调用无 I/O 的 PrepareModel，把私有上游模型和已解析参数编码为不可变 MediaSubmission。PG 将它与 Task、平台幂等记录及受理审计同事务保存，随后 worker 持久 SUBMITTING，再用 SubmitPrepared 发送原始字节。不会在排队执行或重启后用新目录重建旧请求；memory 模式仅进程内保存这些记录。已有 handle 继续查询原任务，目录停用/移除不阻断该查询；服务根或凭据身份变化则进入核实。旧 live 任务若同时没有 handle 和提交快照，恢复为 RECONCILE_REQUIRED，禁止按新默认值补齐后提交。
 
-状态包含 QUEUED/SUBMITTING/RUNNING/INGESTING/SUCCEEDED/PARTIAL/FAILED/CANCELLED，以及 SUBMIT_UNKNOWN、PROVIDER_STATE_UNKNOWN、RECONCILE_REQUIRED。未知提交不能自动再提交；已知 handle 的待核实任务可由有权限用户“重新核对”，只继续查询原任务。完全无 handle 的未知提交仍需外部核实，不伪造恢复。
+状态包含 QUEUED/SUBMITTING/RUNNING/INGESTING/MODERATING/SUCCEEDED/PARTIAL/FAILED/CANCELLED，以及 SUBMIT_UNKNOWN、PROVIDER_STATE_UNKNOWN、RECONCILE_REQUIRED。未知提交不能自动再提交；已知handle、尚无私有审核候选且满足当前核对条件的待核实任务，可由有权限用户“重新核对”，只继续Query原任务。已经形成私有候选或审核决定的任务不借此重新审核或放行；完全无handle的未知提交仍需外部核实，不伪造恢复。
 
 真实素材先完成受控下载、大小/格式检查和私有磁盘落盘，才发布对应产物。静态目录与 ASSET_DIR 的真实路径/祖先符号链接经过配置检查，防止绕过资产 ACL。
 
@@ -163,12 +163,30 @@ V06 的目录、原始请求兼容、共享连接池、真实 PG 恢复和前端
 
 ## V14-B1文本审核与提交后交付
 
-`MODERATION_MODE`默认`disabled`；启用须PG和`AUTH_MODE=required`。既有`POST /api/v1/runs`与会话runs接口共用审核受理链路，没有公开绕过或人工放行接口。bootstrap新增`moderation`能力，包含`enabled/mode/policy_id?/policy_version?/text_delivery/media_supported`；关闭时为`stream`，启用时为`after_review`且不支持新媒体生成。Run新增有界`moderation`摘要：政策ID/版本、固定`output`阶段、PENDING/ALLOWED/BLOCKED/REVIEW、修订号及可选固定原因码。
+`MODERATION_MODE`默认`disabled`；启用须PG和`AUTH_MODE=required`。既有`POST /api/v1/runs`与会话runs接口共用审核受理链路，没有公开绕过或人工放行接口。bootstrap新增`moderation`能力，包含`enabled/mode/policy_id?/policy_version?/text_delivery/media_supported`；文本关闭时为`stream`，启用时为`after_review`。B1阶段拒绝新媒体；当前仅启用文本审核而没有配套媒体审核时仍拒绝，B2能力见下节。Run新增有界`moderation`摘要：政策ID/版本、固定`output`阶段、PENDING/ALLOWED/BLOCKED/REVIEW、修订号及可选固定原因码。
 
 输入先按原幂等键查找已受理请求，再准备实际完整`ChatRequest.Messages`；审核调用在全局状态锁和数据库事务之外执行。返回后重新检查原键、身份与项目作用域、会话版本及重建上下文摘要，才在同一事务创建Run、会话、冻结政策、适用的权益冻结和Outbox。不能把锁外检查前的上下文当成再次受理时仍然有效；输入未通过不调用生成。
 
 启用审核的新Run不发送`message.delta`。最多128KiB的候选正文只在执行内存，输出按受理时冻结政策在锁外全文审核；候选不进入检查点、历史、消息、Outbox或日志。只有审核ALLOWED与Run COMPLETED同时成立，并确认业务、审核决定、账本及Outbox事务提交后，才替换公开缓存并以`run.snapshot`或GET结果交付正文。快照、分页历史、消息分支和后续上下文共同执行正文可见性检查；上文普通流式路径的“保留部分输出”不适用于这些受审核Run。
 
-取消、中断、进程恢复或提交确认不明不能放行候选，也不自动重新生成。重启丢弃候选并将未完成审核置REVIEW；输出隔离不证明供应商未计费，财务核实不改变内容决定。015持久化冻结政策和不可变决定，不保存审核密钥、服务地址或候选原文；当前离线CLI栅栏均为精确001—015。
+取消、中断、进程恢复或提交确认不明不能放行候选，也不自动重新生成。重启丢弃文本候选并将未完成审核置REVIEW；输出隔离不证明供应商未计费，财务核实不改变内容决定。015持久化冻结政策和不可变决定，不保存审核密钥、服务地址或文本候选原文；B1交付时离线CLI栅栏为精确001—015，当前016要求见下节。
 
-`rules`仅供demo的有限字面规则；`http`是自有私有text-v1契约，真实审核商尚未选型，本地HTTP fixture不等于真实语义审核验收。旧文本、旧任务和资产不追溯；媒体输入/产物审核B2、人工放行、申诉和封禁尚未实施，完整V14仍为`in_progress`。配置、限额、错误与恢复细节见[文本审核](moderation.md)，验证见[054集成记录](../changes/2026-11-14-054-text-review-integration.md)。
+`rules`仅供demo的有限字面规则；`http`是自有私有text-v1契约，真实审核商尚未选型，本地HTTP fixture不等于真实语义审核验收。旧文本、旧任务和资产不追溯；人工放行、申诉和封禁尚未实施，完整V14仍为`in_progress`。配置、限额、错误与恢复细节见[文本审核](moderation.md)，B1历史验证保留在[054集成记录](../changes/2026-11-14-054-text-review-integration.md)。
+
+## V14-B2媒体字节审核与016格式
+
+新增独立`MEDIA_MODERATION_MODE=disabled|fixtures|http`，启用须PG、账户认证及已启用的文本审核。任务提示词按冻结文本政策检查；新参考上传、编辑实际引用及生成图片/视频按完整私有字节检查。fixtures仅供demo，以SHA256、长度、类型和input/output阶段精确匹配，未知文件REVIEW；http使用私有media-v1流式上传，不根据prompt或海报推断输出通过。协议与配置见[媒体审核](media-moderation.md)。
+
+新上传只有同步批准后才注册reference、资产库、幂等和审计。生成完成先在租约/版本检查通过的事务中保存016私有候选并进入MODERATING，公开Artifacts为空；审核在锁外执行。只有全部返回候选ALLOWED，且任务为SUCCEEDED/PARTIAL，才同事务提交决定、原顺序产物、目录、账务和Outbox，确认后更新缓存。任一候选未通过则整批隔离，不把未公开结果注册成交付。所有新旧内容、缩略图、library及reference入口共同执行门禁。
+
+与B1仅内存文本候选不同，B2媒体候选持久保存并纳入GC可达集合，取消、阻断、REVIEW及终态均保留。恢复或重领已持久候选会保持隔离，不自动重审或重生成；有原handle但尚无候选、仍满足核对条件的任务可继续Query原任务。财务charge/release不改变审核决定，也不授予内容下载权限。
+
+B2交付时账本、角色及存储维护CLI均要求精确001—016。升级前联备PG、私有参考/产物目录、S3对象与收据、owner及必要密钥；关闭模式或删除格式登记不能替代配套回退。引擎、执行、界面和联合证据分别见[055](../changes/2026-11-14-055-media-moderation-engine.md)、[056](../changes/2026-11-14-056-media-moderation-execution.md)、[057](../changes/2026-11-14-057-media-moderation-workbench.md)、[058](../changes/2026-11-14-058-media-review-integration.md)。真实审核商未选，fixture不代表语义质量或生产渠道放行，完整V14仍在进行中。
+
+## v0.15 / V14-C1工作区生成控制
+
+新增10个HTTP入口，严格8KiB JSON及字段/编码检查，scope、申诉原幂等、限制轮次、预演CAS、当前密码、事务回执和审计贯通。017表及新moderator权限见[控制核心](generation-controls.md)，三类新受理/报价与锁外检查后复核见[准入](generation-admission.md)。读取和限制共享稳定workspace行锁，旧任务继续生命周期；关闭运营配置不绕过持久限制。本批采用有界拉取，没有新建项目Outbox广播。联合结果见[062](../changes/2026-11-14-062-generation-controls-integration.md)。
+
+## V16-A1聊天执行
+
+单轮/多轮统一[有界公平队列](execution-scheduler.md)，执行数量与持久受理数量分开；五项CHAT配置及独立chat HTTP池支持启动配置。原键、工作区限制/审核/报价/会话原子受理不变，执行未实际返回不提前释放预算。017格式未变，SQL现集中[db](../../db/migrations/)。完整V16的媒体lane和逐token持久回放未完成。

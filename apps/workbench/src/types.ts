@@ -1,10 +1,10 @@
 export type Kind = 'chat' | 'image' | 'video';
-export type View = Kind | 'assets' | 'tasks' | 'canvas' | 'activity' | 'security' | 'billing' | 'operations';
+export type View = Kind | 'assets' | 'tasks' | 'canvas' | 'activity' | 'security' | 'billing' | 'operations' | 'generation';
 export type ParameterPreset = { id: string; name: string; aspect_ratio: string; size?: string; resolution?: string; seconds?: number };
 export type ModelCapabilities = { cancel_supported: boolean; max_count: number; max_prompt_bytes: number; parameter_presets: ParameterPreset[]; image_edit_supported?: boolean; max_reference_images?: number; context_window_tokens?: number; max_output_tokens?: number };
 export type ImageOperation = 'generate' | 'edit';
 export type ReferenceLimits = { max_file_bytes: number; max_pixels: number; max_dimension: number; max_reference_images: number; allowed_content_types: string[]; workspace_max_bytes: number; workspace_max_files: number };
-export type ReferenceAsset = { id: string; project_id: string; name: string; content_type: string; byte_size: number; width: number; height: number; created_at: string; url: string; thumbnail_url: string };
+export type ReferenceAsset = { id: string; project_id: string; name: string; content_type: string; byte_size: number; width: number; height: number; created_at: string; url: string; thumbnail_url: string; moderation?: import('./moderation').ModerationSummary };
 export type Model = { id: string; name: string; kind: Kind; description: string; enabled?: boolean; reason?: string; version?: string; capabilities?: ModelCapabilities };
 export type ModelCatalog = { version: string; models: Model[] };
 export type User = { id: string; email: string; name: string; email_verified?: boolean; email_verified_at?: string | null };
@@ -41,6 +41,7 @@ export type Bootstrap = {
 export type Artifact = { id: string; url: string; kind: string; title: string };
 export type ResourceError = { code: string; message: string };
 export type Task = {
+  moderation?: import('./moderation').ModerationSummary;
   billing?: import('./billing').BillingSummary;
   provider_mode?: 'demo' | 'live';
   operation?: ImageOperation; reference_asset_ids?: string[];
@@ -63,4 +64,4 @@ export type RunInput = { project_id: string; model_id: string; model_version?: s
 export type TaskInput = { quote_id?: string; project_id: string; kind: 'image' | 'video'; model_id: string; model_version?: string; operation?: ImageOperation; inputs: { prompt: string; reference_asset_ids?: string[] }; parameters: MediaParameters };
 export type RunEvent = { event: string; data: unknown; id?: string };
 export const terminal = (status: string) => ['COMPLETED', 'SUCCEEDED', 'PARTIAL', 'CANCELLED', 'FAILED', 'INTERRUPTED'].includes(status.toUpperCase());
-export const statusName = (status: string) => ({ CREATED: '已创建', SUBMITTING: '提交中', SUBMIT_UNKNOWN: '上游受理待确认', PROVIDER_STATE_UNKNOWN: '上游状态待核实', RECONCILE_REQUIRED: '需要核对', SUBMITTED: '已提交', ACCEPTED: '已受理', QUEUED: '排队中', RUNNING: '生成中', STREAMING: '输出中', PROCESSING: '处理中', INGESTING: '结果入库中', SAVING: '保存中', SUCCEEDED: '已完成', COMPLETED: '已完成', PARTIAL: '部分完成', CANCEL_REQUESTED: '正在取消', CANCELLING: '正在取消', CANCELLED: '已取消', INTERRUPTED: '运行已中断', FAILED: '失败' }[status.toUpperCase()] || status);
+export const statusName = (status: string) => ({ CREATED: '已创建', SUBMITTING: '提交中', SUBMIT_UNKNOWN: '上游受理待确认', PROVIDER_STATE_UNKNOWN: '上游状态待核实', RECONCILE_REQUIRED: '需要核对', SUBMITTED: '已提交', ACCEPTED: '已受理', QUEUED: '排队中', RUNNING: '生成中', STREAMING: '输出中', PROCESSING: '处理中', INGESTING: '结果入库中', MODERATING: '内容检查中', SAVING: '保存中', SUCCEEDED: '已完成', COMPLETED: '已完成', PARTIAL: '部分完成', CANCEL_REQUESTED: '正在取消', CANCELLING: '正在取消', CANCELLED: '已取消', INTERRUPTED: '运行已中断', FAILED: '失败' }[status.toUpperCase()] || status);

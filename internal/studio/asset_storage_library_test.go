@@ -77,6 +77,15 @@ func TestS3RealLibraryLifecycle(t *testing.T) {
 	}
 	created := decode[Task](t, body)
 	app.executeTaskStep(created.ID)
+	advanceMediaScheduleDue(t, app, created.ID)
+	app.executeTaskStep(created.ID)
+	// Native async query now freezes a private manifest. Delivery must remain
+	// invisible until its separate step finishes; all lifecycle assertions below
+	// still run against the real object service.
+	code, body, _ = request(t, server, "GET", "/api/v1/tasks/"+created.ID, "", nil)
+	if code != 200 || decode[Task](t, body).Status != "INGESTING" || len(decode[Task](t, body).Artifacts) != 0 {
+		t.Fatal("query published content before private delivery")
+	}
 	app.executeTaskStep(created.ID)
 	code, body, _ = request(t, server, "GET", "/api/v1/tasks/"+created.ID, "", nil)
 	completed := decode[Task](t, body)

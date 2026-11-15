@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import net from 'node:net';
 import { resolve } from 'node:path';
-import { binary, root, start, stopOwnedProcess, isolatedReferenceDirectory, isolatedMailEnvironment, isolatedBillingEnvironment, isolatedOperationsEnvironment, isolatedModerationEnvironment } from './lib/process.mjs';
+import { binary, root, start, stopOwnedProcess, isolatedReferenceDirectory, isolatedMailEnvironment, isolatedBillingEnvironment, isolatedOperationsEnvironment, isolatedModerationEnvironment, isolatedExecutionEnvironment } from './lib/process.mjs';
 
 // Isolated demo process and a temporary private catalog. No existing database,
 // development configuration or paid provider is used by this test.
@@ -31,7 +31,7 @@ const json = async response => { assert(response.ok, `Unexpected HTTP ${response
 const post = (path, body, key = randomUUID()) => request(path, { method: 'POST', headers: { Origin: base, 'Content-Type': 'application/json', 'Idempotency-Key': key }, body: JSON.stringify(body) });
 async function launch() {
   startError = undefined;
-  server = start(binary, [], { env: { ...process.env, ...isolatedMailEnvironment,...isolatedBillingEnvironment,...isolatedOperationsEnvironment,...isolatedModerationEnvironment, APP_ADDR: `127.0.0.1:${port}`, APP_WEB_DIR: resolve(root, 'apps/workbench/dist'), MODEL_CATALOG_FILE: catalogPath, REFERENCE_DIR: referenceDirectory.directory, ASSET_DIR: referenceDirectory.assetDirectory, ASSET_STORAGE_BACKEND: 'local', S3_FORCE_PATH_STYLE: 'false',
+  server = start(binary, [], { env: { ...process.env, ...isolatedMailEnvironment,...isolatedBillingEnvironment,...isolatedOperationsEnvironment,...isolatedModerationEnvironment,...isolatedExecutionEnvironment, APP_ADDR: `127.0.0.1:${port}`, APP_WEB_DIR: resolve(root, 'apps/workbench/dist'), MODEL_CATALOG_FILE: catalogPath, REFERENCE_DIR: referenceDirectory.directory, ASSET_DIR: referenceDirectory.assetDirectory, ASSET_STORAGE_BACKEND: 'local', S3_FORCE_PATH_STYLE: 'false',
     DATABASE_URL: '', AUTH_MODE: 'disabled', PROVIDER_MODE: 'demo', METRICS_TOKEN: '', NEWAPI_BASE_URL: '', NEWAPI_API_KEY: '', NEWAPI_CHAT_MODEL: '', ASYNC_IMAGE_BASE_URL: '', ASYNC_IMAGE_API_KEY: '', 
     ADMISSION_WORKSPACE_RUNS: '64', ADMISSION_MODEL_RUNS: '32', ADMISSION_WORKSPACE_TASKS: '128', ADMISSION_MODEL_TASKS: '64', ADMISSION_WORKSPACE_STREAMS: '32' }, stdio: ['ignore', 'ignore', 'pipe'] });
   server.on('error', error => { startError = error; });

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_on": "2026-11-14",
+  "updated_on": "2026-11-15",
   "modules": [
     {
       "id": "H01",
@@ -168,6 +168,12 @@
           "status": "passed",
           "command": "npm run test:todo; npm run check:todo; npm run check:changes",
           "note": "8项治理单测、生成一致性与27份文档/9份台账同步检查通过。完成标记后重新生成并校验。"
+        },
+        {
+          "label": "文档与SQL统一目录增量",
+          "command": "npm run todo:sync; npm run check; npm run test:db; npm run check:changes",
+          "status": "passed",
+          "note": "完整TODO迁入docs，根入口同源生成；10治理测试、全量check/PG238.022s通过。17SQL共55486字节SHA256不变；三HTML字节不变且链接有效。命令由隔离环境wrapper执行，真实渠道未调用，详见063/064/067。"
         }
       ],
       "evidence": [
@@ -178,10 +184,16 @@
         {
           "path": "docs/planning/README.md",
           "note": "批次维护规则"
+        },
+        {
+          "path": "docs/wiki/repository-layout.md",
+          "note": "统一docs/db规则、旧路径映射与双入口治理"
         }
       ],
       "ledgers": [
-        "docs/changes/2026-11-13-009-batch-tracking.md"
+        "docs/changes/2026-11-13-009-batch-tracking.md",
+        "docs/changes/2026-11-14-063-document-layout.md",
+        "docs/changes/2026-11-14-064-sql-layout.md"
       ],
       "completed_on": "2026-11-13",
       "blocker": null
@@ -440,7 +452,7 @@
           "note": "目录、精确参数与真实PG升级/恢复"
         },
         {
-          "path": "internal/studio/migrations/005_model_snapshots.sql",
+          "path": "db/migrations/005_model_snapshots.sql",
           "note": "阻止旧二进制写丢快照的格式版本"
         },
         {
@@ -1136,7 +1148,7 @@
         "V11",
         "V12"
       ],
-      "scope": "运营角色、最小权限、内容审核和异常核实工作流。先交付V14-A工作区运营RBAC/异常工单/预演处置闭环，再推进V14-B生成前后审核、V14-C申诉/封禁及风控；V11真实渠道依赖未放行前不得标整批完成。",
+      "scope": "运营角色与最小权限、生成审核和异常核实；V14-A运营闭环、V14-B1文本及V14-B2媒体本地闭环已验收。后续V14-C2/C3申诉/封禁/风控；真实审核渠道与V11真实邮件依赖未放行前不标整批完成。 V14-C1工作区生成限制与复核已按062本地验收；C2/C3继续推进。",
       "acceptance": [
         "管理员RBAC与关键操作审计/二次确认",
         "生成前/后审核、申诉、封禁与额度风控",
@@ -1174,16 +1186,34 @@
           "note": "2026-11-14用户确认审核商暂未选型，先本地闭环；需要接口文档、服务端配置与受控测试内容，fixture不代替真实验收。"
         },
         {
-          "label": "V14-B2 图片与视频审核",
-          "status": "pending",
-          "command": "参考图/产物私有隔离、所有下载门禁、租约恢复与真实多模态审核",
-          "note": "B1仅文本；新媒体在审核开启时拒绝，原已受理任务不重发。候选资产必须纳入存储可达性，待审不能注册已交付或自动结算。"
+          "label": "V14-B2 图片与视频审核本地闭环",
+          "status": "passed",
+          "command": "npm run check; npm run test:db; TestPostgresMediaModeration*; 六套smoke; perf:local; CUA桌面/手机; OpenAPI引用; check:todo/docs/changes",
+          "note": "2026-11-14本地通过：270前端/26文件、8治理、PG全量192.482s；新增PARTIAL定向1.675s。完整字节/候选/整组隔离、COMMIT ACK丢失、租约恢复、上传/所有下载门禁、GC、016联备保旧、浏览器PNG/MP4/参考编辑/手机通过；白屏和非法PG输入已修。真实渠道与V14-C另验，整批不提前完成。"
         },
         {
-          "label": "V14-C 申诉、封禁与风控",
+          "label": "V14-B2 真实多模态审核渠道",
+          "status": "blocked",
+          "command": "选型后完成media-v1适配与真实图片/视频、故障及策略验收",
+          "note": "用户暂未选审核商；需要实际接口、服务端私有配置和受控内容，fixture不替代真实渠道。"
+        },
+        {
+          "label": "V14-C1 工作区新生成限制与复核本地闭环",
+          "status": "passed",
+          "command": "npm run check; npm run test:db; C1真实PG专项; 六套smoke; perf:local; CUA桌面/390手机; 017联备; OpenAPI及todo/docs/changes",
+          "note": "2026-11-14本地完成：297前端/28文件、8治理、PG全量282.020s；原键与三入口门禁、首次缺行竞争、scope/密码/预演/ACK恢复、017联备保旧；浏览器限制→申请→解除答复→手动新生成及手机通过。主JS494.93kB按需分包。C2/C3/真实渠道和完整V14另验。"
+        },
+        {
+          "label": "V14-C2 账户及内容申诉证据与处置",
           "status": "pending",
-          "command": "申诉状态机、封禁/额度策略、原请求重放边界与浏览器验收",
-          "note": "本子批次后续推进。"
+          "command": "独立证据、权限与可执行决议设计及端到端验收",
+          "note": "后续单独设计；当前文本无候选正文、媒体决定不可改，不能伪称支持重审放行。"
+        },
+        {
+          "label": "V14-C3 额度与自动风控策略",
+          "status": "pending",
+          "command": "冻结额度/频率策略、原键与并发边界、误伤恢复及可观测验收",
+          "note": "后续推进，既有并发准入不冒充完整风控。"
         },
         {
           "label": "完整V14依赖放行",
@@ -1280,6 +1310,118 @@
         {
           "path": "docs/wiki/assets/performance-local-v0.13-2026-11-14.json",
           "note": "隔离memory/demo回归，不是审核或PG容量"
+        },
+        {
+          "path": "docs/planning/v14b2-contract.md",
+          "note": "B2本地闭环范围、整组交付与真实渠道独立验收"
+        },
+        {
+          "path": "internal/studio/media_moderation_test.go",
+          "note": "独立策略与完整字节"
+        },
+        {
+          "path": "internal/studio/media_moderation_http_test.go",
+          "note": "私有流式协议与失败/完整字节边界"
+        },
+        {
+          "path": "internal/studio/media_moderation_store_test.go",
+          "note": "本地同FD与私有S3实际读取"
+        },
+        {
+          "path": "internal/studio/media_moderation_execution_test.go",
+          "note": "混合整组、PARTIAL、输入/故障/权益/租约/恢复"
+        },
+        {
+          "path": "internal/studio/media_moderation_commit_test.go",
+          "note": "真实PG candidate/ALLOW/BLOCK COMMIT ACK丢失"
+        },
+        {
+          "path": "internal/studio/media_moderation_access_test.go",
+          "note": "参考登记事务、下载门禁、GC及非法ID/UTF8不熔断"
+        },
+        {
+          "path": "apps/workbench/src/mediaModeration.test.tsx",
+          "note": "27项媒体状态与安全投影"
+        },
+        {
+          "path": "apps/workbench/src/creationRender.test.tsx",
+          "note": "6项实际App渲染，空/受限/上传中参考不白屏"
+        },
+        {
+          "path": "docs/wiki/assets/media-moderation-validation-v0.14-2026-11-14.json",
+          "note": "全量命令与最终二进制摘要"
+        },
+        {
+          "path": "docs/wiki/assets/media-moderation-browser-v0.14-2026-11-14.json",
+          "note": "桌面/手机/实际MP4播放及修复复验"
+        },
+        {
+          "path": "docs/wiki/assets/media-moderation-upgrade-v0.14-2026-11-14.json",
+          "note": "015→016联备升级与旧数据保留"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.14-2026-11-14.json",
+          "note": "memory/demo回归，非审核或生产容量"
+        },
+        {
+          "path": "docs/planning/v14c1-contract.md",
+          "note": "C1已验收本地范围、依赖与真实渠道边界"
+        },
+        {
+          "path": "docs/wiki/generation-controls.md",
+          "note": "状态、容量、申诉与回执"
+        },
+        {
+          "path": "docs/wiki/generation-admission.md",
+          "note": "原键、稳定工作区锁与角色"
+        },
+        {
+          "path": "docs/wiki/generation-controls-workbench.md",
+          "note": "前端原请求和异步读取保护"
+        },
+        {
+          "path": "docs/wiki/decisions/0013-workspace-generation-controls.md",
+          "note": "限制、内容审核与权益边界"
+        },
+        {
+          "path": "internal/studio/generation_control_http_test.go",
+          "note": "HTTP全链、ACK和固定指标路由"
+        },
+        {
+          "path": "internal/studio/generation_control_test.go",
+          "note": "SQL状态、不可变证据与双向锁"
+        },
+        {
+          "path": "internal/studio/generation_control_operations_test.go",
+          "note": "预演、维持/解除与审计原子性"
+        },
+        {
+          "path": "internal/studio/generation_admission_test.go",
+          "note": "三入口原键、锁外重核和旧任务"
+        },
+        {
+          "path": "apps/workbench/src/generationLifecycle.test.tsx",
+          "note": "真实ReactDOM生命周期测试"
+        },
+        {
+          "path": "docs/wiki/assets/generation-controls-validation-v0.15-2026-11-14.json",
+          "note": "本批最终验证及失败修正记录"
+        },
+        {
+          "path": "docs/wiki/assets/generation-controls-browser-v0.15-2026-11-14.json",
+          "note": "独立角色桌面/390手机完整链"
+        },
+        {
+          "path": "docs/wiki/assets/generation-controls-upgrade-v0.15-2026-11-14.json",
+          "note": "016→017联备与旧数据比对"
+        },
+        {
+          "path": "docs/wiki/assets/generation-reply-phase15.jpg",
+          "note": "公开答复与权限恢复"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.15-2026-11-14.json",
+          "note": "最终构建本地回归，非生产容量"
         }
       ],
       "ledgers": [
@@ -1290,7 +1432,15 @@
         "docs/changes/2026-11-14-051-text-moderation-engine.md",
         "docs/changes/2026-11-14-052-moderation-execution.md",
         "docs/changes/2026-11-14-053-moderation-workbench.md",
-        "docs/changes/2026-11-14-054-text-review-integration.md"
+        "docs/changes/2026-11-14-054-text-review-integration.md",
+        "docs/changes/2026-11-14-055-media-moderation-engine.md",
+        "docs/changes/2026-11-14-056-media-moderation-execution.md",
+        "docs/changes/2026-11-14-057-media-moderation-workbench.md",
+        "docs/changes/2026-11-14-058-media-review-integration.md",
+        "docs/changes/2026-11-14-062-generation-controls-integration.md",
+        "docs/changes/2026-11-14-059-generation-controls.md",
+        "docs/changes/2026-11-14-060-generation-admission.md",
+        "docs/changes/2026-11-14-061-generation-controls-workbench.md"
       ],
       "completed_on": null,
       "blocker": null
@@ -1323,24 +1473,386 @@
     {
       "id": "V16",
       "title": "分布式流与配额公平调度",
-      "status": "todo",
+      "status": "in_progress",
       "modules": [
+        "H01",
+        "H02",
         "H03",
-        "H07"
+        "H04",
+        "H07",
+        "H08",
+        "H09"
       ],
       "depends_on": [
         "V05",
         "V09"
       ],
-      "scope": "流、提交、轮询、导入按负载拆分，持久流日志与容量保护。",
+      "scope": "流、提交、轮询、导入按负载拆分，持久流日志与容量保护。A1/A2及A3.1/A3.2/A3.3已本地验收；B持久流/fencing、完整活跃恢复和C综合测量保留完整范围。",
       "acceptance": [
         "连接池/worker和凭据/模型配额有界",
         "流日志、快照、回放与fencing在故障下正确",
         "任务公平性、供应限流、背压与降级实测"
       ],
-      "checks": [],
-      "evidence": [],
-      "ledgers": [],
+      "checks": [
+        {
+          "label": "V16-A1聊天公平调度与执行预算",
+          "command": "npm run check; npm run test:db; 六套隔离smoke",
+          "status": "passed",
+          "note": "301项前端/29文件、10项治理、Go vet/构建、PG全量238.022s、五项独立PG8.777s、六smoke及同构建性能回归通过。原键、取消真实退出、冻结模型别名与权益审核原子性已验；仅单控制写者，A2/A3/B/C仍待办。见067。"
+        },
+        {
+          "label": "V16-A2媒体提交与查询隔离",
+          "command": "npm run check; npm run test:db; 六套隔离smoke及媒体HTTP/PG专项",
+          "status": "passed",
+          "note": "独立submit/query+交付worker、PG连接与HTTP池；先预算再领取，取消/背压持槽。20函数核心PG37.077s、独立五函数及指标6.255s、全PG318.880s、301前端/10治理及六smoke通过。首轮超时和修正保留071；query仍含导入审核，单写者，A3/B/C待办。"
+        },
+        {
+          "label": "V16-A3.1查询到私有交付",
+          "command": "冻结描述/逐件收据、慢下载隔离、PG提交故障、GC/S3及联备恢复验收",
+          "status": "passed",
+          "note": "2026-11-14本地验收：018加密清单/计划ID/不可变完整收据、三lane、GC/维护栅栏；全PG301.345s、301前端/10治理、六smoke、真实本机S3、017→018及两种dump/restore通过。075保留首次失败和修正；S3未恢复远端服务/无VersionId，不代表云灾备。A3.2/A3.3/B/C待办。"
+        },
+        {
+          "label": "V16-A3.2首次审核分派",
+          "command": "READY/STARTED持久边界、确认不明/失租/取消和整组发布验收",
+          "status": "passed",
+          "note": "2026-11-15本地验收：019 READY/STARTED/FINISHED、四lane和共享2许可；全PG368.160s、301前端/10治理、六smoke、真实版本化S3/018→019和READY/STARTED联备通过。完整收据篡改零审核、原幂等/权益保持；079保留首次问题与修正。A3.3/B/C仍待办，不代表真实渠道/云灾备。"
+        },
+        {
+          "label": "V16-A3.3渠道公平与退避",
+          "command": "完整check、全PG含实际S3/联备、六smoke、180SQL计划/48完整预选/20万旧任务升级与治理",
+          "status": "passed",
+          "note": "2026-11-15本地通过：020四lane公平、冻结预算、冷却/GET探测与共享许可；全PG 443.228s、301前端/10治理、六smoke。100k+100k完整预选P95 16.302ms、20万旧任务迁移11.229s，非App重启/生产容量。首次缺行竞态、真实死锁、晚429等修正见083；A4/B/C继续。"
+        },
+        {
+          "label": "V16-A4.1分页恢复与启动背压",
+          "status": "pending",
+          "command": "完整New分页/私有状态批量读取、超过10000恢复事件、页边界Kill/ACK、分批旧lease撤销验收",
+          "note": "2026-11-15用户暂停：085批读及086分页/Outbox/generation分批已编码；旧恢复13专项36.477s通过，Kill/generation/基础字节通过，ACK代理未触发失败（15.392s故障组退出1），087万条New未运行。状态保持pending，恢复后修复并完成联合验收。"
+        },
+        {
+          "label": "V16-A4.2PG有界缓存与完整启动容量",
+          "status": "pending",
+          "command": "100k活跃+100k历史完整New、峰值缓存/字节、跨512历史受理和pin/冷读/权限/取消/SSE验收",
+          "note": "依赖A4.1；消除PG全局缓存长度误拒新工作区，保留实际执行占位和数据库准入，项目权限按PG作用域；不以调度预选或迁移成绩代替完整App容量。"
+        },
+        {
+          "label": "V16-B持久流日志与fencing",
+          "command": "逐token持久、快照、回放、窗口、租约与进程故障验收",
+          "status": "pending",
+          "note": "待实现，不绕控制写连接/目录锁，不把未审候选公开。"
+        },
+        {
+          "label": "V16-C综合测量",
+          "command": "固定环境公平性、背压、连接/worker/内存和恢复测量",
+          "status": "pending",
+          "note": "待实现，必须独立解决并验证全活跃任务恢复N+1、5秒预算和Outbox满队列启动；本批迁移/预选结果不代表App重启容量。V17生产容量与长稳态另外验收。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/planning/v16-contract.md",
+          "note": "完整范围与A1实施契约，未验收部分单列"
+        },
+        {
+          "path": "docs/wiki/execution-scheduler.md",
+          "note": "预算、轮转、原键与取消的当前实现"
+        },
+        {
+          "path": "docs/wiki/decisions/0014-chat-execution-scheduling.md",
+          "note": "选择、替代方案和测量口径"
+        },
+        {
+          "path": "internal/studio/execution_scheduler_test.go",
+          "note": "轮转/取消/5000步不变量与HTTP池"
+        },
+        {
+          "path": "internal/studio/execution_integration_test.go",
+          "note": "真实HTTP/PG、模型别名、权益和故障"
+        },
+        {
+          "path": "internal/studio/chat_execution_observability_test.go",
+          "note": "真实队列HTTP指标与不泄漏"
+        },
+        {
+          "path": "apps/workbench/src/executionFeedback.test.ts",
+          "note": "四项明确拒收与原未知保护"
+        },
+        {
+          "path": "docs/wiki/assets/execution-validation-v0.16-2026-11-14.json",
+          "note": "联合验收及失败修正汇总"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.16-2026-11-14.json",
+          "note": "新workspace2预算下本地回归，非生产容量"
+        },
+        {
+          "path": "docs/planning/v16a2-contract.md",
+          "note": "A2当前实施契约、文件归属与完整验收条件"
+        },
+        {
+          "path": "docs/wiki/assets/media-lanes-validation-v0.17-2026-11-14.json",
+          "note": "A2联合验收、最终构建及失败修正"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.17-2026-11-14.json",
+          "note": "同构建本地回归，非媒体吞吐或生产容量"
+        },
+        {
+          "path": "docs/wiki/media-execution-lanes.md",
+          "note": "独立执行预算与PG连接"
+        },
+        {
+          "path": "docs/wiki/media-transport-lanes.md",
+          "note": "JSON/编辑提交与GET池隔离"
+        },
+        {
+          "path": "docs/wiki/decisions/0015-media-execution-lanes.md",
+          "note": "选择、替代方案和阶段边界"
+        },
+        {
+          "path": "internal/studio/media_lane_integration_test.go",
+          "note": "真实App/PG双通道、背压、重启与慢审核"
+        },
+        {
+          "path": "internal/studio/media_transport_lanes_test.go",
+          "note": "真实HTTP阻塞、取消、连接复用与POST不重发"
+        },
+        {
+          "path": "internal/studio/media_lane_observability_test.go",
+          "note": "真实执行观察与固定无私有标签"
+        },
+        {
+          "path": "cmd/server/media_execution_config_test.go",
+          "note": "严格四MEDIA环境配置，review独立1—2"
+        },
+        {
+          "path": "docs/planning/v16a31-contract.md",
+          "note": "已验收A3.1契约、恢复与联备边界"
+        },
+        {
+          "path": "docs/wiki/assets/media-delivery-validation-v0.18-2026-11-14.json",
+          "note": "A3.1完整联合验证、首次失败修正及范围"
+        },
+        {
+          "path": "docs/wiki/assets/media-delivery-schema-v0.18-2026-11-14.json",
+          "note": "17SQL字节不变、新018摘要和API引用"
+        },
+        {
+          "path": "docs/wiki/assets/media-delivery-s3-v0.18-2026-11-14.json",
+          "note": "实际本机S3、停止验证及非云灾备边界"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.18-2026-11-14.json",
+          "note": "同构建memory/demo回归，非交付吞吐"
+        },
+        {
+          "path": "docs/wiki/media-delivery.md",
+          "note": "018清单/收据/预算和恢复"
+        },
+        {
+          "path": "docs/wiki/media-delivery-provider.md",
+          "note": "原生QueryStatus和真实local/S3字节验证"
+        },
+        {
+          "path": "docs/wiki/decisions/0016-durable-media-delivery.md",
+          "note": "选择、替代项和GC/联备后果"
+        },
+        {
+          "path": "internal/studio/media_delivery_integration_test.go",
+          "note": "实际HTTP/PG、恢复篡改、慢审核、整组权益和S3"
+        },
+        {
+          "path": "internal/studio/media_delivery_restore_integration_test.go",
+          "note": "真实dump/restore、私有目录/密钥和保留对象"
+        },
+        {
+          "path": "internal/studio/media_delivery_upgrade_test.go",
+          "note": "017旧字节保留、018旧写者栅栏"
+        },
+        {
+          "path": "internal/studio/media_delivery_core_test.go",
+          "note": "四COMMIT ACK、原子回滚、旧lease和不可变证据"
+        },
+        {
+          "path": "internal/studio/storage_maintenance_delivery_test.go",
+          "note": "计划/收据可达性、双锁和离线精确格式"
+        },
+        {
+          "path": "docs/planning/v16a32-contract.md",
+          "note": "A3.2已验收契约、共享许可与019恢复边界"
+        },
+        {
+          "path": "docs/wiki/decisions/0017-media-review-dispatch.md",
+          "note": "已实施的首次审核持久证据与共享许可决策"
+        },
+        {
+          "path": "docs/wiki/assets/media-review-dispatch-validation-v0.19-2026-11-15.json",
+          "note": "A3.2完整联合证据、首次失败修正及限制"
+        },
+        {
+          "path": "docs/wiki/assets/media-review-dispatch-schema-v0.19-2026-11-15.json",
+          "note": "原18SQL不变、新019与API引用校验"
+        },
+        {
+          "path": "docs/wiki/assets/media-review-dispatch-s3-v0.19-2026-11-15.json",
+          "note": "实际本机版本化S3及停止保留证据"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.19-2026-11-15.json",
+          "note": "同SHA本地demo回归，不代表审核吞吐"
+        },
+        {
+          "path": "docs/wiki/media-review-dispatch.md",
+          "note": "十九格式、首次审核事务及恢复"
+        },
+        {
+          "path": "docs/wiki/media-review-permits.md",
+          "note": "共享原2许可与取消实际退出"
+        },
+        {
+          "path": "docs/wiki/media-review-dispatch-validation.md",
+          "note": "独立PG/HTTP及019维护验收"
+        },
+        {
+          "path": "internal/studio/media_review_permit_test.go",
+          "note": "真实HTTP/读取/共享槽/重复Close等10新增函数"
+        },
+        {
+          "path": "internal/studio/review_dispatch_commit_test.go",
+          "note": "READY/STARTED/ALLOWED真实ACK、实际回滚及背压"
+        },
+        {
+          "path": "internal/studio/review_dispatch_receipts_test.go",
+          "note": "等待审核期间完整收据及缩略图篡改拒绝"
+        },
+        {
+          "path": "internal/studio/media_review_dispatch_integration_test.go",
+          "note": "公平前的四lane隔离、输入共享、竞争、整组权益"
+        },
+        {
+          "path": "internal/studio/media_review_dispatch_upgrade_test.go",
+          "note": "018→019保旧/零回填与旧writer拒绝"
+        },
+        {
+          "path": "internal/studio/media_review_dispatch_restore_test.go",
+          "note": "READY/STARTED、local和真实版本化S3联备"
+        },
+        {
+          "path": "internal/studio/storage_maintenance_review_test.go",
+          "note": "019阶段证据和任务版本纳入GC精确计划"
+        },
+        {
+          "path": "docs/planning/v16a33-contract.md",
+          "note": "A3.3实施范围、事务/恢复、资源上限和完整验收条件"
+        },
+        {
+          "path": "docs/wiki/media-scheduler.md",
+          "note": "020投影、严格领取、冻结预算和恢复边界"
+        },
+        {
+          "path": "docs/wiki/media-schedule-transport.md",
+          "note": "真实HTTP事实、两槽公平及不重POST"
+        },
+        {
+          "path": "docs/wiki/media-scheduler-validation.md",
+          "note": "180计划、48完整预选与020维护验收"
+        },
+        {
+          "path": "docs/wiki/decisions/0018-media-fair-scheduling.md",
+          "note": "公平游标与持久退避的选择、替代及后果"
+        },
+        {
+          "path": "internal/studio/media_schedule_postgres_test.go",
+          "note": "冷却/探测、ACK与Outbox背压真实PG"
+        },
+        {
+          "path": "internal/studio/media_schedule_channel_race_test.go",
+          "note": "首条渠道冷却与严格领取双连接竞争"
+        },
+        {
+          "path": "internal/studio/media_schedule_lanes_test.go",
+          "note": "query/delivery/review真实HTTP工作区公平"
+        },
+        {
+          "path": "internal/studio/media_scheduler_reference_test.go",
+          "note": "原参考幂等与等待容量、固定指标及无副作用"
+        },
+        {
+          "path": "internal/studio/media_scheduler_restore_test.go",
+          "note": "真实冷却联备恢复和原键不重发"
+        },
+        {
+          "path": "internal/studio/media_scheduler_plan_test.go",
+          "note": "生产分页SQL与完整预选实测"
+        },
+        {
+          "path": "internal/studio/media_scheduler_upgrade_test.go",
+          "note": "019升级保旧及20万任务集合迁移"
+        },
+        {
+          "path": "docs/wiki/assets/media-scheduler-validation-v0.20-2026-11-15.json",
+          "note": "A3.3独立联合证据、修正与范围"
+        },
+        {
+          "path": "docs/wiki/assets/media-scheduler-plans-v0.20-2026-11-15.json",
+          "note": "180实际SQL计划与48完整生产预选原始数据"
+        },
+        {
+          "path": "docs/wiki/assets/media-scheduler-schema-v0.20-2026-11-15.json",
+          "note": "原19SQL保留/020摘要和公开API引用"
+        },
+        {
+          "path": "docs/wiki/assets/media-scheduler-s3-v0.20-2026-11-15.json",
+          "note": "实际版本化S3、保留历史对象和身份核对停机"
+        },
+        {
+          "path": "docs/wiki/assets/performance-local-v0.20-2026-11-15.json",
+          "note": "同构建memory/demo回归，非媒体吞吐"
+        },
+        {
+          "path": "internal/studio/media_scheduler_reference_cancel_test.go",
+          "note": "取消/超时明确未受理错误、原幂等优先"
+        },
+        {
+          "path": "docs/planning/v16a4-contract.md",
+          "note": "A4契约及085批读进展，完整分页/背压与有界缓存仍待验收"
+        },
+        {
+          "path": "docs/wiki/recovery-private-phases.md",
+          "note": "已接线批读、真实PG边界专项与剩余恢复限制；不作为A4整批验收"
+        },
+        {
+          "path": "docs/wiki/paged-recovery.md",
+          "note": "086已编码，故障组存在未解决ACK验证失败；用户暂停，未标整批通过"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-14-065-execution-scheduler.md",
+        "docs/changes/2026-11-14-066-execution-validation.md",
+        "docs/changes/2026-11-14-067-execution-integration.md",
+        "docs/changes/2026-11-14-068-media-execution-lanes.md",
+        "docs/changes/2026-11-14-069-media-transport-lanes.md",
+        "docs/changes/2026-11-14-070-media-lane-validation.md",
+        "docs/changes/2026-11-14-071-media-lane-integration.md",
+        "docs/changes/2026-11-14-072-media-delivery.md",
+        "docs/changes/2026-11-14-073-media-delivery-provider.md",
+        "docs/changes/2026-11-14-074-delivery-storage-maintenance.md",
+        "docs/changes/2026-11-14-075-media-delivery-integration.md",
+        "docs/changes/2026-11-14-076-media-review-dispatch.md",
+        "docs/changes/2026-11-14-077-media-review-permits.md",
+        "docs/changes/2026-11-14-078-media-review-dispatch-validation.md",
+        "docs/changes/2026-11-14-079-media-review-dispatch-integration.md",
+        "docs/changes/2026-11-15-080-media-scheduler.md",
+        "docs/changes/2026-11-15-081-media-schedule-transport.md",
+        "docs/changes/2026-11-15-082-media-scheduler-validation.md",
+        "docs/changes/2026-11-15-083-media-scheduler-integration.md",
+        "docs/changes/2026-11-15-084-recovery-plan.md",
+        "docs/changes/2026-11-15-085-recovery-private-phases.md",
+        "docs/changes/2026-11-15-086-paged-recovery.md",
+        "docs/changes/2026-11-15-087-recovery-validation.md",
+        "docs/changes/2026-11-15-088-recovery-faults.md"
+      ],
       "completed_on": null,
       "blocker": null
     },

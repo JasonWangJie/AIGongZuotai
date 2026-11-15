@@ -61,13 +61,14 @@ export function useStudio() {
   const authLock = useRef(false);
   const alive = useRef(true);
   const lastSessionCheck = useRef(0);
+  const taskRefreshes = useRef(new Map<string, symbol>());
   const catalogCache = useRef(new CatalogCache());
   const catalogAbort = useRef<AbortController | null>(null), catalogSequence = useRef(0), catalogLock = useRef(false);
   const catalogRetryAt = useRef(0);
   const current = useCallback((token: ScopeToken) => alive.current && scope.current.current(token), []);
   const closeStreams = useCallback(() => { streams.current.forEach(stream => stream.close()); streams.current.clear(); }, []);
   const clearProject = useCallback(() => {
-    closeStreams(); feedSync.current?.stop(); feedSync.current = null; historyAbort.current.abort(); historyAbort.current = new AbortController(); historyFlights.current.clear(); tasksRef.current = []; bootstrapRef.current = null; runsRef.current = []; setUpdates({ activity: 0, library: 0, references: 0, draft: 0, conversations: 0 }); setSyncNotice('');
+    taskRefreshes.current.clear(); closeStreams(); feedSync.current?.stop(); feedSync.current = null; historyAbort.current.abort(); historyAbort.current = new AbortController(); historyFlights.current.clear(); tasksRef.current = []; bootstrapRef.current = null; runsRef.current = []; setUpdates({ activity: 0, library: 0, references: 0, draft: 0, conversations: 0 }); setSyncNotice('');
     catalogSequence.current++; catalogAbort.current?.abort(); catalogLock.current = false; catalogRetryAt.current = 0; setCatalogLoading(false); setCatalogError(null); setCatalogUpdatedAt(0);
     setBootstrap(null); setTasks([]); setRuns([]); setSelectedRun(null); setPending(null); setSubmitting(false);
     setTaskConnection('连接中'); setRunConnection(''); setError(''); setSubmissionRetryAt(0);
@@ -307,6 +308,13 @@ export function useStudio() {
     const key = crypto.randomUUID(), ownerId = data.user?.id || 'demo';
     return submitPending(request.resource_type === 'run' ? { kind: 'run', ownerId, key, body: { ...request.run_input, ...(quoteId ? { quote_id: quoteId } : {}) } } : { kind: 'task', ownerId, key, body: { ...(request as Extract<QuoteRequest, { resource_type: 'task' }>).task_input, ...(quoteId ? { quote_id: quoteId } : {}) } });
   };
+  const refreshTask = async (id: string) => {
+    const token = scope.current.capture(); if (!token.projectId || taskRefreshes.current.has(id)) return;
+    const attempt = Symbol('task-read'); taskRefreshes.current.set(id, attempt);
+    try { const value = await api.task(id, token.projectId); if (value.id !== id) throw new ApiError('任务快照身份不匹配。'); if (scope.current.accepts(token, value)) setTasks(old => current(token) ? mergeTask(old, value) : old); }
+    catch (cause) { failure(cause, token); }
+    finally { if (taskRefreshes.current.get(id) === attempt) taskRefreshes.current.delete(id); }
+  };
   const cancel = async (kind: 'run' | 'task', id: string) => {
     const token = scope.current.capture(); if (!token.projectId) return;
     try {
@@ -339,7 +347,7 @@ export function useStudio() {
   return { bootstrap, session, authState, authBusy, authError, authIssue, authenticate, logout, expireSession, refreshIdentity, projects, createProject, switchProject: loadProject,
     updates, syncNotice, historyOffsets, historyLoading, loadMore, catalogLoading, catalogError, catalogUpdatedAt, refreshCatalog,
     receiveRun: (run: Run) => updateRun(run, scope.current.capture()), tasks, runs, selectedRun, setSelectedRun, loading, submitting, error, setError, requestError, submissionRetryAt, pending, taskConnection, runConnection,
-    connect, create, cancel, reconcileTask, retry: () => pending && Date.now() >= submissionRetryAt && submitPending(pending),
+    connect, create, cancel, reconcileTask, refreshTask, retry: () => pending && Date.now() >= submissionRetryAt && submitPending(pending),
     refresh: async () => { feedSync.current?.resume(); const token = scope.current.capture(); try { await refreshFor(token); if (current(token) && !pending) setError(''); } catch (cause) { failure(cause, token); } },
     recover: () => { feedSync.current?.resume(); setReconnect(n => n + 1); },
   };

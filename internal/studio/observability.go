@@ -18,13 +18,24 @@ import (
 
 // Every label is selected from a compile-time vocabulary. Neither raw URLs,
 // methods, model configuration, identities nor error messages become labels.
-var observedRoutes = [...]string{"other", "health", "ready", "metrics", "runtime", "bootstrap", "audit", "register", "login", "logout", "session", "projects", "draft", "draft_history", "draft_revision", "asset", "runs", "run_snapshot", "run_events", "run_cancel", "tasks", "task_snapshot", "task_cancel", "task_reconcile", "workspace_events", "demo_asset", "frontend", "models", "references", "reference_content", "reference_thumbnail", "library", "library_entry", "library_revisions", "library_trash", "library_restore", "library_content", "library_thumbnail", "conversations", "conversation", "conversation_messages", "conversation_branches", "conversation_runs", "email_verification_request", "email_verification_confirm", "password_reset_request", "password_reset_confirm", "password_change", "account_sessions", "account_session_revoke", "account_sessions_revoke_all", "account_security_events", "billing_wallet", "billing_entries", "billing_reservations", "billing_quotes", "operations_access", "operations_exceptions", "operations_cases", "operations_case", "operations_case_events", "operations_case_plan", "operations_case_execute"}
+var observedRoutes = [...]string{"other", "health", "ready", "metrics", "runtime", "bootstrap", "audit", "register", "login", "logout", "session", "projects", "draft", "draft_history", "draft_revision", "asset", "runs", "run_snapshot", "run_events", "run_cancel", "tasks", "task_snapshot", "task_cancel", "task_reconcile", "workspace_events", "demo_asset", "frontend", "models", "references", "reference_content", "reference_thumbnail", "library", "library_entry", "library_revisions", "library_trash", "library_restore", "library_content", "library_thumbnail", "conversations", "conversation", "conversation_messages", "conversation_branches", "conversation_runs", "email_verification_request", "email_verification_confirm", "password_reset_request", "password_reset_confirm", "password_change", "account_sessions", "account_session_revoke", "account_sessions_revoke_all", "account_security_events", "billing_wallet", "billing_entries", "billing_reservations", "billing_quotes", "operations_access", "operations_exceptions", "operations_cases", "operations_case", "operations_case_events", "operations_case_plan", "operations_case_execute", "generation_access", "generation_appeal_create", "generation_appeals", "generation_appeal", "operations_generation_access", "operations_appeals", "operations_appeal", "operations_generation_plan", "operations_generation_execute", "operations_generation_receipt"}
 var observedMethods = [...]string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "other"}
 var observedStatuses = [...]string{"2xx", "3xx", "4xx", "5xx", "other"}
 var observedErrors = [...]string{"none", "validation", "authentication", "forbidden", "not_found", "conflict", "admission", "database", "unavailable", "upstream", "internal", "other"}
 var durationBounds = [...]float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 15, 60}
 
 var routeNames = map[string]int{
+	"GET /api/v1/workspace/generation-access":              63,
+	"POST /api/v1/restrictions/{id}/appeals":               64,
+	"GET /api/v1/appeals":                                  65,
+	"GET /api/v1/appeals/{id}":                             66,
+	"GET /api/v1/operations/generation-access":             67,
+	"GET /api/v1/operations/appeals":                       68,
+	"GET /api/v1/operations/appeals/{id}":                  69,
+	"POST /api/v1/operations/generation-plans":             70,
+	"POST /api/v1/operations/generation-executions":        71,
+	"GET /api/v1/operations/generation-plans/{id}/receipt": 72,
+
 	"GET /api/v1/operations/access": 56, "GET /api/v1/operations/exceptions": 57,
 	"GET /api/v1/operations/cases": 58, "POST /api/v1/operations/cases": 58,
 	"GET /api/v1/operations/cases/{id}": 59, "GET /api/v1/operations/cases/{id}/events": 60,
@@ -115,7 +126,7 @@ func observedError(status int, code string) int {
 	switch code {
 	case "DATABASE_UNAVAILABLE":
 		return 7
-	case "ADMISSION_WORKSPACE_LIMIT", "ADMISSION_MODEL_LIMIT", "ADMISSION_STREAM_LIMIT", "STREAM_LIMIT", "QUEUE_FULL":
+	case "ADMISSION_WORKSPACE_LIMIT", "ADMISSION_MODEL_LIMIT", "ADMISSION_STREAM_LIMIT", "STREAM_LIMIT", "QUEUE_FULL", "RUN_QUEUE_FULL", "EXECUTION_WORKSPACE_QUEUE_LIMIT":
 		return 6
 	}
 	switch status {
@@ -380,6 +391,8 @@ func (a *App) prometheusText() string {
 	metricHeader(&out, "studio_slow_consumers_total", "Subscribers disconnected because a bounded event buffer filled or an HTTP write timed out.", "counter")
 	fmt.Fprintf(&out, "studio_slow_consumers_total{reason=\"buffer_full\"} %d\nstudio_slow_consumers_total{reason=\"write_timeout\"} %d\n", a.obs.slowConsumers.Load(), a.obs.slowWrites.Load())
 	a.obs.writeExecutionMetrics(&out)
+	writeMediaSchedulingMetrics(&out, a.mediaExecution.snapshot())
+	writeMediaFairnessMetrics(&out, a.mediaScheduler.snapshot(), a.mediaModeration.permitSnapshot())
 	ready, _ := a.readiness()
 	readyValue := 0
 	if ready {
@@ -389,7 +402,9 @@ func (a *App) prometheusText() string {
 	fmt.Fprintf(&out, "studio_ready %d\n", readyValue)
 	a.mu.Lock()
 	counts, _ := a.admissionCountsLocked("") // Explicitly the bounded local cache, never a global SQL scan.
+	scheduling := a.execution.snapshotLocked(time.Now())
 	a.mu.Unlock()
+	writeChatSchedulingMetrics(&out, scheduling)
 	type count struct {
 		active, queued int
 		oldest         time.Time

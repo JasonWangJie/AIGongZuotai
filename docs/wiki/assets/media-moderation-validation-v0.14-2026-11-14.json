@@ -1,0 +1,151 @@
+{
+  "date": "2026-11-14",
+  "version": "0.14.0",
+  "batch": "V14-B2 local",
+  "full_v14_status": "in_progress",
+  "check": {
+    "command": "node .runtime/v14b2-all-checks.mjs check -> scripts/run.mjs check (npm run check entry, isolated external settings)",
+    "status": "passed",
+    "go_vet": true,
+    "go_tests": true,
+    "go_build": true,
+    "studio_seconds": 8.637,
+    "frontend_tests": 270,
+    "frontend_files": 26,
+    "frontend_seconds": 1.68,
+    "task_tests": 8,
+    "vite_seconds": 1.6,
+    "js_kb": 505.19,
+    "js_gzip_kb": 159.37,
+    "css_kb": 116.27,
+    "css_gzip_kb": 23.25,
+    "chunk_warning": "Main JS exceeds 500 kB; limit not raised; route splitting remains planned"
+  },
+  "postgres": {
+    "command": "node .runtime/v14b2-all-checks.mjs db -> scripts/run.mjs test:db (isolated TEST_DATABASE_URL and external settings)",
+    "status": "passed",
+    "studio_seconds": 192.482,
+    "includes_media_test_functions": 8,
+    "commit_ack_subcases": [
+      "candidate",
+      "ALLOWED",
+      "BLOCKED"
+    ],
+    "scope": "Real PG and TCP dropped COMMIT acknowledgement, App recovery; media-specific recovery is not OS process Kill"
+  },
+  "additional_partial": {
+    "command": "node .runtime/v14b-test.mjs '^TestPostgresMediaModerationWholeBatchReleaseAndBilling$'",
+    "status": "passed",
+    "seconds": 1.675,
+    "subcases": 7,
+    "observed": "Two requested / one delivered, ALLOWED PARTIAL charges 100 and releases 100 of 200 test units; original replay no Provider call"
+  },
+  "openapi": {
+    "version": "0.14.0",
+    "paths": 61,
+    "operations": 73,
+    "schemas": 84,
+    "refs": 347,
+    "valid": true
+  },
+  "smokes": {
+    "passed_commands": [
+      "smoke",
+      "smoke:runtime",
+      "smoke:catalog",
+      "smoke:references",
+      "smoke:library",
+      "smoke:conversations"
+    ],
+    "five_json_reports": [
+      {
+        "name": "runtime",
+        "binary_sha256": "3e08a07c354d2099a9f46386ea68869dfdd82eabb377457f79fce3e2b1f5c6a5",
+        "status": "passed"
+      },
+      {
+        "name": "catalog",
+        "binary_sha256": "3e08a07c354d2099a9f46386ea68869dfdd82eabb377457f79fce3e2b1f5c6a5",
+        "status": "passed"
+      },
+      {
+        "name": "reference",
+        "binary_sha256": "3e08a07c354d2099a9f46386ea68869dfdd82eabb377457f79fce3e2b1f5c6a5",
+        "status": "passed"
+      },
+      {
+        "name": "library",
+        "binary_sha256": "3e08a07c354d2099a9f46386ea68869dfdd82eabb377457f79fce3e2b1f5c6a5",
+        "status": "passed"
+      },
+      {
+        "name": "conversation",
+        "binary_sha256": "3e08a07c354d2099a9f46386ea68869dfdd82eabb377457f79fce3e2b1f5c6a5",
+        "status": "passed"
+      }
+    ],
+    "final_ui_rebuild_smoke": "passed",
+    "parent_invalid_settings_isolated": [
+      "MEDIA_MODERATION_*",
+      "MODERATION_*",
+      "AUTH_MAIL_*",
+      "BILLING_*",
+      "OPERATIONS_ENABLED"
+    ]
+  },
+  "binary_sha256": "3e08a07c354d2099a9f46386ea68869dfdd82eabb377457f79fce3e2b1f5c6a5",
+  "full_decode": [
+    {
+      "file": "internal/studio/testdata/moderation/allow.mp4",
+      "decode_exit": 0,
+      "errors": ""
+    },
+    {
+      "file": "internal/studio/testdata/moderation/block.mp4",
+      "decode_exit": 0,
+      "errors": ""
+    },
+    {
+      "file": "internal/studio/testdata/moderation/review.mp4",
+      "decode_exit": 0,
+      "errors": ""
+    }
+  ],
+  "browser_artifact": "media-moderation-browser-v0.14-2026-11-14.json",
+  "upgrade_artifact": "media-moderation-upgrade-v0.14-2026-11-14.json",
+  "performance_artifact": "performance-local-v0.14-2026-11-14.json",
+  "issues_found_and_fixed": [
+    "Reference upload ALLOWED must bypass the error-only decision helper",
+    "Malformed asset/library IDs, cursor and invalid UTF-8 filters must be rejected before PG to prevent global store failure",
+    "Empty/blocked/pending reference selection must not build executable quote input during App render"
+  ],
+  "test_harness_corrections": [
+    "Moved intentional audit database failure to end of access fixture",
+    "COMMIT ACK proxy handles only business control connection; lease connection uses same test database directly"
+  ],
+  "real_provider_requests": 0,
+  "real_external_mail": false,
+  "real_payments": false,
+  "limitations": [
+    "Exact-byte fixtures do not measure image/video semantic accuracy",
+    "No real supplier, manual release, appeal/ban or production capacity acceptance",
+    "Single control writer and private local directory ownership retained",
+    "Runtime MP4 container precheck does not perform full video decoding; three fixed fixture files separately fully decoded",
+    "Go race unavailable in local environment; existing Linux CI not executed remotely"
+  ],
+  "governance": {
+    "status": "passed",
+    "modules": 10,
+    "batches": 23,
+    "done_batches": 11,
+    "documents": 122,
+    "ledgers": 58,
+    "commands": [
+      "npm run todo:sync",
+      "npm run check:todo",
+      "npm run check:docs",
+      "npm run check:changes",
+      "git diff --check"
+    ]
+  }
+}

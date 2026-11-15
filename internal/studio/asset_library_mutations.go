@@ -94,6 +94,9 @@ func libraryActionAudit(entry libraryRecord, old libraryRecord, action, actor st
 	return newAuditEvent(entry.WorkspaceID, entry.ProjectID, actor, actions[action], "asset", entry.ID, AuditDetails{FromStatus: old.State, ToStatus: entry.State, Revision: entry.Revision, Kind: entry.Kind})
 }
 func mutateLibrarySQL(ctx context.Context, tx pgx.Tx, workspaceID, projectID, id, key, action, actor string, input libraryMutation, hash [32]byte) (LibraryEntry, bool, error) {
+	if !libraryIDPattern.MatchString(id) {
+		return LibraryEntry{}, false, failure(404, "ASSET_NOT_FOUND", "资产不存在或不属于当前项目")
+	}
 	// Also serializes the workspace-wide idempotency key across different assets.
 	var locked string
 	if err := tx.QueryRow(ctx, "SELECT id FROM studio_workspaces WHERE id=$1 FOR UPDATE", workspaceID).Scan(&locked); err != nil {
@@ -306,7 +309,7 @@ func (a *App) serveLibraryHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	thumbnail := strings.HasSuffix(r.URL.Path, "/thumbnail")
-	if entry.State != "active" || thumbnail && !entry.HasThumbnail {
+	if entry.State != "active" || !libraryContentReleased(entry) || thumbnail && !entry.HasThumbnail {
 		writeError(w, failure(404, "ASSET_NOT_FOUND", "资产内容不存在或已在回收站"))
 		return
 	}
@@ -327,9 +330,12 @@ func (a *App) serveLibraryHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (a *App) legacyAssetAllowedLocked(workspaceID, projectID, id string) (bool, error) {
+	if !localAssetID.MatchString(id) {
+		return false, nil
+	}
 	if a.store == nil {
 		for _, entry := range a.library {
-			if entry.WorkspaceID == workspaceID && (projectID == "" || entry.ProjectID == projectID) && entry.Source == "generated" && entry.ArtifactID == id && entry.State == "active" {
+			if entry.WorkspaceID == workspaceID && (projectID == "" || entry.ProjectID == projectID) && entry.Source == "generated" && entry.ArtifactID == id && entry.State == "active" && libraryContentReleased(entry) {
 				return true, nil
 			}
 		}

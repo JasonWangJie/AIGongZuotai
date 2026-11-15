@@ -3,11 +3,14 @@ import type { AuditPage, AuthSession, Bootstrap, CloudDraft, DraftRevisionPage, 
 import type { CatalogEntry } from './modelCatalog';
 import type { AssetEntry, AssetOperation, AssetRevisionPage, LibraryFilters, LibraryPageData } from './libraryState';
 import { libraryQuery } from './libraryState';
-import { ACCOUNT_RETRY_SECONDS, MAX_RETRY_SECONDS, retryDeadline, safeRequestId } from './requestFeedback';
+import { ACCOUNT_RETRY_SECONDS, MAX_RETRY_SECONDS, retryDeadline, safeRequestId, definiteExecutionRejection, executionErrorMessage } from './requestFeedback';
 import type { Conversation, ConversationPage, MessagePage, BranchPage, TurnInput } from './conversationState';
 import type { AccountResult, LoginSession, SecurityEventPage } from './accountSecurity';
 import type { OperationAccess, OperationCase, OperationCaseInput, OperationEvent, OperationException, OperationExecuteInput, OperationPage, OperationPlan, OperationPlanInput } from './operations';
 import { moderationErrorMessage } from './moderation';
+import { definiteModerationUnavailable, mediaModerationErrorMessage } from './mediaModeration';
+import { generationErrorMessage } from './generationControls';
+import type { GenerationAccess, GenerationAppeal, GenerationPage, AppealInput, GenerationPlanInput, GenerationPlan, GenerationExecuteInput, GenerationReceipt } from './generationControls';
 
 export class ApiError extends Error {
   status: number;
@@ -36,9 +39,10 @@ async function request<T>(path: string, init?: RequestInit, cache?: { value?: T;
     if (!response.ok) {
       const body = data as { error?: { message?: string; code?: string; request_id?: string } | string; message?: string };
       const code = typeof body.error === 'object' && typeof body.error?.code === 'string' ? body.error.code : undefined;
-      const message = moderationErrorMessage(code) || (typeof body.error === 'string' ? body.error : body.error?.message || body.message);
+      const message = executionErrorMessage(code) || generationErrorMessage(code) || mediaModerationErrorMessage(code) || moderationErrorMessage(code) || (typeof body.error === 'string' ? body.error : body.error?.message || body.message);
       // This closed code is exclusively a confirmed pre-admission rejection. Existing unknown requests still retain their original key in the recovery stores.
-      const preAdmissionRejection = response.status === 503 && code === 'MODERATION_UNAVAILABLE';
+      const chatCreation = init?.method === 'POST' && (path === '/runs' || /^\/conversations\/[^/?]+\/runs$/.test(path));
+      const preAdmissionRejection = definiteModerationUnavailable(response.status, code) || (chatCreation && definiteExecutionRejection(response.status, code));
       throw new ApiError(message || `请求失败（${response.status}）`, response.status, response.status >= 500 && mutation && !preAdmissionRejection, code, requestId || (typeof body.error === 'object' ? body.error?.request_id : undefined), retryAt);
     }
     cache?.response?.(response); return data as T;
@@ -49,6 +53,16 @@ async function request<T>(path: string, init?: RequestInit, cache?: { value?: T;
 }
 
 export const api = {
+  generationAccess: (signal?: AbortSignal) => request<GenerationAccess>('/workspace/generation-access', { signal }),
+  generationAppeals: (query: string, signal?: AbortSignal) => request<GenerationPage<GenerationAppeal>>('/appeals?' + query, { signal }),
+  generationAppeal: (id: string, signal?: AbortSignal) => request<GenerationAppeal>('/appeals/' + encodeURIComponent(id), { signal }),
+  createGenerationAppeal: (restriction: string, body: AppealInput, key: string) => request<GenerationAppeal>('/restrictions/' + encodeURIComponent(restriction) + '/appeals', { method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify(body) }),
+  operationGenerationAccess: (workspace: string, signal?: AbortSignal) => request<GenerationAccess>('/operations/generation-access?workspace_id=' + encodeURIComponent(workspace), { signal }),
+  operationGenerationAppeals: (query: string, signal?: AbortSignal) => request<GenerationPage<GenerationAppeal>>('/operations/appeals?' + query, { signal }),
+  operationGenerationAppeal: (workspace: string, id: string, signal?: AbortSignal) => request<GenerationAppeal>('/operations/appeals/' + encodeURIComponent(id) + '?workspace_id=' + encodeURIComponent(workspace), { signal }),
+  planGeneration: (body: GenerationPlanInput) => request<GenerationPlan>('/operations/generation-plans', { method: 'POST', body: JSON.stringify(body) }),
+  executeGeneration: (body: GenerationExecuteInput) => request<GenerationReceipt>('/operations/generation-executions', { method: 'POST', body: JSON.stringify(body) }),
+  generationReceipt: (workspace: string, plan: string, signal?: AbortSignal) => request<GenerationReceipt>('/operations/generation-plans/' + encodeURIComponent(plan) + '/receipt?workspace_id=' + encodeURIComponent(workspace), { signal }),
   operationsAccess: (signal?: AbortSignal) => request<OperationAccess>('/operations/access', { signal }),
   operationExceptions: (query: string, signal?: AbortSignal) => request<OperationPage<OperationException>>('/operations/exceptions?' + query, { signal }),
   operationCases: (query: string, signal?: AbortSignal) => request<OperationPage<OperationCase>>('/operations/cases?' + query, { signal }),

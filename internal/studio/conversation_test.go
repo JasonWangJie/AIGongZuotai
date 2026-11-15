@@ -404,13 +404,66 @@ func TestPostgresConversationUnknownCommitReplaysWholeTurn(t *testing.T) {
 		store.close()
 		t.Fatal(err)
 	}
+	closed := false
+	defer func() {
+		if !closed {
+			app.Close()
+		}
+	}()
 	// No background PG dispatcher/checkpointer is launched by this memory
-	// fixture, so the next dropped COMMIT is exactly this acceptance transaction.
+	// fixture. The generation-access preflight still commits a read transaction,
+	// so arm the proxy only after the actual turn transaction reaches its context
+	// insert. This SQL barrier identifies the write, not a count of prior COMMITs.
 	app.store = store
+	provider := &conversationChatFixture{calls: make(chan ChatRequest, 1)}
+	app.chat = provider
 	c := memoryConversation(t, app)
+	admin, err := pgx.Connect(context.Background(), databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer admin.Close(context.Background())
+	if _, err = admin.Exec(context.Background(), `CREATE FUNCTION wait_conversation_acceptance() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_advisory_xact_lock(867530901); RETURN NEW; END $$;
+		CREATE TRIGGER wait_conversation_acceptance BEFORE INSERT ON studio_chat_contexts FOR EACH ROW EXECUTE FUNCTION wait_conversation_acceptance()`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = admin.Exec(context.Background(), "SELECT pg_advisory_lock(867530901)"); err != nil {
+		t.Fatal(err)
+	}
 	input := conversationInput(1, nil, "仅创建一次的原始请求")
+	writerPID := store.conn.PgConn().PID()
+	accepted := make(chan error, 1)
+	go func() {
+		_, _, acceptErr := app.createConversationRun("ws_demo", "prj_demo", c.ID, "conversation-unknown-key", "", input)
+		accepted <- acceptErr
+	}()
+	barrierCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	for {
+		var waiting bool
+		if err = admin.QueryRow(barrierCtx, `SELECT EXISTS(SELECT 1 FROM pg_locks WHERE locktype='advisory' AND pid=$1 AND classid=0 AND objid=867530901 AND objsubid=1 AND NOT granted)`, writerPID).Scan(&waiting); err != nil {
+			t.Fatal("acceptance did not reach the context-insert barrier", err)
+		}
+		if waiting {
+			break
+		}
+		select {
+		case acceptErr := <-accepted:
+			t.Fatal("acceptance returned before its write barrier", acceptErr)
+		case <-barrierCtx.Done():
+			t.Fatal("acceptance did not reach the context-insert barrier")
+		case <-time.After(5 * time.Millisecond):
+		}
+	}
 	armed.Store(true)
-	_, _, err = app.createConversationRun("ws_demo", "prj_demo", c.ID, "conversation-unknown-key", "", input)
+	if _, err = admin.Exec(context.Background(), "SELECT pg_advisory_unlock(867530901)"); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case err = <-accepted:
+	case <-time.After(5 * time.Second):
+		t.Fatal("acceptance did not return after the barrier was released")
+	}
 	if err == nil || !store.failed.Load() {
 		t.Fatal("lost commit response did not fail closed", err)
 	}
@@ -419,21 +472,33 @@ func TestPostgresConversationUnknownCommitReplaysWholeTurn(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("commit was not acknowledged by database before disconnect")
 	}
+	// Verify the committed turn before restart, so a fresh request after a
+	// failed preflight can never masquerade as unknown-commit recovery.
+	var committedID, committedStatus string
+	if err = admin.QueryRow(context.Background(), "SELECT id,document->>'status' FROM studio_runs WHERE conversation_id=$1", c.ID).Scan(&committedID, &committedStatus); err != nil || committedStatus != "QUEUED" {
+		t.Fatal("fault did not target a committed conversation turn", err, committedStatus)
+	}
+	app.mu.Lock()
+	cachedRuns := len(app.runs)
+	app.mu.Unlock()
+	if cachedRuns != 0 || len(provider.calls) != 0 {
+		t.Fatal("unknown acceptance published or executed an unconfirmed turn")
+	}
 	app.Close()
+	closed = true
 	restarted, err := New(Config{DatabaseURL: databaseURL, AssetDir: assetDir, ReferenceDir: referenceDir})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer restarted.Close()
+	restarted.chat = provider
 	replayed, yes, err := restarted.createConversationRun("ws_demo", "prj_demo", c.ID, "conversation-unknown-key", "", input)
-	if err != nil || !yes || replayed.Status != "INTERRUPTED" {
+	if err != nil || !yes || replayed.ID != committedID || replayed.Status != "INTERRUPTED" {
 		t.Fatal("unknown acceptance did not recover via original key", err, replayed.Status)
 	}
-	admin, err := pgx.Connect(context.Background(), databaseURL)
-	if err != nil {
-		t.Fatal(err)
+	if len(provider.calls) != 0 {
+		t.Fatal("replaying the interrupted turn invoked the provider")
 	}
-	defer admin.Close(context.Background())
 	if outboxCount(t, admin, "SELECT count(*) FROM studio_chat_messages WHERE conversation_id=$1", c.ID) != 2 || outboxCount(t, admin, "SELECT count(*) FROM studio_chat_contexts WHERE conversation_id=$1", c.ID) != 1 || outboxCount(t, admin, "SELECT version FROM studio_conversations WHERE id=$1", c.ID) != 2 {
 		t.Fatal("unknown commit recovery duplicated or split accepted turn")
 	}

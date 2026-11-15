@@ -597,6 +597,7 @@ func TestPostgresReferenceEditSpoolSurvivesDisabledCatalogAndHandleRestart(t *te
 	catalog.Models[0].Capabilities.MaxReferenceImages = 4
 	path := writeCatalogFixture(t, catalog)
 	cfg := Config{DatabaseURL: db, Mode: "live", ModelCatalogFile: path, AsyncImageBaseURL: upstream.URL, AsyncImageAPIKey: fixtureMediaKey, AsyncImageCredentialID: "persisted-edit-credential", ReferenceDir: t.TempDir(), AssetDir: t.TempDir(), PollInterval: time.Hour}
+	cfg.MediaDelivery = MediaDeliveryConfig{EncryptionKey: coreDeliveryKey()}
 	app, err := newIsolatedApp(t, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -663,6 +664,7 @@ func TestPostgresReferenceEditSpoolSurvivesDisabledCatalogAndHandleRestart(t *te
 		t.Fatal(err)
 	}
 	server = httptest.NewServer(app.Handler())
+	advanceMediaScheduleDue(t, app, task.ID)
 	app.executeTaskStep(task.ID)
 	if submits.Load() != 1 || queries.Load() != 1 {
 		t.Fatal("known edit handle was resubmitted after restart")

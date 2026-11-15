@@ -48,11 +48,13 @@ go run ./cmd/storage --apply
 go run ./cmd/storage --apply --limit 100 --after asset_上一页最后的64位ID
 ```
 
-第一条只生成计划，不访问 S3、不解码或修改原资产文件；获取目录锁可能创建目录/空锁文件。默认每页 100 项，最多 1000，返回 `has_more` 和 `next_after`；按 ID 游标重入。apply 验证同一个本地句柄的大小与 SHA-256，补旧图片缩略图，执行 create-only 上传与远端完整读回校验，再提交小收据。已经迁移的对象重新校验原对象，不再次 PUT。部分失败返回已完成项和非零退出码；保留原参数重跑即可。
+第一条只生成计划，不修改原资产文件；PG绑定目录需DATABASE_URL、控制写锁、目录锁、稳定UUID及精确020格式。可达性检查会读取并hash已登记交付的完整本地原件/缩略图，不能再称所有dry-run均不读取正文；计划阶段不上传S3。默认每页100项、最多1000，按ID游标重入。apply对普通旧资产验证同一文件句柄的长度与SHA256，补缩略图、create-only上传及完整读回后提交收据，已有对象不再次PUT。
+
+018交付计划及收据绑定不可变存储定位，所有已登记delivery项（含NULL收据、取消及终态）目前禁止迁移，完整Delivery标记也不能绕过。更换其定位需后续显式追加证据方案；不能自行改manifest或PG收据。旧无DB的MigrateAssets发现owner即拒绝，只用于无owner的本地fixture；生产入口为MigrateOwnedAssets，具体门禁见[074](../changes/2026-11-14-074-delivery-storage-maintenance.md)。
 
 **迁移不删除任何本地原件、缩略图或远端对象。** 回收站不是物理清空。独立离线 GC 仅处理全量持久引用证明不可达且超过宽限期的本地孤立文件，见维护台账；本批没有 S3 孤立对象扫描、版本历史清理或生命周期策略自动化。不能手工清掉仍被任务或 manifest 引用的数据。
 
-备份必须同时涵盖 DB、两个私有目录和 S3 对象/版本；S3 不是自动跨区域容灾。回滚程序前应恢复一致备份。已有 S3 manifest 时仅把 backend 改回 local 会拒绝读取；禁止去掉存储身份字段来强行绕过，当前没有 S3→local 反向迁移工具。
+备份必须同时涵盖DB、两个私有目录和S3对象/版本、已启用邮件队列密钥及018独立交付密钥；S3不是自动跨区域容灾。运行时完整远端校验成功不代表本地副本可删，维护仍要求本地原件/缩略图与冻结收据一致。回滚需成套恢复，禁止移除存储身份、Delivery标记、owner或迁移登记；当前没有S3→local反向迁移工具。
 
 ## 验证依据
 
@@ -65,3 +67,13 @@ go run ./cmd/storage --apply --limit 100 --after asset_上一页最后的64位ID
 官方依据：[AWS SDK endpoint](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-endpoints.html)、[校验和](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/s3-checksums.html)、[文件句柄与传输内存](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/sdk-utilities-s3.html)、[S3 GetObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html)、[S3 PutObject 条件写入](https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html)、[SeaweedFS S3 服务](https://github.com/seaweedfs/seaweedfs/wiki/Amazon-S3-API)。真实 AWS、其他兼容厂商、生产 TLS/临时凭据轮换、跨区域容灾和大容量稳定性尚未验收。
 
 实现与验证记录：[027 对象存储](../changes/2026-11-13-027-object-storage.md)。
+
+## V14-B2媒体审核与016候选
+
+[媒体审核](media-moderation.md)新增服务端私有读取：local使用同一文件句柄重新校验完整长度、SHA256与编码；S3必须真实GET原收据绑定的版本/ETag，将完整字节流式写入私有暂存并校验。Head或对象元数据不能代替实际审核，S3缺失/变更时也不回落残留本地副本。暂存reader的Close/取消清理自身文件，未生成预签名URL或公开对象入口。
+
+016中的私有候选尚未注册为公开资产，也可能已经写入私有S3。上传、迁移、缩略图生成和财务结案都不表示审核通过；只有主链路确认ALLOWED且SUCCEEDED/PARTIAL的交付事务后，新旧下载和缩略图入口才允许读取。未知、BLOCKED/REVIEW、取消及终态候选仍属于[离线维护](storage-maintenance.md)的可达保护集合，不能按“没有library条目”判断可删。
+
+V14-B2交付时工具要求精确001—016，后经017治理、018交付、019首次审核分派和020公平调度升级；当前精确版本及PG-aware资产迁移规则以本页020说明与[维护Wiki](storage-maintenance.md)为准。升级/回退须成套保留PG、私有目录、owner、S3版本、本地manifest与必要密钥；迁移不得重置决定，关闭媒体审核不得放行旧候选。020新增冷却、游标和调度投影也必须随PG恢复，不得通过重启清除供应商退避。
+
+本批S3审核读取使用真实本机HTTP协议fixture验证GET字节、版本条件、篡改/缺失及取消清理，结果见[055](../changes/2026-11-14-055-media-moderation-engine.md)与[058](../changes/2026-11-14-058-media-review-integration.md)。上节V08的SeaweedFS实测保持原有范围；本批fixture不冒充生产云S3或真实审核商验收。

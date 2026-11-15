@@ -225,6 +225,9 @@ func (a *App) createConversationRunApproved(workspaceID, projectID, id, key, act
 		}
 		return copyRun(r.Run), true, nil
 	}
+	if err := a.checkGenerationAccessLocked(workspaceID); err != nil {
+		return Run{}, false, err
+	}
 	if input.ExpectedVersion == nil || *input.ExpectedVersion < 1 || *input.ExpectedVersion > 9007199254740991 || input.Operation != "reply" && input.Operation != "continue" {
 		return Run{}, false, failure(422, "INVALID_CHAT_INPUT", "需要明确操作和当前对话版本")
 	}
@@ -262,8 +265,11 @@ func (a *App) createConversationRunApproved(workspaceID, projectID, id, key, act
 		return Run{}, false, err
 	}
 	a.evictTerminalsLocked()
-	if len(a.runs) >= a.config.MaxRecords || len(a.runQueue) >= cap(a.runQueue) {
+	if len(a.runs) >= a.config.MaxRecords {
 		return Run{}, false, failure(503, "RUN_QUEUE_FULL", "生成队列或本地缓存已满，请稍后重试原请求")
+	}
+	if err = a.execution.checkLocked(workspaceID); err != nil {
+		return Run{}, false, err
 	}
 	var run Run
 	var execution *chatExecution
@@ -274,6 +280,9 @@ func (a *App) createConversationRunApproved(workspaceID, projectID, id, key, act
 				return e
 			}
 			defer tx.Rollback(ctx)
+			if e = checkWorkspaceGenerationSQL(ctx, tx, workspaceID); e != nil {
+				return e
+			}
 			c, e := readConversationSQL(ctx, tx, workspaceID, projectID, id, true)
 			if e != nil {
 				return e
@@ -388,7 +397,7 @@ func (a *App) createConversationRunApproved(workspaceID, projectID, id, key, act
 		return Run{}, false, err
 	}
 	a.runs[run.ID] = &runRecord{Run: run, UpstreamModel: execution.UpstreamModel, ChatExecution: execution, Subscribers: make(map[chan event]bool)}
-	a.runQueue <- run.ID
+	a.execution.enqueueLocked(executionJob{ID: run.ID, WorkspaceID: run.WorkspaceID, ModelKey: execution.UpstreamModel, EnqueuedAt: time.Now()})
 	return copyRun(run), false, nil
 }
 

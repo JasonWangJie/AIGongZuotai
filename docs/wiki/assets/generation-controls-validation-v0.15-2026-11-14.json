@@ -1,0 +1,131 @@
+{
+  "date": "2026-11-14",
+  "version": "0.15.0",
+  "batch": "V14-C1 local",
+  "full_v14_status": "in_progress",
+  "check": {
+    "command": "node .runtime/v14b2-all-checks.mjs check -> npm run check equivalent isolated entry",
+    "status": "passed",
+    "go_vet": true,
+    "go_tests": true,
+    "go_build": true,
+    "studio_seconds": 11.799,
+    "frontend_tests": 297,
+    "frontend_files": 28,
+    "frontend_seconds": 3.45,
+    "task_tests": 8,
+    "vite_seconds": 2.63,
+    "main_js_kb": 494.93,
+    "main_js_gzip_kb": 156.88,
+    "user_page_js_kb": 10.8,
+    "operations_page_js_kb": 42.06,
+    "css_kb": 114.97,
+    "css_gzip_kb": 22.87,
+    "chunk_warning": false,
+    "test_only_dependency": "jsdom 29.1.1; Node 22.18 compatible; lockfile pinned"
+  },
+  "postgres": {
+    "command": "node .runtime/v14b2-all-checks.mjs db -> npm run test:db equivalent isolated entry",
+    "status": "passed",
+    "studio_seconds": 282.02,
+    "first_failed_seconds": 249.751,
+    "second_failed_seconds": 270.901,
+    "corrections": [
+      "Old conversation COMMIT fault injection moved past new read-only gate to a real write barrier",
+      "SQL-helper media fixture now joins its background workers before manual state transitions"
+    ],
+    "production_guards_weakened": false
+  },
+  "focused": {
+    "generation_postgres_functions": 11,
+    "generation_postgres_seconds": 28.923,
+    "independent_first_restriction_lock_seconds": 2.312,
+    "strict_http_and_bounded_metrics_seconds": 0.35,
+    "conversation_ack_repeat3_seconds": 4.257,
+    "media_fixture_repeat5_seconds": 12.149,
+    "unknown_commit": [
+      "restrict_future",
+      "lift_restriction"
+    ],
+    "scope": "Real PG, TCP acknowledgement loss, App restart; C1 acknowledgement tests are not OS process Kill"
+  },
+  "frontend_findings_fixed": [
+    "new restriction ID in first restriction preview",
+    "cross-tab different appeal body does not clear unknown original",
+    "fresh network attempt while preserving original key/body",
+    "StrictMode initial reads and stale finally ownership"
+  ],
+  "openapi": {
+    "version": "0.15.0",
+    "paths": 71,
+    "operations": 83,
+    "schemas": 95,
+    "refs": 411,
+    "valid": true
+  },
+  "smokes": {
+    "passed_commands": [
+      "smoke",
+      "smoke:runtime",
+      "smoke:catalog",
+      "smoke:references",
+      "smoke:library",
+      "smoke:conversations"
+    ],
+    "five_json_reports": [
+      {
+        "name": "runtime",
+        "binary_sha256": "e78378ef82c317e3255378d3d2e633ad9239d01152ed891acad0c35b7d8c8873",
+        "status": "passed"
+      },
+      {
+        "name": "catalog",
+        "binary_sha256": "e78378ef82c317e3255378d3d2e633ad9239d01152ed891acad0c35b7d8c8873",
+        "status": "passed"
+      },
+      {
+        "name": "reference",
+        "binary_sha256": "e78378ef82c317e3255378d3d2e633ad9239d01152ed891acad0c35b7d8c8873",
+        "status": "passed"
+      },
+      {
+        "name": "library",
+        "binary_sha256": "e78378ef82c317e3255378d3d2e633ad9239d01152ed891acad0c35b7d8c8873",
+        "status": "passed"
+      },
+      {
+        "name": "conversation",
+        "binary_sha256": "e78378ef82c317e3255378d3d2e633ad9239d01152ed891acad0c35b7d8c8873",
+        "status": "passed"
+      }
+    ],
+    "hostile_parent_config_isolated": true
+  },
+  "build_sha256": "e78378ef82c317e3255378d3d2e633ad9239d01152ed891acad0c35b7d8c8873",
+  "performance_scope": "Isolated loopback HTTP/1.1, memory storage, authentication disabled, demo providers; server and load client share this machine.",
+  "browser": "generation-controls-browser-v0.15-2026-11-14.json",
+  "upgrade": "generation-controls-upgrade-v0.15-2026-11-14.json",
+  "public_deployment": false,
+  "real_provider_requests": 0,
+  "real_mail": false,
+  "real_payment": false,
+  "not_completed": [
+    "V14-C2 account and content appeal evidence/decisions",
+    "V14-C3 credit and automatic risk policies",
+    "real moderation provider",
+    "real SMTP",
+    "real payment",
+    "production multiwriter and capacity/DR"
+  ],
+  "governance": {
+    "todo_sync": true,
+    "check_todo": true,
+    "check_docs": true,
+    "check_changes": true,
+    "git_diff_check": true,
+    "documents": 131,
+    "ledgers": 62,
+    "full_batches_done": 11,
+    "full_batches_total": 23
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "measured_at": "2026-11-14T13:47:11.178Z",
+  "build": {
+    "version": "0.16.0",
+    "binary_sha256": "4f8b5002a97548bda126abccb6fcf29a5674b435f91273135f3a729367b173c5",
+    "go": "go version go1.26.11 windows/amd64"
+  },
+  "scope": "Isolated loopback HTTP/1.1, memory storage, authentication disabled, demo providers; server and load client share this machine.",
+  "limitations": [
+    "Not a gateway, database, TLS, cluster, 10000-stream or production SLO test.",
+    "Latency includes Node fetch and same-machine client scheduling; no CPU/RSS/FD profiling included.",
+    "Task case measures create plus cancel; demo stream duration is deliberately paced.",
+    "All demo chat requests share one workspace. First delta includes execution queue wait; workspace concurrency is now 2 while client concurrency is 4, so this is not comparable with the previous 4-active-chat baseline."
+  ],
+  "chat_scheduler": {
+    "workers": 4,
+    "queue_size": 32,
+    "workspace_concurrency": 2,
+    "model_concurrency": 4,
+    "workspace_queue_size": 8
+  },
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26100",
+    "arch": "x64",
+    "logical_cpus": 6,
+    "cpu": "AMD Ryzen 5 3500X 6-Core Processor             ",
+    "memory_bytes": 17107918848,
+    "node": "v22.18.0"
+  },
+  "results": [
+    {
+      "name": "bootstrap-http",
+      "concurrency": 32,
+      "elapsed_ms": 476.84,
+      "operations_per_second": 2097.14,
+      "samples": 1000,
+      "min_ms": 4.12,
+      "p50_ms": 13.46,
+      "p95_ms": 24.54,
+      "p99_ms": 30.51,
+      "max_ms": 42.34
+    },
+    {
+      "name": "task-create-and-cancel",
+      "concurrency": 8,
+      "elapsed_ms": 128.15,
+      "operations_per_second": 780.37,
+      "samples": 100,
+      "min_ms": 3.36,
+      "p50_ms": 9.44,
+      "p95_ms": 14.25,
+      "p99_ms": 14.94,
+      "max_ms": 15.14
+    },
+    {
+      "name": "llm-full-demo-stream",
+      "concurrency": 4,
+      "elapsed_ms": 10234.66,
+      "operations_per_second": 1.17,
+      "samples": 12,
+      "min_ms": 1707.08,
+      "p50_ms": 3410.5,
+      "p95_ms": 3412.92,
+      "p99_ms": 3412.92,
+      "max_ms": 3412.92
+    },
+    {
+      "name": "llm-first-delta-including-submit",
+      "samples": 12,
+      "min_ms": 56.73,
+      "p50_ms": 1759.99,
+      "p95_ms": 1761.82,
+      "p99_ms": 1761.82,
+      "max_ms": 1761.82
+    }
+  ]
+}

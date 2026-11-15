@@ -3,7 +3,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import net from 'node:net';
 import { resolve } from 'node:path';
-import { binary, root, start, stopOwnedProcess, isolatedReferenceDirectory, isolatedMailEnvironment, isolatedBillingEnvironment, isolatedOperationsEnvironment, isolatedModerationEnvironment } from './lib/process.mjs';
+import { binary, root, start, stopOwnedProcess, isolatedReferenceDirectory, isolatedMailEnvironment, isolatedBillingEnvironment, isolatedOperationsEnvironment, isolatedModerationEnvironment, isolatedExecutionEnvironment } from './lib/process.mjs';
 
 const port = await new Promise((done, fail) => {
   const probe = net.createServer(); probe.on('error', fail);
@@ -21,7 +21,7 @@ const upload = async name => {
   return json(await request('/api/v1/references', { method: 'POST', headers: { Origin: base, 'Idempotency-Key': randomUUID(), 'X-Project-ID': 'prj_demo' }, body: form }));
 };
 try {
-  server = start(binary, [], { env: { ...process.env, ...isolatedMailEnvironment,...isolatedBillingEnvironment,...isolatedOperationsEnvironment,...isolatedModerationEnvironment, APP_ADDR: `127.0.0.1:${port}`, APP_WEB_DIR: resolve(root, 'apps/workbench/dist'),
+  server = start(binary, [], { env: { ...process.env, ...isolatedMailEnvironment,...isolatedBillingEnvironment,...isolatedOperationsEnvironment,...isolatedModerationEnvironment,...isolatedExecutionEnvironment, APP_ADDR: `127.0.0.1:${port}`, APP_WEB_DIR: resolve(root, 'apps/workbench/dist'),
     DATABASE_URL: '', AUTH_MODE: 'disabled', PROVIDER_MODE: 'demo', MODEL_CATALOG_FILE: '',
     REFERENCE_DIR: directories.directory, ASSET_DIR: directories.assetDirectory, ASSET_STORAGE_BACKEND: 'local', S3_FORCE_PATH_STYLE: 'false',
     NEWAPI_BASE_URL: '', NEWAPI_API_KEY: '', ASYNC_IMAGE_BASE_URL: '', ASYNC_IMAGE_API_KEY: '', METRICS_TOKEN: token,

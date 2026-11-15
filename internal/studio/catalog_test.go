@@ -353,6 +353,7 @@ func TestPostgresCatalogReplaySnapshotsRecoveryAndLegacyHash(t *testing.T) {
 		t.Fatal("legacy normalized hash failed after model removed", err)
 	}
 	a.executeTaskStep(task.ID)
+	advanceMediaScheduleDue(t, a, task.ID)
 	a.executeTaskStep(task.ID)
 	p.mu.Lock()
 	defer p.mu.Unlock()

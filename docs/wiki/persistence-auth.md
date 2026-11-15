@@ -11,7 +11,7 @@
 | `TEST_DATABASE_URL` | 仅集成测试使用；每项测试创建随机 schema 并清理该 schema，不清空已有数据库。 |
 | `APP_ADDR` | 默认 `127.0.0.1:8080`，仍拒绝非回环字面量地址。 |
 
-根目录开发脚本读取 `.env`；直接 `go run ./cmd/server` 从进程环境读取。不要提交连接串、网关 key 或 cookie。连接串不回显到日志。PostgreSQL 应使用专属应用数据库/角色；当前启动按版本应用内嵌 [001基础](../../internal/studio/migrations/001_core.sql)、[002审计](../../internal/studio/migrations/002_audit.sql)、[003草稿](../../internal/studio/migrations/003_drafts.sql)、[004准入索引](../../internal/studio/migrations/004_admission_indexes.sql)、[005模型快照格式栅栏](../../internal/studio/migrations/005_model_snapshots.sql)，需要建表/触发器/索引权限。`studio_schema_versions` 登记已应用版本，已有001数据可以增量升级；迁移与版本登记同事务提交。发现数据库有当前二进制不认识的版本时拒绝启动，不能通过直接换旧二进制回退。
+根目录开发脚本读取 `.env`；直接 `go run ./cmd/server` 从进程环境读取。不要提交连接串、网关 key 或 cookie。连接串不回显到日志。PostgreSQL 应使用专属应用数据库/角色；当前启动按版本应用内嵌 [001基础](../../db/migrations/001_core.sql)、[002审计](../../db/migrations/002_audit.sql)、[003草稿](../../db/migrations/003_drafts.sql)、[004准入索引](../../db/migrations/004_admission_indexes.sql)、[005模型快照格式栅栏](../../db/migrations/005_model_snapshots.sql)，需要建表/触发器/索引权限。`studio_schema_versions` 登记已应用版本，已有001数据可以增量升级；迁移与版本登记同事务提交。发现数据库有当前二进制不认识的版本时拒绝启动，不能通过直接换旧二进制回退。
 
 005 不新增表或重写旧记录，其 SQL 为 `SELECT 1`，作用是登记新数据格式版本。V06 在现有 JSON 列中保存模型身份/能力/参数快照，并改变新请求的平台幂等摘要口径；旧v0.4结构反序列化后写回会丢弃新字段。因此旧v0.4迁移加载器看到数据库版本5会拒绝启动，避免无声破坏已受理记录。不能删除版本号来强行降级，也不能把该栅栏当作自动数据回滚。
 

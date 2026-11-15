@@ -1,0 +1,44 @@
+[
+  {
+    "file": "allow.png",
+    "kind": "image",
+    "sha256": "fda65e848109e9f61725c6f1e343dfa0e3daccf1711127be14d34f909152f07d",
+    "byte_size": 4604,
+    "decision": "allow"
+  },
+  {
+    "file": "allow.mp4",
+    "kind": "video",
+    "sha256": "e81d1231f96fb999155110d60cc8a41b69f9bb038a766e0ca263e5f11d489f50",
+    "byte_size": 5993,
+    "decision": "allow"
+  },
+  {
+    "file": "block.png",
+    "kind": "image",
+    "sha256": "10cfbb67137454b9ed7b8e7e11112edfa705a94a8c04258f687de9693054cbbb",
+    "byte_size": 4540,
+    "decision": "block"
+  },
+  {
+    "file": "block.mp4",
+    "kind": "video",
+    "sha256": "d67e280902ef6c4fd3c322b5d6b9948d533c29bead997ee37a79bd58ad38d0a8",
+    "byte_size": 6330,
+    "decision": "block"
+  },
+  {
+    "file": "review.png",
+    "kind": "image",
+    "sha256": "ab5278460a783c8bb2cd5a17f24c584affeb7583cb8a08209e897975a4260ef1",
+    "byte_size": 4740,
+    "decision": "review"
+  },
+  {
+    "file": "review.mp4",
+    "kind": "video",
+    "sha256": "03445effc00b26ab7e81197991094e16f6eeadcc400d0baac6ccb18f5bf3a501",
+    "byte_size": 6473,
+    "decision": "review"
+  }
+]

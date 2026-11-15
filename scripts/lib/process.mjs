@@ -19,7 +19,15 @@ export const isolatedMailEnvironment = Object.freeze({
 
 export const isolatedBillingEnvironment = Object.freeze({ BILLING_MODE: "disabled", BILLING_PRICE_FILE: "" });
 export const isolatedOperationsEnvironment = Object.freeze({ OPERATIONS_ENABLED: "false" });
-export const isolatedModerationEnvironment = Object.freeze({ MODERATION_MODE: 'disabled', MODERATION_POLICY_FILE: '', MODERATION_ENDPOINT: '', MODERATION_API_KEY: '', MODERATION_CREDENTIAL_ID: '' });
+export const isolatedModerationEnvironment = Object.freeze({ MODERATION_MODE: 'disabled', MODERATION_POLICY_FILE: '', MODERATION_ENDPOINT: '', MODERATION_API_KEY: '', MODERATION_CREDENTIAL_ID: '', MEDIA_MODERATION_MODE: 'disabled', MEDIA_MODERATION_POLICY_FILE: '', MEDIA_MODERATION_ENDPOINT: '', MEDIA_MODERATION_API_KEY: '', MEDIA_MODERATION_CREDENTIAL_ID: '' });
+
+// Smoke/performance services must not inherit production scheduler tuning.
+export const isolatedExecutionEnvironment = Object.freeze({
+  CHAT_WORKERS: '4', CHAT_QUEUE_SIZE: '32', CHAT_WORKSPACE_CONCURRENCY: '2',
+  CHAT_MODEL_CONCURRENCY: '4', CHAT_WORKSPACE_QUEUE_SIZE: '8',
+  MEDIA_SUBMIT_WORKERS: '2', MEDIA_QUERY_WORKERS: '2', MEDIA_DELIVERY_WORKERS: '2', MEDIA_REVIEW_WORKERS: '2', MEDIA_DELIVERY_KEY: '',
+  MEDIA_WORKSPACE_CONCURRENCY: '1', MEDIA_CHANNEL_CONCURRENCY: '2',
+});
 
 // Every isolated service gets a private reference tree. Cleanup only owns the
 // exact newly created child, never the developer's REFERENCE_DIR or assets.

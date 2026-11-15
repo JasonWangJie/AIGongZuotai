@@ -117,4 +117,30 @@ V08增加library、library_entry、library_revisions、library_trash、library_r
 
 ## V14-A 运营路由
 
-在V12的56类基础上，新增operations_access、operations_exceptions、operations_cases、operations_case、operations_case_events、operations_case_plan、operations_case_execute七个固定桶，当前共63类。7个路径对应8项HTTP操作，工单列表与创建共用一个路由桶；运营功能默认关闭也不改变标签词表。用户/工作区/工单ID、提示词、输出、邮箱、供应商handle、证据标识、密码和计划摘要均不作为指标标签，不使用原始URL作为标签。HTTP计数不代表账务效果、回执或运营审计完成；相关证据见[异常工单](operations-cases.md)与[050验收](../changes/2026-11-14-050-operations-integration.md)。
+在V12的56类基础上，新增operations_access、operations_exceptions、operations_cases、operations_case、operations_case_events、operations_case_plan、operations_case_execute七个固定桶，V14-A交付时共63类。7个路径对应8项HTTP操作，工单列表与创建共用一个路由桶；运营功能默认关闭也不改变标签词表。用户/工作区/工单ID、提示词、输出、邮箱、供应商handle、证据标识、密码和计划摘要均不作为指标标签，不使用原始URL作为标签。HTTP计数不代表账务效果、回执或运营审计完成；相关证据见[异常工单](operations-cases.md)与[050验收](../changes/2026-11-14-050-operations-integration.md)。
+
+## V14-C1生成权限与复核路由
+
+当前增加10个固定桶，共73类：generation_access、generation_appeal_create、generation_appeals、generation_appeal、operations_generation_access、operations_appeals、operations_appeal、operations_generation_plan、operations_generation_execute、operations_generation_receipt。只由注册路由模板映射；工作区/限制/申请/计划ID、正文、公开答复、证据、密码或原URL均不成为标签。真实HTTP指标回归见[062](../changes/2026-11-14-062-generation-controls-integration.md)。这些计数不等于申诉解决率、已读保证或生产容量。
+
+## V16-A1聊天执行指标
+
+受保护`/metrics`增加11个无标签固定系列：`studio_chat_scheduler_queued`、`running`、`workspaces`、`workers_limit`、`queue_limit`、`workspace_concurrency_limit`、`model_concurrency_limit`、`workspace_queue_limit`、`dispatched_total`、`wait_seconds_total`、`wait_seconds_max`（后10项均沿用同一`studio_chat_scheduler_`前缀）。只覆盖当前进程聊天执行，running包含输出审核及终态持久背压，不等于活跃网关连接数；最大等待不是P95/P99，不记录租户、私有模型或提示词。普通工作区runtime不返回这些全局统计。详细语义见[调度Wiki](execution-scheduler.md)与[067](../changes/2026-11-14-067-execution-integration.md)。
+
+## V16-A2媒体执行指标
+
+增加`studio_media_lane_reserved`、`studio_media_lane_limit`、`studio_media_lane_steps_total`三个族，仅有固定`lane="submit"/"query"`两值，共六系列。reserved从领取前预留至整个步骤返回，包含辅助连接领取、上游请求、下载导入、审核及持久背压；不是网关活跃连接数。steps累计已领取执行步骤，不是POST次数、任务完成数或计费使用量；重启清零。不扫描PG全队列，不包含工作区、任务、模型、handle或原URL。普通runtime接口不增加全局信息，访问仍需要独立运维令牌。验收见[071](../changes/2026-11-14-071-media-lane-integration.md)。
+
+## V16-A3.1交付指标
+
+上述三族新增固定delivery值，当前共九系列。原生query只含查询与清单事务，delivery包含下载/导入、整组审核及保存；旧非phased provider仍可能在query内导入。reserved覆盖真实执行直到退出，取消不提前释放；steps不是下载件数或HTTP次数。指标访问边界和私有身份禁入不变，根真实慢下载HTTP指标测试观察delivery=1、query=0，见[075](../changes/2026-11-14-075-media-delivery-integration.md)。
+
+## V16-A3.2首次审核指标
+
+A3.2第四通道增加固定review值，三族共十二系列；前节九系列为v0.18口径。review的reserved包括共享许可、领取、首次审核和最终保存/退出；引用输入也使用同一审核引擎，因此此数不是引擎全部活跃请求量。steps仍是步骤次数，不等于媒体件数、审核HTTP次数或计费数量。没有新增工作区、文件、policy、attempt或URL标签。独立真实HTTP审核阻塞时，review=1而query/delivery可归零，验证进度见[078](../changes/2026-11-14-078-media-review-dispatch-validation.md)和[079](../changes/2026-11-14-079-media-review-dispatch-integration.md)。
+
+## V16-A3.3公平与许可观测
+
+在原十二系列之外新增23个固定系列：四lane的`studio_media_scope_reserved`、`studio_media_schedule_examined_total`、`studio_media_schedule_claims_total`各4项；`studio_media_schedule_deferrals_total`仅四lane乘capacity/cooldown两个原因，共8项；`studio_media_review_waiting`仅input/output两项，共享`studio_media_review_permits`无标签1项。这些是本进程计数和当前占用，不查询全数据库任务总量；反复遇到同一任务会重复计入deferrals，不能当独立受影响任务数。
+
+scope_reserved覆盖工作区和冻结渠道预算，实际执行未退出不得因取消提前释放。review_permits包含输入/输出共同持有的物理槽，waiting只是有界仲裁等待；不等于远端活跃HTTP数或吞吐。没有工作区、渠道指纹、模型、任务、请求键或原URL标签。真实参考入队拒绝/原键重放与聚合指标专项已运行，最终联合验收以[083](../changes/2026-11-15-083-media-scheduler-integration.md)为准。

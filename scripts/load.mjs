@@ -6,7 +6,7 @@ import net from 'node:net';
 import os from 'node:os';
 import { resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
-import { binary, root, start, stopOwnedProcess, isolatedReferenceDirectory, isolatedMailEnvironment, isolatedBillingEnvironment, isolatedOperationsEnvironment, isolatedModerationEnvironment } from './lib/process.mjs';
+import { binary, root, start, stopOwnedProcess, isolatedReferenceDirectory, isolatedMailEnvironment, isolatedBillingEnvironment, isolatedOperationsEnvironment, isolatedModerationEnvironment, isolatedExecutionEnvironment } from './lib/process.mjs';
 
 // A reproducible single-machine regression baseline, never a production capacity claim.
 // There is intentionally no remote target option: this owns an isolated demo process.
@@ -22,7 +22,7 @@ const port = await new Promise((resolvePromise, reject) => {
 const base = `http://127.0.0.1:${port}`;
 const referenceDirectory = isolatedReferenceDirectory();
 const child = start(binary, [], {
-  env: { ...process.env, ...isolatedMailEnvironment,...isolatedBillingEnvironment,...isolatedOperationsEnvironment,...isolatedModerationEnvironment, APP_ADDR: `127.0.0.1:${port}`, PROVIDER_MODE: 'demo', MODEL_CATALOG_FILE: '', REFERENCE_DIR: referenceDirectory.directory, ASSET_DIR: referenceDirectory.assetDirectory, ASSET_STORAGE_BACKEND: 'local', S3_FORCE_PATH_STYLE: 'false', AUTH_MODE: 'disabled', DATABASE_URL: '', METRICS_TOKEN: '', ADMISSION_WORKSPACE_RUNS: '64', ADMISSION_MODEL_RUNS: '32', ADMISSION_WORKSPACE_TASKS: '128', ADMISSION_MODEL_TASKS: '64', ADMISSION_WORKSPACE_STREAMS: '32' },
+  env: { ...process.env, ...isolatedMailEnvironment,...isolatedBillingEnvironment,...isolatedOperationsEnvironment,...isolatedModerationEnvironment,...isolatedExecutionEnvironment, APP_ADDR: `127.0.0.1:${port}`, PROVIDER_MODE: 'demo', MODEL_CATALOG_FILE: '', REFERENCE_DIR: referenceDirectory.directory, ASSET_DIR: referenceDirectory.assetDirectory, ASSET_STORAGE_BACKEND: 'local', S3_FORCE_PATH_STYLE: 'false', AUTH_MODE: 'disabled', DATABASE_URL: '', METRICS_TOKEN: '', ADMISSION_WORKSPACE_RUNS: '64', ADMISSION_MODEL_RUNS: '32', ADMISSION_WORKSPACE_TASKS: '128', ADMISSION_MODEL_TASKS: '64', ADMISSION_WORKSPACE_STREAMS: '32' },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 let startupError;
@@ -110,7 +110,9 @@ try {
     measured_at: new Date().toISOString(),
     build: { version: JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')).version, binary_sha256: createHash('sha256').update(readFileSync(binary)).digest('hex'), go: execFileSync('go', ['version'], { cwd: root, encoding: 'utf8', windowsHide: true }).trim() },
     scope: 'Isolated loopback HTTP/1.1, memory storage, authentication disabled, demo providers; server and load client share this machine.',
-    limitations: ['Not a gateway, database, TLS, cluster, 10000-stream or production SLO test.', 'Latency includes Node fetch and same-machine client scheduling; no CPU/RSS/FD profiling included.', 'Task case measures create plus cancel; demo stream duration is deliberately paced.'],
+    limitations: ['Not a gateway, database, TLS, cluster, 10000-stream or production SLO test.', 'Latency includes Node fetch and same-machine client scheduling; no CPU/RSS/FD profiling included.', 'Task case measures create plus cancel; demo stream duration is deliberately paced.', 'All demo chat requests share one workspace. First delta includes execution queue wait; workspace concurrency is now 2 while client concurrency is 4, so this is not comparable with the previous 4-active-chat baseline.'],
+    chat_scheduler: { workers: 4, queue_size: 32, workspace_concurrency: 2, model_concurrency: 4, workspace_queue_size: 8 },
+    media_lanes: { submit_workers: 2, query_workers: 2, delivery_workers: 2, review_workers: 2, workspace_concurrency_per_lane: 1, channel_concurrency_per_lane: 2, query_includes: 'native phased providers: status and manifest transaction; legacy demo has no real download', delivery_includes: 'private download, import and candidate handoff', review_includes: 'first review only, shared engine permits and final persistence', measurement: 'create plus cancel only; not media execution, queue fairness or moderation throughput' },
     environment: { platform: os.platform(), release: os.release(), arch: os.arch(), logical_cpus: os.cpus().length, cpu: os.cpus()[0]?.model, memory_bytes: os.totalmem(), node: process.version },
     results,
   };

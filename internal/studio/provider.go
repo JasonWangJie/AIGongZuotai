@@ -31,6 +31,7 @@ type MediaProvider interface {
 }
 
 type MediaHandle struct {
+	Observation      *MediaScheduleObservation `json:"-"`
 	ProviderIdentity string
 	RetryAfter       time.Duration
 	CredentialID     string
@@ -40,11 +41,12 @@ type MediaHandle struct {
 	SubmittedAt      time.Time
 }
 type MediaResult struct {
-	Error      *APIError
-	RetryAfter time.Duration
-	Status     string
-	Progress   int
-	Artifacts  []Artifact
+	Observation *MediaScheduleObservation `json:"-"`
+	Error       *APIError
+	RetryAfter  time.Duration
+	Status      string
+	Progress    int
+	Artifacts   []Artifact
 }
 
 type demoChat struct{ delay time.Duration }
@@ -130,6 +132,12 @@ func newOpenAIChat(baseURL, key, model string) (*openAIChat, error) {
 // A catalog resolves the private upstream model for each accepted operation.
 // All such operations share this gateway client and its connection pool.
 func newOpenAIChatGateway(baseURL, key string) (*openAIChat, error) {
+	return newOpenAIChatGatewayWithConcurrency(baseURL, key, 32)
+}
+func newOpenAIChatGatewayWithConcurrency(baseURL, key string, concurrency int) (*openAIChat, error) {
+	if concurrency < 1 || concurrency > 64 {
+		return nil, errors.New("invalid chat HTTP connection limit")
+	}
 	u, err := url.Parse(baseURL)
 	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
 		return nil, errors.New("NEWAPI_BASE_URL must be an absolute HTTP(S) API base URL without credentials, query or fragment")
@@ -146,9 +154,9 @@ func newOpenAIChatGateway(baseURL, key string) (*openAIChat, error) {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Proxy = nil // Do not silently send private gateway credentials to an environment proxy.
 	transport.DialContext = (&net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}).DialContext
-	transport.MaxIdleConns = 64
-	transport.MaxIdleConnsPerHost = 32
-	transport.MaxConnsPerHost = 32
+	transport.MaxIdleConns = concurrency
+	transport.MaxIdleConnsPerHost = concurrency
+	transport.MaxConnsPerHost = concurrency
 	transport.IdleConnTimeout = 90 * time.Second
 	transport.TLSHandshakeTimeout = 10 * time.Second
 	transport.ResponseHeaderTimeout = 45 * time.Second

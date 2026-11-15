@@ -7,6 +7,7 @@ import { completeReference, emptyReferences, fileValidation, mergeReferences, mo
 import type { ReferenceItem, ReferenceState } from './referenceState';
 import { uploadReference } from './referenceUpload';
 import type { ReferenceLimits } from './types';
+import { mediaContentAllowed, mediaUploadRetryAllowed } from './mediaModeration';
 
 const MAX_BUFFERED_BYTES = 64 * 1048576;
 export function useReferences({ ownerId, projectId, limits, maxSelected, refreshVersion = 0, visible = true, onAuthExpired }: { ownerId: string; projectId?: string; limits?: ReferenceLimits; maxSelected: number; refreshVersion?: number; visible?: boolean; onAuthExpired: () => void }) {
@@ -69,8 +70,8 @@ export function useReferences({ ownerId, projectId, limits, maxSelected, refresh
       return { ...old, items, selected, validation };
     });
   }
-  function select(id: string) { if (!key) return; update(key, old => { const already = old.selected.includes(id); if (!already && old.selected.length >= maxSelected) return { ...old, validation: ['本次参考图已达当前模型上限，请先移出一张再选择。'] }; return { ...old, selected: already ? old.selected.filter(value => value !== id) : [...old.selected, id], validation: [] }; }); }
-  function retry(id: string) { if (!key) return; update(key, old => { const item = old.items.find(value => value.id === id); if (!item?.file || !['uncertain', 'failed'].includes(item.phase) || Date.now() < (item.error?.retryAt || 0)) return old; return patchReference(old, id, item.attempt, { phase: 'queued', error: undefined, progress: null }); }); }
+  function select(id: string) { if (!key) return; update(key, old => { const already = old.selected.includes(id), item = old.items.find(value => value.id === id); if (!already && item?.asset && !mediaContentAllowed(item.asset.moderation)) return { ...old, validation: ['此参考素材暂不可用于新生成，请移出或更换。原待确认请求保持不变。'] }; if (!already && old.selected.length >= maxSelected) return { ...old, validation: ['本次参考图已达当前模型上限，请先移出一张再选择。'] }; return { ...old, selected: already ? old.selected.filter(value => value !== id) : [...old.selected, id], validation: [] }; }); }
+  function retry(id: string) { if (!key) return; update(key, old => { const item = old.items.find(value => value.id === id); if (!item?.file || !mediaUploadRetryAllowed(item.error?.code, item.wasUnknown) || !['uncertain', 'failed'].includes(item.phase) || Date.now() < (item.error?.retryAt || 0)) return old; return patchReference(old, id, item.attempt, { phase: 'queued', error: undefined, progress: null }); }); }
   function stop(id: string) { transfers.current.get(id)?.abort(); }
   function remove(id: string) { if (!key) return; update(key, old => { const item = old.items.find(value => value.id === id); return { ...old, selected: old.selected.filter(value => value !== id), items: item?.phase === 'queued' && item.attempt === 0 ? old.items.filter(value => value.id !== id) : old.items }; }); }
   function forget(id: string) { if (!key) return; update(key, old => { const item = old.items.find(value => value.id === id); if (!item || !['failed', 'uncertain'].includes(item.phase)) return old; return { ...old, items: old.items.filter(value => value.id !== id), selected: old.selected.filter(value => value !== id) }; }); }

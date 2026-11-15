@@ -346,7 +346,7 @@ func TestPostgresAdmissionTerminalPredicateAndIndexes(t *testing.T) {
 	wantActive := 0
 	for _, status := range statuses {
 		now := time.Now().UTC().Add(-time.Minute)
-		record := &taskRecord{Task: Task{ID: newID("task"), WorkspaceID: "ws_demo", ProjectID: "prj_demo", ModelID: "studio-image", Kind: "image", Status: status, CreatedAt: now, UpdatedAt: now}, Input: taskInput("image"), NextPoll: time.Now().Add(time.Hour)}
+		record := &taskRecord{Task: Task{ID: newID("task"), WorkspaceID: "ws_demo", ProjectID: "prj_demo", ProviderMode: a.config.Mode, ModelID: "studio-image", Kind: "image", Status: status, CreatedAt: now, UpdatedAt: now}, Input: taskInput("image"), NextPoll: time.Now().Add(time.Hour)}
 		if err := a.store.createTask(record, "terminal-fixture-"+status, payloadHash(status)); err != nil {
 			t.Fatal(err)
 		}

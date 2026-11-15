@@ -1,0 +1,90 @@
+{
+  "date": "2026-11-14",
+  "version": "0.14.0",
+  "batch": "V14-B2 local",
+  "tool": "CUA in-app browser",
+  "environment": "Loopback Go + PostgreSQL + React; demo provider; text rules + media fixtures; demo CREDIT; mail disabled",
+  "results": [
+    {
+      "case": "Image approval and settlement",
+      "status": "passed",
+      "observed": "Private PNG appears only after ALLOWED/SUCCEEDED; 0.2 CREDIT settled; explicit non-AI fixture label"
+    },
+    {
+      "case": "Blocked image output",
+      "status": "passed",
+      "observed": "FAILED/BLOCKED shows no output image or download; refresh-only; 0.2 CREDIT remains REVIEW; reload preserves restriction"
+    },
+    {
+      "case": "Video playback",
+      "status": "passed",
+      "observed": "ALLOWED/SUCCEEDED and 2 CREDIT settled; observed playback currentTime 0.2185, paused false, then ended",
+      "video": {
+        "currentTime": 1,
+        "duration": 1,
+        "ended": true,
+        "error": null,
+        "height": 144,
+        "paused": true,
+        "readyState": 4,
+        "width": 256
+      }
+    },
+    {
+      "case": "Empty edit selection regression",
+      "status": "passed after fix",
+      "observed": "Initially App render threw from strict TaskInput builder. Fixed readiness gating. Reloaded and entered reference edit with no file and with nonempty prompt; quote disabled, page remains usable."
+    },
+    {
+      "case": "Reference rejection",
+      "status": "passed",
+      "observed": "block.png definitely rejected, not registered; original file and prompt retained; no auto retry, quote disabled; user can remove original"
+    },
+    {
+      "case": "Reference acceptance and editing",
+      "status": "passed",
+      "observed": "allow.png registered with ALLOWED, thumbnail 512x288; editing selected original creates task, ALLOWED/SUCCEEDED, 0.3 CREDIT settled"
+    },
+    {
+      "case": "Library and reload",
+      "status": "passed",
+      "observed": "Approved reference and generated image/video have review labels; legacy entries retain no approval claim; approved reference detail thumbnail complete with authenticated original/download links; blocked output absent from library"
+    },
+    {
+      "case": "Responsive layout",
+      "status": "passed",
+      "desktop": {
+        "width": 1440,
+        "height": 1000,
+        "document_width": 1440
+      },
+      "mobile": {
+        "width": 390,
+        "height": 844,
+        "document_width": 390
+      },
+      "observed": "Approved and blocked cards, reserved credit and action text inspected; no document horizontal overflow"
+    }
+  ],
+  "console": {
+    "initial_app_error": 1,
+    "initial_react_warning": 1,
+    "fixed": true,
+    "new_warning_error_after_fix": 0
+  },
+  "screenshots": [
+    "media-moderation-phase14.jpg",
+    "media-blocked-phase14.jpg",
+    "media-video-phase14.jpg",
+    "media-reference-blocked-phase14.jpg",
+    "media-library-phase14.jpg",
+    "mobile-media-phase14.jpg",
+    "mobile-media-blocked-phase14.jpg"
+  ],
+  "limitations": [
+    "No real AI, moderation supplier, SMTP, payment or public deployment",
+    "One-second H264 fixture is not requested model resolution/duration or semantic moderation accuracy",
+    "Output REVIEW, mixed batch, cancellation, lease loss and commit ACK failure validated in Go/PG, not all repeated in browser",
+    "Browser checks UI; absence of early byte delivery additionally asserted by API/PG tests"
+  ]
+}

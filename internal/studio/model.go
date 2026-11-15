@@ -18,6 +18,7 @@ type Artifact struct {
 }
 
 type Task struct {
+	Moderation         *ModerationSummary `json:"moderation,omitempty"`
 	Billing            *BillingSummary    `json:"billing,omitempty"`
 	BillingRequestHash [32]byte           `json:"-"`
 	BillingQuoteID     string             `json:"-"`
@@ -134,6 +135,10 @@ type Project struct {
 }
 
 func copyTask(t Task) Task {
+	t.Moderation = copyRunModeration(t.Moderation)
+	if !taskArtifactsReleased(t) {
+		t.Artifacts = nil
+	}
 	t.Billing = copyBilling(t.Billing)
 	t.ReferenceAssetIDs = append([]string(nil), t.ReferenceAssetIDs...)
 	t.Artifacts = append([]Artifact{}, t.Artifacts...)
@@ -143,6 +148,10 @@ func copyTask(t Task) Task {
 		t.Parameters = &parameters
 	}
 	return t
+}
+
+func taskArtifactsReleased(t Task) bool {
+	return t.Moderation == nil || t.Moderation.State == "ALLOWED" && (t.Status == "SUCCEEDED" || t.Status == "PARTIAL")
 }
 
 func copyCapabilities(c *ModelCapabilities) *ModelCapabilities {
