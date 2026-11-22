@@ -1,0 +1,12 @@
+Source: https://github.com/sapics/ip-location-db (user-country)
+License: Open Data Commons Public Domain Dedication and License 1.0
+https://opendatacommons.org/licenses/pddl/1-0/
+Only CN/HK/MO/TW/JP ranges are retained and mapped to display languages.
+
+https://github.com/sapics/ip-location-db/releases/download/latest/user-country-ipv4.csv
+2026-11-21T02:09:16Z
+sha256:8c8f8651a2f62f7a784786485329e78be6d1851e974aa9d3f8aa079d9230952f
+
+https://github.com/sapics/ip-location-db/releases/download/latest/user-country-ipv6.csv
+2026-11-21T02:09:18Z
+sha256:324efae5726cf0e7c98b022d1cce98a19c7130090ba0680f2bc35d511830a62f

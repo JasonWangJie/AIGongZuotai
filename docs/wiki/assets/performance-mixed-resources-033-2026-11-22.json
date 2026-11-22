@@ -1,0 +1,2042 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-11-21T19:47:13.6046635+00:00",
+  "cpu": "Intel(R) Core(TM) Ultra 7 155U",
+  "machine_memory_bytes": 33849176064,
+  "windows_version": "10.0.26200.0",
+  "test_binary_sha256": "5f8ef1927642eb4fe74ff577bb8b476c3217f8d0e4b0f928dbd0d6850ed68629",
+  "working_set_scope": "Maximum sampled Windows PeakWorkingSet64 of each test process, sampled about every 20 ms. Includes App, HTTP fixtures, client, Go runtime and tests. Excludes PostgreSQL and the sampler.",
+  "trials": [
+    {
+      "trial": 1,
+      "peak_working_set_bytes_observed": 98942976,
+      "working_set_samples": 608,
+      "workload": {
+        "arch": "amd64",
+        "chat_limits": {
+          "workers": 2,
+          "queue_size": 5,
+          "workspace_concurrency": 1,
+          "model_concurrency": 2,
+          "workspace_queue_size": 2
+        },
+        "chat_provider_calls": 6,
+        "complete_reopen_ms": 222.5,
+        "controlled_pg_lock": {
+          "waiter_while_blocked": {
+            "registered": 1,
+            "observed": 1,
+            "state_counts": {
+              "active": 1
+            },
+            "wait_event_type_counts": {
+              "Lock": 1
+            }
+          },
+          "waiter_after_release": {
+            "registered": 1,
+            "observed": 1,
+            "state_counts": {
+              "idle": 1
+            },
+            "wait_event_type_counts": {
+              "Client": 1
+            }
+          },
+          "own_blocker_verified": true,
+          "waiter_statement_elapsed_ms": 11.0857,
+          "stale_backend_identity_excluded": true
+        },
+        "controlled_run_fanout": {
+          "subscriber_buffer_capacity": 64,
+          "events_published": 66,
+          "normal_delivered_in_order": 66,
+          "slow_buffered_before_disconnect": 64,
+          "slow_buffer_full_evictions": 1
+        },
+        "go_version": "go1.26.11",
+        "gomaxprocs": 14,
+        "interrupted_runs": 1,
+        "logical_cpu": 14,
+        "media_limits": {
+          "workspace_concurrency": 1,
+          "channel_concurrency": 2,
+          "review_workers": 1,
+          "delivery_workers": 1,
+          "submit_workers": 2,
+          "query_workers": 1
+        },
+        "media_output_review_http": 6,
+        "media_query_http": 7,
+        "media_query_http_429": 1,
+        "media_submit_http": 6,
+        "original_key_replayed": true,
+        "os": "windows",
+        "persisted_cooldown_from_http_ms": 3000,
+        "poll_interval_ms": 15,
+        "postgres_version": "16.14",
+        "private_download_http": 6,
+        "request_to_provider_ms": {
+          "A-chat-0": 14.905,
+          "A-chat-1": 3152.9941,
+          "A-chat-2": 3159.7771,
+          "A-chat-3": 5.773,
+          "A-chat-healthy": 38.1173,
+          "A-media-0": 28.1524,
+          "A-media-1": 25.7115,
+          "A-media-2": 3134.0858,
+          "A-media-healthy": 66.797,
+          "B-chat-0": 7.1861,
+          "B-media-0": 21.5799,
+          "B-media-backoff": 13.8149
+        },
+        "resource_sample_scope": "six phase snapshots; GC deltas from first runtime sample, nanoseconds; managed PG snapshots cover only this App writer and its media lane connections, state and wait types are counts not wait durations; slow counters are per App incarnation",
+        "restored_approved_media": 6,
+        "retry_after_seconds": 1,
+        "same_handle_retry_ms": 3027.5732,
+        "samples": [
+          {
+            "phase": "baseline",
+            "elapsed_ms": 0,
+            "heap_alloc_bytes": 3062624,
+            "heap_inuse_bytes": 5193728,
+            "go_sys_bytes": 19966200,
+            "goroutines": 18,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 6
+              },
+              "wait_event_type_counts": {
+                "Client": 6
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 0,
+              "pause_total_ns": 0,
+              "pause_samples": 0,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 0,
+              "workspace_count": 0,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 0,
+              "wait_seconds_total": 0,
+              "wait_seconds_max": 0
+            },
+            "media_lanes": {
+              "ReviewInFlight": 0,
+              "ReviewLimit": 1,
+              "ReviewSteps": 0,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 0,
+              "SubmitInFlight": 0,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 0,
+              "QuerySteps": 0
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                }
+              ]
+            }
+          },
+          {
+            "phase": "healthy_pair_completed",
+            "elapsed_ms": 3360.2101,
+            "heap_alloc_bytes": 13588984,
+            "heap_inuse_bytes": 16171008,
+            "go_sys_bytes": 33138936,
+            "goroutines": 27,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 5,
+                "idle in transaction": 1
+              },
+              "wait_event_type_counts": {
+                "Client": 4,
+                "none": 2
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 6,
+              "pause_total_ns": 0,
+              "pause_samples": 6,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 0,
+              "workspace_count": 0,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 1,
+              "wait_seconds_total": 0,
+              "wait_seconds_max": 0
+            },
+            "media_lanes": {
+              "ReviewInFlight": 1,
+              "ReviewLimit": 1,
+              "ReviewSteps": 1,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 1,
+              "SubmitInFlight": 1,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 1,
+              "QuerySteps": 1
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 1,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 2,
+                  "Claims": 1
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 182,
+                  "Claims": 1
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 1,
+                  "Claims": 1
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 1,
+                  "Claims": 1
+                }
+              ]
+            }
+          },
+          {
+            "phase": "two_chats_and_submit_and_review_held",
+            "elapsed_ms": 9622.6182,
+            "heap_alloc_bytes": 11151944,
+            "heap_inuse_bytes": 13901824,
+            "go_sys_bytes": 33147128,
+            "goroutines": 35,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 6
+              },
+              "wait_event_type_counts": {
+                "Client": 6
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 7,
+              "pause_total_ns": 1539200,
+              "pause_samples": 7,
+              "max_observed_pause_ns": 514700,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "chat": {
+              "queued": 2,
+              "running": 2,
+              "workspace_count": 2,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 3,
+              "wait_seconds_total": 0.0006727,
+              "wait_seconds_max": 0.0006727
+            },
+            "media_lanes": {
+              "ReviewInFlight": 1,
+              "ReviewLimit": 1,
+              "ReviewSteps": 2,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 3,
+              "SubmitInFlight": 1,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 4,
+              "QuerySteps": 3
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 1,
+                  "CapacityDeferrals": 96,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 194,
+                  "Claims": 4
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 544,
+                  "Claims": 3
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 3,
+                  "Claims": 3
+                },
+                {
+                  "ScopeInFlight": 1,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 2,
+                  "Claims": 2
+                }
+              ]
+            }
+          },
+          {
+            "phase": "backlog_drained",
+            "elapsed_ms": 12783.61,
+            "heap_alloc_bytes": 3000088,
+            "heap_inuse_bytes": 5816320,
+            "go_sys_bytes": 41535736,
+            "goroutines": 27,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 1,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "active": 1,
+                "idle": 5
+              },
+              "wait_event_type_counts": {
+                "Client": 5,
+                "none": 1
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 6,
+              "pause_total_ns": 0,
+              "pause_samples": 6,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 0,
+              "workspace_count": 0,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 5,
+              "wait_seconds_total": 6.2890827,
+              "wait_seconds_max": 3.154416
+            },
+            "media_lanes": {
+              "ReviewInFlight": 1,
+              "ReviewLimit": 1,
+              "ReviewSteps": 5,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 5,
+              "SubmitInFlight": 0,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 5,
+              "QuerySteps": 5
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 97,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 197,
+                  "Claims": 5
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 908,
+                  "Claims": 5
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 5,
+                  "Claims": 5
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 5,
+                  "Claims": 5
+                }
+              ]
+            }
+          },
+          {
+            "phase": "media_channel_cooling_with_chat_held",
+            "elapsed_ms": 15823.9997,
+            "heap_alloc_bytes": 3977904,
+            "heap_inuse_bytes": 6119424,
+            "go_sys_bytes": 41806072,
+            "goroutines": 25,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 6
+              },
+              "wait_event_type_counts": {
+                "Client": 6
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 2,
+              "pause_total_ns": 699000,
+              "pause_samples": 2,
+              "max_observed_pause_ns": 699000,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 1,
+              "workspace_count": 1,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 6,
+              "wait_seconds_total": 6.2890827,
+              "wait_seconds_max": 3.154416
+            },
+            "media_lanes": {
+              "ReviewInFlight": 0,
+              "ReviewLimit": 1,
+              "ReviewSteps": 5,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 5,
+              "SubmitInFlight": 0,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 6,
+              "QuerySteps": 6
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 97,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 198,
+                  "Claims": 6
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 1092,
+                  "Claims": 6
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 5,
+                  "Claims": 5
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 5,
+                  "Claims": 5
+                }
+              ]
+            }
+          },
+          {
+            "phase": "reopened",
+            "elapsed_ms": 19171.6898,
+            "heap_alloc_bytes": 15224824,
+            "heap_inuse_bytes": 17825792,
+            "go_sys_bytes": 41806072,
+            "goroutines": 18,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 1,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "active": 1,
+                "idle": 5
+              },
+              "wait_event_type_counts": {
+                "Client": 5,
+                "none": 1
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 4,
+              "pause_total_ns": 0,
+              "pause_samples": 4,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              1,
+              0,
+              0,
+              0
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 0,
+              "workspace_count": 0,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 0,
+              "wait_seconds_total": 0,
+              "wait_seconds_max": 0
+            },
+            "media_lanes": {
+              "ReviewInFlight": 0,
+              "ReviewLimit": 1,
+              "ReviewSteps": 0,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 0,
+              "SubmitInFlight": 1,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 0,
+              "QuerySteps": 0
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                }
+              ]
+            }
+          }
+        ],
+        "scope": "single local writer, two workspaces, six chat executions and six native asynchronous media tasks; samples include test HTTP servers; Go Sys excludes other processes and is not RSS",
+        "shutdown_ms": 4.5398,
+        "wait_definition": "wall time from before submission via authenticated HTTP to provider adapter entry, includes admission and queue; fixed fixture barriers hold selected calls",
+        "workspace_queue_429": 1
+      }
+    },
+    {
+      "trial": 2,
+      "peak_working_set_bytes_observed": 44544000,
+      "working_set_samples": 628,
+      "workload": {
+        "arch": "amd64",
+        "chat_limits": {
+          "workers": 2,
+          "queue_size": 5,
+          "workspace_concurrency": 1,
+          "model_concurrency": 2,
+          "workspace_queue_size": 2
+        },
+        "chat_provider_calls": 6,
+        "complete_reopen_ms": 344.7764,
+        "controlled_pg_lock": {
+          "waiter_while_blocked": {
+            "registered": 1,
+            "observed": 1,
+            "state_counts": {
+              "active": 1
+            },
+            "wait_event_type_counts": {
+              "Lock": 1
+            }
+          },
+          "waiter_after_release": {
+            "registered": 1,
+            "observed": 1,
+            "state_counts": {
+              "idle": 1
+            },
+            "wait_event_type_counts": {
+              "Client": 1
+            }
+          },
+          "own_blocker_verified": true,
+          "waiter_statement_elapsed_ms": 11.0524,
+          "stale_backend_identity_excluded": true
+        },
+        "controlled_run_fanout": {
+          "subscriber_buffer_capacity": 64,
+          "events_published": 66,
+          "normal_delivered_in_order": 66,
+          "slow_buffered_before_disconnect": 64,
+          "slow_buffer_full_evictions": 1
+        },
+        "go_version": "go1.26.11",
+        "gomaxprocs": 14,
+        "interrupted_runs": 1,
+        "logical_cpu": 14,
+        "media_limits": {
+          "workspace_concurrency": 1,
+          "channel_concurrency": 2,
+          "review_workers": 1,
+          "delivery_workers": 1,
+          "submit_workers": 2,
+          "query_workers": 1
+        },
+        "media_output_review_http": 6,
+        "media_query_http": 7,
+        "media_query_http_429": 1,
+        "media_submit_http": 6,
+        "original_key_replayed": true,
+        "os": "windows",
+        "persisted_cooldown_from_http_ms": 3000.0005,
+        "poll_interval_ms": 15,
+        "postgres_version": "16.14",
+        "private_download_http": 6,
+        "request_to_provider_ms": {
+          "A-chat-0": 6.8479,
+          "A-chat-1": 3147.2415,
+          "A-chat-2": 3164.6883,
+          "A-chat-3": 5.1291,
+          "A-chat-healthy": 29.4445,
+          "A-media-0": 12.5523,
+          "A-media-1": 11.4695,
+          "A-media-2": 3140.4832,
+          "A-media-healthy": 87.365,
+          "B-chat-0": 7.1969,
+          "B-media-0": 29.3617,
+          "B-media-backoff": 9.9652
+        },
+        "resource_sample_scope": "six phase snapshots; GC deltas from first runtime sample, nanoseconds; managed PG snapshots cover only this App writer and its media lane connections, state and wait types are counts not wait durations; slow counters are per App incarnation",
+        "restored_approved_media": 6,
+        "retry_after_seconds": 1,
+        "same_handle_retry_ms": 3301.048,
+        "samples": [
+          {
+            "phase": "baseline",
+            "elapsed_ms": 0,
+            "heap_alloc_bytes": 3026664,
+            "heap_inuse_bytes": 5021696,
+            "go_sys_bytes": 19712248,
+            "goroutines": 18,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 6
+              },
+              "wait_event_type_counts": {
+                "Client": 6
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 0,
+              "pause_total_ns": 0,
+              "pause_samples": 0,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 0,
+              "workspace_count": 0,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 0,
+              "wait_seconds_total": 0,
+              "wait_seconds_max": 0
+            },
+            "media_lanes": {
+              "ReviewInFlight": 0,
+              "ReviewLimit": 1,
+              "ReviewSteps": 0,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 0,
+              "SubmitInFlight": 0,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 0,
+              "QuerySteps": 0
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                }
+              ]
+            }
+          },
+          {
+            "phase": "healthy_pair_completed",
+            "elapsed_ms": 3290.2616,
+            "heap_alloc_bytes": 13588616,
+            "heap_inuse_bytes": 16203776,
+            "go_sys_bytes": 33130744,
+            "goroutines": 27,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 5,
+                "idle in transaction": 1
+              },
+              "wait_event_type_counts": {
+                "Client": 5,
+                "IO": 1
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 5,
+              "pause_total_ns": 0,
+              "pause_samples": 5,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 0,
+              "workspace_count": 0,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 1,
+              "wait_seconds_total": 0,
+              "wait_seconds_max": 0
+            },
+            "media_lanes": {
+              "ReviewInFlight": 0,
+              "ReviewLimit": 1,
+              "ReviewSteps": 1,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 1,
+              "SubmitInFlight": 0,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 1,
+              "QuerySteps": 1
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 1,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 2,
+                  "Claims": 1
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 183,
+                  "Claims": 1
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 1,
+                  "Claims": 1
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 1,
+                  "Claims": 1
+                }
+              ]
+            }
+          },
+          {
+            "phase": "two_chats_and_submit_and_review_held",
+            "elapsed_ms": 9532.4399,
+            "heap_alloc_bytes": 11153536,
+            "heap_inuse_bytes": 13983744,
+            "go_sys_bytes": 37357816,
+            "goroutines": 35,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 1,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "active": 1,
+                "idle": 5
+              },
+              "wait_event_type_counts": {
+                "Client": 5,
+                "none": 1
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 7,
+              "pause_total_ns": 0,
+              "pause_samples": 7,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              2,
+              0,
+              0,
+              1
+            ],
+            "chat": {
+              "queued": 2,
+              "running": 2,
+              "workspace_count": 2,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 3,
+              "wait_seconds_total": 0,
+              "wait_seconds_max": 0
+            },
+            "media_lanes": {
+              "ReviewInFlight": 1,
+              "ReviewLimit": 1,
+              "ReviewSteps": 2,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 3,
+              "SubmitInFlight": 2,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 4,
+              "QuerySteps": 3
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 1,
+                  "CapacityDeferrals": 189,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 378,
+                  "Claims": 4
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 545,
+                  "Claims": 3
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 3,
+                  "Claims": 3
+                },
+                {
+                  "ScopeInFlight": 1,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 2,
+                  "Claims": 2
+                }
+              ]
+            }
+          },
+          {
+            "phase": "backlog_drained",
+            "elapsed_ms": 12671.1024,
+            "heap_alloc_bytes": 15201664,
+            "heap_inuse_bytes": 18055168,
+            "go_sys_bytes": 46008568,
+            "goroutines": 27,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 5,
+                "idle in transaction": 1
+              },
+              "wait_event_type_counts": {
+                "Client": 5,
+                "none": 1
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 5,
+              "pause_total_ns": 0,
+              "pause_samples": 5,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              0,
+              1,
+              0,
+              0
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 0,
+              "workspace_count": 0,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 5,
+              "wait_seconds_total": 6.293018,
+              "wait_seconds_max": 3.1543546
+            },
+            "media_lanes": {
+              "ReviewInFlight": 0,
+              "ReviewLimit": 1,
+              "ReviewSteps": 5,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 5,
+              "SubmitInFlight": 0,
+              "QueryInFlight": 1,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 5,
+              "QuerySteps": 5
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 190,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 382,
+                  "Claims": 5
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 906,
+                  "Claims": 5
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 5,
+                  "Claims": 5
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 5,
+                  "Claims": 5
+                }
+              ]
+            }
+          },
+          {
+            "phase": "media_channel_cooling_with_chat_held",
+            "elapsed_ms": 15717.8123,
+            "heap_alloc_bytes": 5067256,
+            "heap_inuse_bytes": 7266304,
+            "go_sys_bytes": 46008568,
+            "goroutines": 25,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 6
+              },
+              "wait_event_type_counts": {
+                "Client": 6
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 1,
+              "pause_total_ns": 0,
+              "pause_samples": 1,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 1,
+              "workspace_count": 1,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 6,
+              "wait_seconds_total": 6.293018,
+              "wait_seconds_max": 3.1543546
+            },
+            "media_lanes": {
+              "ReviewInFlight": 0,
+              "ReviewLimit": 1,
+              "ReviewSteps": 5,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 5,
+              "SubmitInFlight": 0,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 6,
+              "QuerySteps": 6
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 191,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 384,
+                  "Claims": 6
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 1089,
+                  "Claims": 6
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 5,
+                  "Claims": 5
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 5,
+                  "Claims": 5
+                }
+              ]
+            }
+          },
+          {
+            "phase": "reopened",
+            "elapsed_ms": 19501.9914,
+            "heap_alloc_bytes": 15236352,
+            "heap_inuse_bytes": 17948672,
+            "go_sys_bytes": 46008568,
+            "goroutines": 18,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 6
+              },
+              "wait_event_type_counts": {
+                "Client": 6
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 5,
+              "pause_total_ns": 0,
+              "pause_samples": 5,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 0,
+              "workspace_count": 0,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 0,
+              "wait_seconds_total": 0,
+              "wait_seconds_max": 0
+            },
+            "media_lanes": {
+              "ReviewInFlight": 0,
+              "ReviewLimit": 1,
+              "ReviewSteps": 0,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 0,
+              "SubmitInFlight": 0,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 0,
+              "QuerySteps": 0
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                }
+              ]
+            }
+          }
+        ],
+        "scope": "single local writer, two workspaces, six chat executions and six native asynchronous media tasks; samples include test HTTP servers; Go Sys excludes other processes and is not RSS",
+        "shutdown_ms": 3.9529,
+        "wait_definition": "wall time from before submission via authenticated HTTP to provider adapter entry, includes admission and queue; fixed fixture barriers hold selected calls",
+        "workspace_queue_429": 1
+      }
+    },
+    {
+      "trial": 3,
+      "peak_working_set_bytes_observed": 42205184,
+      "working_set_samples": 627,
+      "workload": {
+        "arch": "amd64",
+        "chat_limits": {
+          "workers": 2,
+          "queue_size": 5,
+          "workspace_concurrency": 1,
+          "model_concurrency": 2,
+          "workspace_queue_size": 2
+        },
+        "chat_provider_calls": 6,
+        "complete_reopen_ms": 212.9406,
+        "controlled_pg_lock": {
+          "waiter_while_blocked": {
+            "registered": 1,
+            "observed": 1,
+            "state_counts": {
+              "active": 1
+            },
+            "wait_event_type_counts": {
+              "Lock": 1
+            }
+          },
+          "waiter_after_release": {
+            "registered": 1,
+            "observed": 1,
+            "state_counts": {
+              "idle": 1
+            },
+            "wait_event_type_counts": {
+              "Client": 1
+            }
+          },
+          "own_blocker_verified": true,
+          "waiter_statement_elapsed_ms": 12.2593,
+          "stale_backend_identity_excluded": true
+        },
+        "controlled_run_fanout": {
+          "subscriber_buffer_capacity": 64,
+          "events_published": 66,
+          "normal_delivered_in_order": 66,
+          "slow_buffered_before_disconnect": 64,
+          "slow_buffer_full_evictions": 1
+        },
+        "go_version": "go1.26.11",
+        "gomaxprocs": 14,
+        "interrupted_runs": 1,
+        "logical_cpu": 14,
+        "media_limits": {
+          "workspace_concurrency": 1,
+          "channel_concurrency": 2,
+          "review_workers": 1,
+          "delivery_workers": 1,
+          "submit_workers": 2,
+          "query_workers": 1
+        },
+        "media_output_review_http": 6,
+        "media_query_http": 7,
+        "media_query_http_429": 1,
+        "media_submit_http": 6,
+        "original_key_replayed": true,
+        "os": "windows",
+        "persisted_cooldown_from_http_ms": 3000.5635,
+        "poll_interval_ms": 15,
+        "postgres_version": "16.14",
+        "private_download_http": 6,
+        "request_to_provider_ms": {
+          "A-chat-0": 11.5662,
+          "A-chat-1": 3128.7495,
+          "A-chat-2": 3144.4409,
+          "A-chat-3": 5.9357,
+          "A-chat-healthy": 31.2055,
+          "A-media-0": 22.2705,
+          "A-media-1": 30.2468,
+          "A-media-2": 3119.7905,
+          "A-media-healthy": 86.0311,
+          "B-chat-0": 6.0377,
+          "B-media-0": 21.0345,
+          "B-media-backoff": 25.3591
+        },
+        "resource_sample_scope": "six phase snapshots; GC deltas from first runtime sample, nanoseconds; managed PG snapshots cover only this App writer and its media lane connections, state and wait types are counts not wait durations; slow counters are per App incarnation",
+        "restored_approved_media": 6,
+        "retry_after_seconds": 1,
+        "same_handle_retry_ms": 3348.2401,
+        "samples": [
+          {
+            "phase": "baseline",
+            "elapsed_ms": 0,
+            "heap_alloc_bytes": 3107352,
+            "heap_inuse_bytes": 5103616,
+            "go_sys_bytes": 19695864,
+            "goroutines": 18,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 3,
+                "idle in transaction": 3
+              },
+              "wait_event_type_counts": {
+                "Client": 5,
+                "none": 1
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 0,
+              "pause_total_ns": 0,
+              "pause_samples": 0,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              2,
+              1,
+              0,
+              0
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 0,
+              "workspace_count": 0,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 0,
+              "wait_seconds_total": 0,
+              "wait_seconds_max": 0
+            },
+            "media_lanes": {
+              "ReviewInFlight": 0,
+              "ReviewLimit": 1,
+              "ReviewSteps": 0,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 0,
+              "SubmitInFlight": 2,
+              "QueryInFlight": 1,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 0,
+              "QuerySteps": 0
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                }
+              ]
+            }
+          },
+          {
+            "phase": "healthy_pair_completed",
+            "elapsed_ms": 3299.9529,
+            "heap_alloc_bytes": 13565776,
+            "heap_inuse_bytes": 15982592,
+            "go_sys_bytes": 32598264,
+            "goroutines": 27,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 5,
+                "idle in transaction": 1
+              },
+              "wait_event_type_counts": {
+                "Client": 6
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 5,
+              "pause_total_ns": 0,
+              "pause_samples": 5,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 0,
+              "workspace_count": 0,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 1,
+              "wait_seconds_total": 0,
+              "wait_seconds_max": 0
+            },
+            "media_lanes": {
+              "ReviewInFlight": 1,
+              "ReviewLimit": 1,
+              "ReviewSteps": 1,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 1,
+              "SubmitInFlight": 0,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 1,
+              "QuerySteps": 1
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 1,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 2,
+                  "Claims": 1
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 182,
+                  "Claims": 1
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 1,
+                  "Claims": 1
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 1,
+                  "Claims": 1
+                }
+              ]
+            }
+          },
+          {
+            "phase": "two_chats_and_submit_and_review_held",
+            "elapsed_ms": 9555.988,
+            "heap_alloc_bytes": 11154960,
+            "heap_inuse_bytes": 14098432,
+            "go_sys_bytes": 33147128,
+            "goroutines": 35,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 6
+              },
+              "wait_event_type_counts": {
+                "Client": 6
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 7,
+              "pause_total_ns": 1040200,
+              "pause_samples": 7,
+              "max_observed_pause_ns": 524800,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "chat": {
+              "queued": 2,
+              "running": 2,
+              "workspace_count": 2,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 3,
+              "wait_seconds_total": 0,
+              "wait_seconds_max": 0
+            },
+            "media_lanes": {
+              "ReviewInFlight": 1,
+              "ReviewLimit": 1,
+              "ReviewSteps": 2,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 3,
+              "SubmitInFlight": 1,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 4,
+              "QuerySteps": 3
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 1,
+                  "CapacityDeferrals": 96,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 193,
+                  "Claims": 4
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 544,
+                  "Claims": 3
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 3,
+                  "Claims": 3
+                },
+                {
+                  "ScopeInFlight": 1,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 2,
+                  "Claims": 2
+                }
+              ]
+            }
+          },
+          {
+            "phase": "backlog_drained",
+            "elapsed_ms": 12711.5063,
+            "heap_alloc_bytes": 16043368,
+            "heap_inuse_bytes": 18882560,
+            "go_sys_bytes": 37603576,
+            "goroutines": 27,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 5,
+                "idle in transaction": 1
+              },
+              "wait_event_type_counts": {
+                "Client": 6
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 5,
+              "pause_total_ns": 551300,
+              "pause_samples": 5,
+              "max_observed_pause_ns": 551300,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              0,
+              0,
+              1,
+              1
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 0,
+              "workspace_count": 0,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 5,
+              "wait_seconds_total": 6.2550478,
+              "wait_seconds_max": 3.1340442
+            },
+            "media_lanes": {
+              "ReviewInFlight": 1,
+              "ReviewLimit": 1,
+              "ReviewSteps": 5,
+              "DeliveryInFlight": 1,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 5,
+              "SubmitInFlight": 0,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 5,
+              "QuerySteps": 5
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 96,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 195,
+                  "Claims": 5
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 909,
+                  "Claims": 5
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 5,
+                  "Claims": 5
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 5,
+                  "Claims": 5
+                }
+              ]
+            }
+          },
+          {
+            "phase": "media_channel_cooling_with_chat_held",
+            "elapsed_ms": 15765.1317,
+            "heap_alloc_bytes": 3969064,
+            "heap_inuse_bytes": 6316032,
+            "go_sys_bytes": 37603576,
+            "goroutines": 25,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 0,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "idle": 6
+              },
+              "wait_event_type_counts": {
+                "Client": 6
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 2,
+              "pause_total_ns": 0,
+              "pause_samples": 2,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 1,
+              "workspace_count": 1,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 6,
+              "wait_seconds_total": 6.2550478,
+              "wait_seconds_max": 3.1340442
+            },
+            "media_lanes": {
+              "ReviewInFlight": 0,
+              "ReviewLimit": 1,
+              "ReviewSteps": 5,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 5,
+              "SubmitInFlight": 0,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 6,
+              "QuerySteps": 6
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 97,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 197,
+                  "Claims": 6
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 1093,
+                  "Claims": 6
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 5,
+                  "Claims": 5
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 5,
+                  "Claims": 5
+                }
+              ]
+            }
+          },
+          {
+            "phase": "reopened",
+            "elapsed_ms": 19429.633,
+            "heap_alloc_bytes": 15268600,
+            "heap_inuse_bytes": 17940480,
+            "go_sys_bytes": 37603576,
+            "goroutines": 18,
+            "managed_pg_sessions": 6,
+            "active_managed_pg_sessions": 1,
+            "managed_pg_activity": {
+              "registered": 6,
+              "observed": 6,
+              "state_counts": {
+                "active": 1,
+                "idle": 5
+              },
+              "wait_event_type_counts": {
+                "Client": 5,
+                "none": 1
+              }
+            },
+            "gc_since_previous_sample": {
+              "completed_cycles": 4,
+              "pause_total_ns": 0,
+              "pause_samples": 4,
+              "max_observed_pause_ns": 0,
+              "pause_ring_truncated": false
+            },
+            "app_slow_buffer_full_total": 0,
+            "app_slow_write_timeout_total": 0,
+            "checked_out_pg_connections_by_lane": [
+              1,
+              0,
+              0,
+              0
+            ],
+            "chat": {
+              "queued": 0,
+              "running": 0,
+              "workspace_count": 0,
+              "limits": {
+                "workers": 2,
+                "queue_size": 5,
+                "workspace_concurrency": 1,
+                "model_concurrency": 2,
+                "workspace_queue_size": 2
+              },
+              "dispatched": 0,
+              "wait_seconds_total": 0,
+              "wait_seconds_max": 0
+            },
+            "media_lanes": {
+              "ReviewInFlight": 0,
+              "ReviewLimit": 1,
+              "ReviewSteps": 0,
+              "DeliveryInFlight": 0,
+              "DeliveryLimit": 1,
+              "DeliverySteps": 0,
+              "SubmitInFlight": 1,
+              "QueryInFlight": 0,
+              "SubmitLimit": 2,
+              "QueryLimit": 1,
+              "SubmitSteps": 0,
+              "QuerySteps": 0
+            },
+            "media_scheduler": {
+              "Lanes": [
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                },
+                {
+                  "ScopeInFlight": 0,
+                  "CapacityDeferrals": 0,
+                  "CooldownDeferrals": 0,
+                  "ExaminedCandidates": 0,
+                  "Claims": 0
+                }
+              ]
+            }
+          }
+        ],
+        "scope": "single local writer, two workspaces, six chat executions and six native asynchronous media tasks; samples include test HTTP servers; Go Sys excludes other processes and is not RSS",
+        "shutdown_ms": 4.2332,
+        "wait_definition": "wall time from before submission via authenticated HTTP to provider adapter entry, includes admission and queue; fixed fixture barriers hold selected calls",
+        "workspace_queue_429": 1
+      }
+    }
+  ]
+}

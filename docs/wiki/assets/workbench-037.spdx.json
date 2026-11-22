@@ -1,0 +1,824 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "AIGongZuotai local server and workbench",
+  "documentNamespace": "urn:uuid:05f4653c-f73c-4840-bbbc-2148cb5e5890",
+  "creationInfo": {
+    "created": "2026-11-21T23:55:37Z",
+    "creators": [
+      "Tool: AIGongZuotai-workbench-sbom-1"
+    ]
+  },
+  "comment": "Local server and web artifacts only. External gateway, database, object service, optional media codecs and deployment images require separate inventories. License evidence records installed declarations and files. Distribution clearance is an independent review.",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-b3eacd33433b31b525235103",
+      "name": "aigongzuotai/cmd/server",
+      "versionInfo": "v0.0.0-20261115034643-e10d13fa337a+dirty",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6fb7b00b8899f84e9acca769bc9201a250c47c308de1524e714a0378ecb20caf"
+        }
+      ],
+      "comment": "Compiled workbench server."
+    },
+    {
+      "SPDXID": "SPDXRef-d85b40105dd0b9cdbe46a1ee",
+      "name": "@xingtu/workbench",
+      "versionInfo": "0.20.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9d500caf860d05137c200bd695f80d1266c5c3a3e5e4864fc67d22f85a98c63c"
+        }
+      ],
+      "sourceInfo": "Production dist tree SHA256 over sorted name NUL file-SHA256 NUL, 55 files. npm lockfile SHA256 a6233581226ce88a161a53fb9ef05cf01c317c830a867babf457837a07b698ad"
+    },
+    {
+      "SPDXID": "SPDXRef-abb8352a20f027918444a38c",
+      "name": "Go standard library and runtime",
+      "versionInfo": "go1.26.11",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+    },
+    {
+      "SPDXID": "SPDXRef-279ad82b5045eadc6ec1f4dc",
+      "name": "github.com/aws/aws-sdk-go-v2",
+      "versionInfo": "v1.48.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.txt SHA256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30; NOTICE.txt SHA256 a6e830174d62dafad3a718384772ea1f4c0e27989f050932dc442a5e3ddad080",
+      "sourceInfo": "Go build information and go.sum module checksum h1:tFU7EJVm7MfyaXLsXdYTZ0Vd6vwt9OljCyqq0gqk0Mc="
+    },
+    {
+      "SPDXID": "SPDXRef-e46600aaacea214323e662d9",
+      "name": "github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream",
+      "versionInfo": "v1.7.27",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.txt SHA256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sourceInfo": "Go build information and go.sum module checksum h1:3dMP9eEmHVosFN1QiD24IJBKVY8m6iUfVYXqRCT118Q="
+    },
+    {
+      "SPDXID": "SPDXRef-3dd41bcfb92e1c1fda57659e",
+      "name": "github.com/aws/aws-sdk-go-v2/credentials",
+      "versionInfo": "v1.21.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.txt SHA256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sourceInfo": "Go build information and go.sum module checksum h1:OViwhqeipkQzSHuO2eQDUCdLrI6r3nzGxFUyM8GqnCs="
+    },
+    {
+      "SPDXID": "SPDXRef-d2bf4f96bf012d459dbda0e9",
+      "name": "github.com/aws/aws-sdk-go-v2/internal/configsources",
+      "versionInfo": "v1.5.12",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.txt SHA256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sourceInfo": "Go build information and go.sum module checksum h1:W0yUUzKBA8SofGQ0yZafEUuZq9UxfvijRgdc6vcRQPA="
+    },
+    {
+      "SPDXID": "SPDXRef-350187cd8562baa160122324",
+      "name": "github.com/aws/aws-sdk-go-v2/internal/endpoints/v2",
+      "versionInfo": "v2.8.12",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.txt SHA256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sourceInfo": "Go build information and go.sum module checksum h1:lqSi8qvAnKC1vfosImdmOsuiJLr/jdybZX5299beB6Q="
+    },
+    {
+      "SPDXID": "SPDXRef-39947a68c3aa6b252a368cf1",
+      "name": "github.com/aws/aws-sdk-go-v2/internal/v4a",
+      "versionInfo": "v1.5.12",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.txt SHA256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sourceInfo": "Go build information and go.sum module checksum h1:uvX2yaL+aMjkmnrLPPlR/zwjoKFRMoNhhJfeGjfk6qc="
+    },
+    {
+      "SPDXID": "SPDXRef-41e625999d455ced8dc763ec",
+      "name": "github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding",
+      "versionInfo": "v1.13.25",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.txt SHA256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sourceInfo": "Go build information and go.sum module checksum h1:rKwkY3Z+fvt2W0msjdNs6uNewPmXzPayQ961oyuWhes="
+    },
+    {
+      "SPDXID": "SPDXRef-bfcf046e75fe1bb1b3f0050c",
+      "name": "github.com/aws/aws-sdk-go-v2/service/internal/checksum",
+      "versionInfo": "v1.11.13",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.txt SHA256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sourceInfo": "Go build information and go.sum module checksum h1:U5HZ8FpTr6tyvulf1nT11Nw4KG1CAsXkuQGdUrIjZ/E="
+    },
+    {
+      "SPDXID": "SPDXRef-b2518f6ba1e08899bcb50fb1",
+      "name": "github.com/aws/aws-sdk-go-v2/service/internal/presigned-url",
+      "versionInfo": "v1.14.12",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.txt SHA256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sourceInfo": "Go build information and go.sum module checksum h1:wzAqMZ2O4+ij9HQqIrk+P9PBGacE0wOTuWB7Mo97//I="
+    },
+    {
+      "SPDXID": "SPDXRef-3c921bbcd046008ce50079dd",
+      "name": "github.com/aws/aws-sdk-go-v2/service/internal/s3shared",
+      "versionInfo": "v1.20.12",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.txt SHA256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sourceInfo": "Go build information and go.sum module checksum h1:H0IaQayT3TLiGIHiNnleQZTbndDlx7LGZ0NWZ5mDwjA="
+    },
+    {
+      "SPDXID": "SPDXRef-9c56f315cfddb067d0159e19",
+      "name": "github.com/aws/aws-sdk-go-v2/service/s3",
+      "versionInfo": "v1.114.10",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.txt SHA256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sourceInfo": "Go build information and go.sum module checksum h1:WBJb2VxRzzKnuN94YWqZPiu5a5zc3IleFqgZnmVCyvU="
+    },
+    {
+      "SPDXID": "SPDXRef-b01ea95dfa0282df93e1d3a5",
+      "name": "github.com/aws/smithy-go",
+      "versionInfo": "v1.28.9",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 09e8a9bcec8067104652c168685ab0931e7868f9c8284b66f5ae6edae5f1130b; NOTICE SHA256 d4290ed64c2edd0fce1d84e3f9dfb2881240fe534def76b8cd29ed6af683e287",
+      "sourceInfo": "Go build information and go.sum module checksum h1:zkZ058OpNX0iGTK24b+ZUEQSMc11CBA6oO7xtKZfzkY="
+    },
+    {
+      "SPDXID": "SPDXRef-0462a9ce910716bee1e2010e",
+      "name": "github.com/gofrs/flock",
+      "versionInfo": "v0.13.2",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 f4c7b0fbdba9660126feab6388ceed10ff744b2c772a63132f64f9ab2ee5fa29",
+      "sourceInfo": "Go build information and go.sum module checksum h1:9o62TArG4T0f8L46kSf8sLtNUGvJEfiCK9md7/ilko0="
+    },
+    {
+      "SPDXID": "SPDXRef-fa07f6a132b920f4d26fbea7",
+      "name": "github.com/jackc/pgpassfile",
+      "versionInfo": "v1.0.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 adb1663fda031df8f4344aa68f299fd87d80353e31339406742ded21dae65702",
+      "sourceInfo": "Go build information and go.sum module checksum h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM="
+    },
+    {
+      "SPDXID": "SPDXRef-a0370bb25ee85c069b524256",
+      "name": "github.com/jackc/pgservicefile",
+      "versionInfo": "v0.0.0-20240606120523-5a60cdf6a761",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 fc505773403fe869ed64cc2235cdd13988a427bb7e3a7e7004a3f4b27420f8fc",
+      "sourceInfo": "Go build information and go.sum module checksum h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo="
+    },
+    {
+      "SPDXID": "SPDXRef-d688d7c5df1b1f9650d0fb16",
+      "name": "github.com/jackc/pgx/v5",
+      "versionInfo": "v5.13.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 467f95e074fe23079a5623ed652619682692041b8551da27e3c2ddb9659a1507",
+      "sourceInfo": "Go build information and go.sum module checksum h1:Hl08k64maU0nrRyVUEbwCnK6/gT0EhMrtAqBHz9/gA4="
+    },
+    {
+      "SPDXID": "SPDXRef-4d48944848c55a5f2b536b0d",
+      "name": "golang.org/x/crypto",
+      "versionInfo": "v0.59.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+      "sourceInfo": "Go build information and go.sum module checksum h1:xS2jhqYbzNrpvkWP2YTDf4TJwBy3ykR03i8vFDxEc7c="
+    },
+    {
+      "SPDXID": "SPDXRef-da5d7b4a0a10a8e5fd97a3c2",
+      "name": "golang.org/x/image",
+      "versionInfo": "v0.48.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+      "sourceInfo": "Go build information and go.sum module checksum h1:1AvuPcuoOTJpA7s4VZ5umrb90T3So0rkB/bSGmxkxik="
+    },
+    {
+      "SPDXID": "SPDXRef-17839e50745f4cc7970bb319",
+      "name": "golang.org/x/sys",
+      "versionInfo": "v0.50.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+      "sourceInfo": "Go build information and go.sum module checksum h1:dkKZEFTEKaLr1sjhs0WiKqoi8Jj5nHbS3Njmx1UoMJs="
+    },
+    {
+      "SPDXID": "SPDXRef-486898713a5776599183ced0",
+      "name": "golang.org/x/text",
+      "versionInfo": "v0.44.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+      "sourceInfo": "Go build information and go.sum module checksum h1:YItdp/mQNGnsmrgpcdA5yQ3bnRxCfo/Tj/iByGW9GGo="
+    },
+    {
+      "SPDXID": "SPDXRef-a122fd915996981f787806ee",
+      "name": "@types/node",
+      "versionInfo": "22.20.5",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-b660f3ee80b7b773fbf41586",
+      "name": "core-util-is",
+      "versionInfo": "1.0.3",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 33b734d60042d0fe0c92dd1fc1e874193a1c899ec3e276a2eb935d2d0bf5b710",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-57029236b44d700987f353e6",
+      "name": "https",
+      "versionInfo": "1.0.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "ISC",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "No top-level license file found in the installed package.",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-4EC57ddXrkaF0x83Oj8sM6SLQHAWXw90Skqu2M4AEWENZ3F02dFJE/GARA8igO79tcgYqGrD7ae4f5L3um2lgg==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-8e4765c176c2ca8db609fcaf",
+      "name": "image-size",
+      "versionInfo": "1.2.1",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 3109783dad7527b490aabc49c3cb148573c19b41b843e70cf9388a93f3d7fccd",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-rH+46sQJ2dlwfjfhCyNx5thzrv+dtmBIhPHk0zgRUukHzZ/kRueTJXoYYsclBaKcSMBWuGbOFXtioLpzTb5euw==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-6d873355e774e6432032c93c",
+      "name": "immediate",
+      "versionInfo": "3.0.6",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.txt SHA256 809e66de579fb7d92503848bbe6d1f348f4f6521a71e5d294fe7cc0c87a3b4ff",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-XXOFtyqDjNDAQxVfYxuF7g9Il/IbWmmlQg2MYKOH8ExIT1qg6xc4zyS3HaEEATgs1btfzxq15ciUiY7gjSXRGQ==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-b27bc177ec31b3d47bf6fee8",
+      "name": "inherits",
+      "versionInfo": "2.0.4",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "ISC",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 5ffe28e7ade7d8f10d85d5337a73fd793dac5c462fb9a28fbf8c5046c7fbca3b",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-3bb811bc18f031876be645b4",
+      "name": "isarray",
+      "versionInfo": "1.0.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "README.md (contains license section) SHA256 ff138e683771b187f3629c383db72ee7d632009010a36d08e18e8d2a34222ec7",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-VLghIWNM6ELQzo7zwmcg0NmTVyWKYjvIeM83yjp0wRDTmUnrM678fQbcKBo6n2CJEF0szoG//ytg+TKla89ALQ==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-3e76c9afeb9e6ec519c7be03",
+      "name": "jszip",
+      "versionInfo": "3.10.2",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "(MIT OR GPL-3.0-or-later)",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.markdown SHA256 566c953c6090b1218ca6217dd7359d45dde46581968586dc607d59a78af6a9c4",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-3l+rb15IOWtUhU0H5MFqES/T6Kh7abYwjosBey/vD6hDt8zoEffkSC5Ws5SGtgVw3gBx2NEbhTeSW1+kWkpyTQ==",
+      "comment": "An emitted chunk contains module IDs from this installed package."
+    },
+    {
+      "SPDXID": "SPDXRef-afdd3fd4f1b4e0ab9fcd2aec",
+      "name": "lie",
+      "versionInfo": "3.3.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "license.md SHA256 5c81b0caa98593408b03125efa25efe622341ed87ae55561968828cd887d64a4",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-bc57cb95552833805bb6a551",
+      "name": "pako",
+      "versionInfo": "1.0.11",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "(MIT AND Zlib)",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 a04665b3b2de56c66730c1f720f528175739e4104f79073614aa611da1e85539",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-b8c73eba30a0d7e299d7fd30",
+      "name": "pptxgenjs",
+      "versionInfo": "4.0.1",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 7a2bfe96150786ed1908b8e63f98ebab88875c1e79e28faff6649e0f11f77e52",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-TeJISr8wouAuXw4C1F/mC33xbZs/FuEG6nH9FG1Zj+nuPcGMP5YRHl6X+j3HSUnS1f3at6k75ZZXPMZlA5Lj9A==",
+      "comment": "An emitted chunk contains module IDs from this installed package."
+    },
+    {
+      "SPDXID": "SPDXRef-2b8bd1b9588586ed1109b7b8",
+      "name": "process-nextick-args",
+      "versionInfo": "2.0.1",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "license.md SHA256 ecdccbcf39024f624ded480c01c0b25458e1eca8f26ecf040933865ce56d9a4f",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-c8c8dc7513cce065fb7a5f2a",
+      "name": "queue",
+      "versionInfo": "6.0.2",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 38d7c4d8410c68eeae9ce24a8b4ee2380199d6df4abb1d9c15dc70b135935fe8",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-iHZWu+q3IdFZFX36ro/lKBkSvfkztY5Y7HMiPlOUjhupPcG2JMfst2KKEpu5XndviX/3UhFbRngUPNKtgvtZiA==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-36c0cf8a208433d4a93d5fff",
+      "name": "react",
+      "versionInfo": "19.3.1",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==",
+      "comment": "An emitted chunk contains module IDs from this installed package."
+    },
+    {
+      "SPDXID": "SPDXRef-5413a54f7921dbbe6eafaac4",
+      "name": "react-dom",
+      "versionInfo": "19.3.1",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-Y0bARz53lhEC1NMCASs0/j+faB/zqt3R8hpvg1e8+61ZVJ4UL0UdC4cBbXfZMcIuhrfgeILTLe+ZeBCavQPtKQ==",
+      "comment": "An emitted chunk contains module IDs from this installed package."
+    },
+    {
+      "SPDXID": "SPDXRef-aafcae54e09ff8da1d556415",
+      "name": "readable-stream",
+      "versionInfo": "2.3.8",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 ec62dc96da0099b87f4511736c87309335527fb7031639493e06c95728dc8c54",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-8p0AUk4XODgIewSi0l8Epjs+EVnWiK7NoDIEGU0HhE7+ZyY8D1IMY7odu5lRrFXGg71L15KG8QrPmum45RTtdA==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-837b7b1b3e2ba1043fd52317",
+      "name": "safe-buffer",
+      "versionInfo": "5.1.2",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 c7cc929b57080f4b9d0c6cf57669f0463fc5b39906344dfc8d3bc43426b30eac",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-e8037eb3f48f9a8d80740914",
+      "name": "scheduler",
+      "versionInfo": "0.28.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==",
+      "comment": "An emitted chunk contains module IDs from this installed package."
+    },
+    {
+      "SPDXID": "SPDXRef-44fe7b90bc72e6cd8089bb8e",
+      "name": "setimmediate",
+      "versionInfo": "1.0.5",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE.txt SHA256 c4b4ad3a5746f1f5249a6dd90396ec519264e1bb02e01e48a6522c48a3a97cb4",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-MATJdZp8sLqDl/68LfQmbP8zKPLQNV6BIZoIgrscFDQ+RsvK/BxeDQOgyxKKoh0y/8h3BqVFnCqQ/gd+reiIXA==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-b50d95c087ae8453c53597c2",
+      "name": "string_decoder",
+      "versionInfo": "1.1.1",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 11f2aafb37d06b3ee5bdaf06e9811141d0da05263c316f3d627f45c20d43261b",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-n/ShnvDi6FHbbVfviro+WojiFzv+s8MPMHBczVePfUpDJLwoLT0ht1l4YwBCbi8pJAveEEdnkHyPyTP/mzRfwg==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-8ee8508002c1f1878a6d44d8",
+      "name": "undici-types",
+      "versionInfo": "6.21.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    },
+    {
+      "SPDXID": "SPDXRef-fb8a6dd038ce27ea3b07e751",
+      "name": "util-deprecate",
+      "versionInfo": "1.0.2",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "NOASSERTION",
+      "licenseComments": "LICENSE SHA256 0154425673db15cdfa80ecba2c9b1f1a867f7197a006764712849bfc3a93cbb7",
+      "sourceInfo": "Production npm resolution. Lockfile archive integrity sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==",
+      "comment": "Present in the locked production dependency closure. No separate module ID from this package was observed in emitted chunks."
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-b3eacd33433b31b525235103"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-d85b40105dd0b9cdbe46a1ee"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-abb8352a20f027918444a38c"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-279ad82b5045eadc6ec1f4dc"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-e46600aaacea214323e662d9"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-3dd41bcfb92e1c1fda57659e"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-d2bf4f96bf012d459dbda0e9"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-350187cd8562baa160122324"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-39947a68c3aa6b252a368cf1"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-41e625999d455ced8dc763ec"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-bfcf046e75fe1bb1b3f0050c"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-b2518f6ba1e08899bcb50fb1"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-3c921bbcd046008ce50079dd"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-9c56f315cfddb067d0159e19"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-b01ea95dfa0282df93e1d3a5"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-0462a9ce910716bee1e2010e"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-fa07f6a132b920f4d26fbea7"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-a0370bb25ee85c069b524256"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-d688d7c5df1b1f9650d0fb16"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-4d48944848c55a5f2b536b0d"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-da5d7b4a0a10a8e5fd97a3c2"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-17839e50745f4cc7970bb319"
+    },
+    {
+      "spdxElementId": "SPDXRef-b3eacd33433b31b525235103",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-486898713a5776599183ced0"
+    },
+    {
+      "spdxElementId": "SPDXRef-d85b40105dd0b9cdbe46a1ee",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-b8c73eba30a0d7e299d7fd30"
+    },
+    {
+      "spdxElementId": "SPDXRef-d85b40105dd0b9cdbe46a1ee",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-36c0cf8a208433d4a93d5fff"
+    },
+    {
+      "spdxElementId": "SPDXRef-d85b40105dd0b9cdbe46a1ee",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-5413a54f7921dbbe6eafaac4"
+    },
+    {
+      "spdxElementId": "SPDXRef-a122fd915996981f787806ee",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-8ee8508002c1f1878a6d44d8"
+    },
+    {
+      "spdxElementId": "SPDXRef-8e4765c176c2ca8db609fcaf",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-c8c8dc7513cce065fb7a5f2a"
+    },
+    {
+      "spdxElementId": "SPDXRef-3e76c9afeb9e6ec519c7be03",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-afdd3fd4f1b4e0ab9fcd2aec"
+    },
+    {
+      "spdxElementId": "SPDXRef-3e76c9afeb9e6ec519c7be03",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-bc57cb95552833805bb6a551"
+    },
+    {
+      "spdxElementId": "SPDXRef-3e76c9afeb9e6ec519c7be03",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-aafcae54e09ff8da1d556415"
+    },
+    {
+      "spdxElementId": "SPDXRef-3e76c9afeb9e6ec519c7be03",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-44fe7b90bc72e6cd8089bb8e"
+    },
+    {
+      "spdxElementId": "SPDXRef-afdd3fd4f1b4e0ab9fcd2aec",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-6d873355e774e6432032c93c"
+    },
+    {
+      "spdxElementId": "SPDXRef-b8c73eba30a0d7e299d7fd30",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-a122fd915996981f787806ee"
+    },
+    {
+      "spdxElementId": "SPDXRef-b8c73eba30a0d7e299d7fd30",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-57029236b44d700987f353e6"
+    },
+    {
+      "spdxElementId": "SPDXRef-b8c73eba30a0d7e299d7fd30",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-8e4765c176c2ca8db609fcaf"
+    },
+    {
+      "spdxElementId": "SPDXRef-b8c73eba30a0d7e299d7fd30",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-3e76c9afeb9e6ec519c7be03"
+    },
+    {
+      "spdxElementId": "SPDXRef-c8c8dc7513cce065fb7a5f2a",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-b27bc177ec31b3d47bf6fee8"
+    },
+    {
+      "spdxElementId": "SPDXRef-5413a54f7921dbbe6eafaac4",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-e8037eb3f48f9a8d80740914"
+    },
+    {
+      "spdxElementId": "SPDXRef-aafcae54e09ff8da1d556415",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-b660f3ee80b7b773fbf41586"
+    },
+    {
+      "spdxElementId": "SPDXRef-aafcae54e09ff8da1d556415",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-b27bc177ec31b3d47bf6fee8"
+    },
+    {
+      "spdxElementId": "SPDXRef-aafcae54e09ff8da1d556415",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-3bb811bc18f031876be645b4"
+    },
+    {
+      "spdxElementId": "SPDXRef-aafcae54e09ff8da1d556415",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-2b8bd1b9588586ed1109b7b8"
+    },
+    {
+      "spdxElementId": "SPDXRef-aafcae54e09ff8da1d556415",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-837b7b1b3e2ba1043fd52317"
+    },
+    {
+      "spdxElementId": "SPDXRef-aafcae54e09ff8da1d556415",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-b50d95c087ae8453c53597c2"
+    },
+    {
+      "spdxElementId": "SPDXRef-aafcae54e09ff8da1d556415",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-fb8a6dd038ce27ea3b07e751"
+    },
+    {
+      "spdxElementId": "SPDXRef-b50d95c087ae8453c53597c2",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-837b7b1b3e2ba1043fd52317"
+    }
+  ]
+}

@@ -71,10 +71,23 @@ func appendOutboxSQL(ctx context.Context, tx pgx.Tx, key string, e DurableEvent)
 	return err
 }
 
+func appendWorkflowOutboxSQL(ctx context.Context, tx pgx.Tx, scope subscriptionScope, id string, version uint64, status string) error {
+	return appendOutboxSQL(ctx, tx, "workflow:"+id+":"+strconv.FormatUint(version, 10), DurableEvent{
+		WorkspaceID: scope.WorkspaceID, ProjectID: scope.ProjectID, Kind: "workflow.updated",
+		ResourceType: "workflow", ResourceID: id, ResourceVersion: version, Status: status,
+	})
+}
+
 func appendTaskOutboxSQL(ctx context.Context, tx pgx.Tx, t Task) error {
+	if err := workflowImageOutcomeSQL(ctx, tx, t); err != nil {
+		return err
+	}
 	return appendOutboxSQL(ctx, tx, "task:"+t.ID+":"+strconv.FormatUint(t.Version, 10), DurableEvent{WorkspaceID: t.WorkspaceID, ProjectID: t.ProjectID, Kind: "task.updated", ResourceType: "task", ResourceID: t.ID, ResourceVersion: t.Version, Status: t.Status})
 }
 func appendRunOutboxSQL(ctx context.Context, tx pgx.Tx, r Run) error {
+	if err := workflowTextOutcomeSQL(ctx, tx, r); err != nil {
+		return err
+	}
 	return appendOutboxSQL(ctx, tx, "run:"+r.ID+":"+r.Status+":"+strconv.FormatUint(r.Seq, 10), DurableEvent{WorkspaceID: r.WorkspaceID, ProjectID: r.ProjectID, Kind: "run.updated", ResourceType: "run", ResourceID: r.ID, ResourceVersion: r.Seq, Status: r.Status})
 }
 

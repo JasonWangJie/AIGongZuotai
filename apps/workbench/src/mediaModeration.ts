@@ -1,3 +1,4 @@
+import { uiText } from './locale';
 import { mergeModeration, sameModerationDecision, validModeration } from './moderation';
 import type { ModerationCapability, ModerationSummary } from './moderation';
 import type { ReferenceAsset, Task } from './types';
@@ -22,7 +23,7 @@ export function mergeReferenceAsset(previous: ReferenceAsset | undefined, incomi
 }
 export function mediaModerationErrorMessage(code?: string): string | undefined {
   if (!code?.startsWith('MEDIA_MODERATION_')) return undefined;
-  return ({ MEDIA_MODERATION_INPUT_BLOCKED: '图片、视频描述或参考内容未通过检查，本次新请求未受理。请调整描述或更换参考图后手动提交。', MEDIA_MODERATION_INPUT_REVIEW: '媒体内容需要进一步核实，本次新请求未受理。请保留输入并联系维护者，或更换内容。', MEDIA_MODERATION_INPUT_INVALID: '媒体内容不符合当前检查的格式或大小要求，本次新请求未受理。', MEDIA_MODERATION_INVALID: '媒体内容不符合当前检查的格式或大小要求，本次新请求未受理。', MEDIA_MODERATION_BUSY: '媒体检查繁忙，本次新请求未受理。请等待冷却后手动操作。', MEDIA_MODERATION_UNAVAILABLE: '媒体检查暂不可用，本次新请求未受理。输入或原文件仍保留，不会自动重新提交。', MEDIA_MODERATION_CONTEXT_CHANGED: '参考素材或生成条件已变化，本次新请求未受理。请刷新并核对原有选择。' } as Record<string, string>)[code] || '媒体内容检查需要处理。请刷新原记录核对，必要时提供请求编号；不会自动重新生成。';
+  return ({ MEDIA_MODERATION_INPUT_BLOCKED: uiText('图片、视频描述或参考内容未通过检查，本次新请求未受理。请调整描述或更换参考图后手动提交。'), MEDIA_MODERATION_INPUT_REVIEW: uiText('媒体内容需要进一步核实，本次新请求未受理。请保留输入并联系维护者，或更换内容。'), MEDIA_MODERATION_INPUT_INVALID: uiText('媒体内容不符合当前检查的格式或大小要求，本次新请求未受理。'), MEDIA_MODERATION_INVALID: uiText('媒体内容不符合当前检查的格式或大小要求，本次新请求未受理。'), MEDIA_MODERATION_BUSY: uiText('媒体检查繁忙，本次新请求未受理。请等待冷却后手动操作。'), MEDIA_MODERATION_UNAVAILABLE: uiText('媒体检查暂不可用，本次新请求未受理。输入或原文件仍保留，不会自动重新提交。'), MEDIA_MODERATION_CONTEXT_CHANGED: uiText('参考素材或生成条件已变化，本次新请求未受理。请刷新并核对原有选择。') } as Record<string, string>)[code] || uiText('媒体内容检查需要处理。请刷新原记录核对，必要时提供请求编号；不会自动重新生成。');
 }
 export function mediaUploadRetryAllowed(errorCode: string | undefined, wasUnknown: boolean): boolean { return wasUnknown || !['MEDIA_MODERATION_INPUT_BLOCKED', 'MEDIA_MODERATION_INPUT_REVIEW', 'MEDIA_MODERATION_INPUT_INVALID', 'MEDIA_MODERATION_INVALID'].includes(errorCode || ''); }
 export function definiteModerationUnavailable(status: number, code?: string): boolean { return status === 503 && ['MODERATION_UNAVAILABLE', 'MEDIA_MODERATION_UNAVAILABLE'].includes(code || ''); }

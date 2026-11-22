@@ -260,18 +260,25 @@ func (b *recoveryRowBarrier) release() {
 	}
 }
 
-func (b *recoveryRowBarrier) wait(t *testing.T, conn *pgx.Conn, child *recoveryProcess) {
+func (b *recoveryRowBarrier) wait(t *testing.T, conn *pgx.Conn, child *recoveryProcess) uint32 {
 	t.Helper()
-	deadline := time.Now().Add(4 * time.Second)
+	// The child has to start and commit earlier recovery pages before it
+	// attempts the locked row. Poll throughout startup to observe the actual
+	// lock without tying process startup to a single database operation's budget.
+	deadline := time.Now().Add(20 * time.Second)
 	for time.Now().Before(deadline) {
-		var blocked bool
-		err := conn.QueryRow(context.Background(), `SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1::integer=ANY(pg_blocking_pids(pid)))`, int32(b.pid)).Scan(&blocked)
+		var blockedPID uint32
+		err := conn.QueryRow(context.Background(), `SELECT COALESCE((SELECT pid FROM pg_stat_activity WHERE datname=current_database() AND $1::integer=ANY(pg_blocking_pids(pid))),0)`, int32(b.pid)).Scan(&blockedPID)
 		if err != nil {
 			t.Fatal("cannot inspect recovery row-lock boundary")
 		}
-		if blocked {
+		if blockedPID != 0 {
 			child.assertNotReady(t)
-			return
+			return blockedPID
+		}
+		child.assertNotReady(t)
+		if _, err := os.Stat(child.rejected); !os.IsNotExist(err) {
+			t.Fatal("recovery startup rejected before reaching the locked row")
 		}
 		select {
 		case <-child.done:
@@ -280,7 +287,10 @@ func (b *recoveryRowBarrier) wait(t *testing.T, conn *pgx.Conn, child *recoveryP
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
-	t.Fatal("recovery did not reach the expected database row boundary")
+	var interrupted int
+	err := conn.QueryRow(context.Background(), "SELECT count(*) FROM studio_runs WHERE document->>'status'='INTERRUPTED'").Scan(&interrupted)
+	t.Fatalf("recovery did not reach the expected row lock; blocker_pid=%d committed_interrupted_runs=%d count_available=%t", b.pid, interrupted, err == nil)
+	return 0
 }
 
 func assertRecoveryFaultRuns(t *testing.T, f *recoveryFaultFixture, ids []string, recovered int) {
@@ -337,20 +347,17 @@ func TestPostgresRecoveryProcessKillAtPageBoundary(t *testing.T) {
 	t.Log("Complete New was killed after one committed page; restart resumed the remainder, with stable checkpoint sequences/events and one original supplier POST.")
 }
 
-// New creates auxiliary lease connections as well as its control writer. Route
-// only its first connection through the existing single-connection ACK proxy;
-// the rest reach the same real isolated database directly.
-func recoveryControlAckProxy(t *testing.T, database string) (string, *atomic.Bool, <-chan struct{}) {
+// Match the backend blocked on the test row, independent of connection order.
+// Auxiliary lease and startup connections always receive their own replies.
+func recoveryControlAckProxy(t *testing.T, database string) (string, *atomic.Uint32, <-chan struct{}) {
 	t.Helper()
-	controlURL, armed, dropped := commitAckDropProxy(t, database)
 	actual, err := url.Parse(database)
 	if err != nil {
 		t.Fatal("invalid private fixture database URL")
 	}
-	control, err := url.Parse(controlURL)
-	if err != nil {
-		t.Fatal("invalid private fixture control URL")
-	}
+	target := actual.Host
+	armedPID := &atomic.Uint32{}
+	dropped := make(chan struct{})
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal("cannot start local recovery proxy")
@@ -372,7 +379,6 @@ func recoveryControlAckProxy(t *testing.T, database string) (string, *atomic.Boo
 	acceptDone := make(chan struct{})
 	go func() {
 		defer close(acceptDone)
-		first := true
 		for {
 			client, e := listener.Accept()
 			if e != nil {
@@ -381,12 +387,8 @@ func recoveryControlAckProxy(t *testing.T, database string) (string, *atomic.Boo
 			if !addSocket(client) {
 				return
 			}
-			target := actual.Host
-			if first {
-				target, first = control.Host, false
-			}
 			wg.Add(1)
-			go func(client net.Conn, target string) {
+			go func(client net.Conn) {
 				defer wg.Done()
 				defer client.Close()
 				backend, e := net.DialTimeout("tcp", target, 3*time.Second)
@@ -396,10 +398,14 @@ func recoveryControlAckProxy(t *testing.T, database string) (string, *atomic.Boo
 				defer backend.Close()
 				copied := make(chan struct{})
 				go func() { _, _ = io.Copy(backend, client); _ = backend.Close(); close(copied) }()
-				_, _ = io.Copy(client, backend)
+				if relayUntilCommitAck(client, backend, func(pid uint32) bool {
+					return pid != 0 && armedPID.CompareAndSwap(pid, 0)
+				}) {
+					close(dropped)
+				}
 				_ = client.Close()
 				<-copied
-			}(client, target)
+			}(client)
 		}
 	}()
 	t.Cleanup(func() {
@@ -413,23 +419,26 @@ func recoveryControlAckProxy(t *testing.T, database string) (string, *atomic.Boo
 		<-acceptDone
 		wg.Wait()
 	})
-	control.Host = listener.Addr().String()
-	return control.String(), armed, dropped
+	actual.Host = listener.Addr().String()
+	q := actual.Query()
+	q.Set("sslmode", "disable")
+	actual.RawQuery = q.Encode()
+	return actual.String(), armedPID, dropped
 }
 
 func TestPostgresRecoveryProcessCommitAckUnknown(t *testing.T) {
 	f := newRecoveryFaultFixture(t)
 	ids := seedRecoveryFaultRuns(t, f, recoveryMediaPageRecords+2)
 	barrier := lockRecoveryRow(t, f.config.DatabaseURL, "studio_runs", ids[recoveryMediaPageRecords])
-	proxy, armed, dropped := recoveryControlAckProxy(t, f.config.DatabaseURL)
+	proxy, armedPID, dropped := recoveryControlAckProxy(t, f.config.DatabaseURL)
 	cfg := f.config
 	cfg.DatabaseURL = proxy
 	first := startRecoveryProcess(t, cfg)
-	barrier.wait(t, f.conn, first)
+	writerPID := barrier.wait(t, f.conn, first)
 	assertRecoveryFaultRuns(t, f, ids, recoveryMediaPageRecords)
 	// The writer is already inside the specific run-save transaction. Previous
 	// read-only page and outbox commits cannot consume this acknowledgement fault.
-	armed.Store(true)
+	armedPID.Store(writerPID)
 	barrier.release()
 	select {
 	case <-dropped:

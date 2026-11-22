@@ -1,3 +1,4 @@
+import { uiText } from './locale';
 import type { ApiError } from './api';
 import type { ModerationSummary } from './moderation';
 import { mediaContentAllowed, mergeMediaProjection } from './mediaModeration';
@@ -10,7 +11,7 @@ export type AssetOperation = { kind: 'metadata' | 'trash' | 'restore'; key: stri
 export type AssetEditor = { server: AssetEntry; name: string; tagsText: string; phase: 'ready' | 'saving' | 'uncertain' | 'conflict' | 'error'; pending: AssetOperation | null; conflict: AssetEntry | null; error: ApiError | null; message: string; force: boolean; conflictKind: AssetOperation['kind'] };
 export const defaultLibraryFilters = (): LibraryFilters => ({ state: 'active', source: '', kind: '', q: '', tag: '' });
 export function parseAssetTags(text: string): string[] { return [...new Set(text.split(/[,，\n]/).map(tag => tag.trim().toLowerCase()).filter(Boolean))]; }
-export function metadataError(name: string, tags: string[]): string { if (!name.trim() || Array.from(name.trim()).length > 120 || /[\u0000-\u001f\u007f]/u.test(name)) return '名称需为 1–120 个字符，不能包含控制字符。'; if (tags.length > 10 || tags.some(tag => Array.from(tag).length > 32 || /[\u0000-\u001f\u007f]/u.test(tag))) return '最多 10 个标签，每个不超过 32 个字符。'; return ''; }
+export function metadataError(name: string, tags: string[]): string { if (!name.trim() || Array.from(name.trim()).length > 120 || /[\u0000-\u001f\u007f]/u.test(name)) return uiText('名称需为 1–120 个字符，不能包含控制字符。'); if (tags.length > 10 || tags.some(tag => Array.from(tag).length > 32 || /[\u0000-\u001f\u007f]/u.test(tag))) return uiText('最多 10 个标签，每个不超过 32 个字符。'); return ''; }
 export function mergeAssetSnapshot(previous: AssetEntry | undefined, incoming: AssetEntry): AssetEntry {
   if (previous && (previous.id !== incoming.id || previous.project_id !== incoming.project_id)) return previous;
   const accepted = !previous || incoming.revision >= previous.revision, base = accepted ? incoming : previous!;
@@ -41,21 +42,21 @@ export function assetReducer(state: AssetEditor, action: AssetAction): AssetEdit
   switch (action.type) {
     case 'edit': return state.server.state === 'trashed' || ['saving', 'uncertain'].includes(state.phase) ? state : { ...state, name: action.name, tagsText: action.tagsText, error: null, message: '' };
     case 'saving': return { ...state, phase: 'saving', pending: { ...action.operation, body: { ...action.operation.body, ...(action.operation.body.tags ? { tags: [...action.operation.body.tags] } : {}) } }, error: null, message: '' };
-    case 'saved': return action.asset.revision < state.server.revision ? { ...state, phase: 'ready', pending: null, message: '原请求已确认，请重新打开详情核对当前版本。' } : { ...initialAssetEditor(action.asset), message: '变更已保存。' };
+    case 'saved': return action.asset.revision < state.server.revision ? { ...state, phase: 'ready', pending: null, message: uiText('原请求已确认，请重新打开详情核对当前版本。') } : { ...initialAssetEditor(action.asset), message: uiText('变更已保存。') };
     case 'observed': return assetDirty(state) || state.phase === 'conflict' || action.asset.revision < state.server.revision ? state : initialAssetEditor(action.asset);
     case 'reset': return state.pending ? state : initialAssetEditor(state.server);
     case 'failed': return { ...state, phase: action.unknown ? 'uncertain' : ['ASSET_REVISION_CONFLICT', 'ASSET_STATE_CONFLICT'].includes(action.error.code || '') ? 'conflict' : 'error', pending: action.unknown ? state.pending : null, conflict: null, conflictKind: state.pending?.kind || 'metadata', error: action.error, message: action.error.message };
     case 'conflict_snapshot': return state.phase !== 'conflict' || action.asset.revision < (state.conflict?.revision || 0) ? state : { ...state, conflict: action.asset };
     case 'use_server': return state.conflict ? initialAssetEditor(mergeAssetSnapshot(state.server, state.conflict)) : state;
-    case 'keep_mine': return state.conflict && state.conflict.state === 'active' ? { ...state, server: mergeAssetSnapshot(state.server, state.conflict), phase: 'ready', conflict: null, force: true, error: null, message: '已保留你的名称和标签，请核对后另存为新版本。' } : state;
-    case 'restore_metadata': return state.server.state === 'trashed' || ['saving', 'uncertain', 'conflict'].includes(state.phase) ? state : { ...state, name: action.revision.name, tagsText: action.revision.tags.join(', '), force: true, message: '历史名称和标签已载入，保存后成为新版本；回收状态保持当前值。' };
+    case 'keep_mine': return state.conflict && state.conflict.state === 'active' ? { ...state, server: mergeAssetSnapshot(state.server, state.conflict), phase: 'ready', conflict: null, force: true, error: null, message: uiText('已保留你的名称和标签，请核对后另存为新版本。') } : state;
+    case 'restore_metadata': return state.server.state === 'trashed' || ['saving', 'uncertain', 'conflict'].includes(state.phase) ? state : { ...state, name: action.revision.name, tagsText: action.revision.tags.join(', '), force: true, message: uiText('历史名称和标签已载入，保存后成为新版本；回收状态保持当前值。') };
   }
 }
 export function libraryScope(owner: string, project: string, asset: string): string { return JSON.stringify([owner, project, asset]); }
 export class LibraryRecovery {
   private entries = new Map<string, AssetEditor>();
   remember(owner: string, project: string, state: AssetEditor): void { const key = libraryScope(owner, project, state.server.id), previous = this.entries.get(key); if (assetDirty(state)) this.entries.set(key, previous ? { ...state, server: projectAssetSafety(state.server, previous.server) } : state); else this.entries.delete(key); }
-  restore(owner: string, project: string, asset: AssetEntry): AssetEditor { const key = libraryScope(owner, project, asset.id), saved = this.entries.get(key); if (!saved) return initialAssetEditor(asset); const restored = { ...saved, server: projectAssetSafety(saved.server, asset) }; const next: AssetEditor = saved.pending ? { ...restored, phase: 'uncertain', message: '已恢复本页待确认操作，请使用原请求重试核对。' } : restored; this.entries.set(key, next); return next; }
+  restore(owner: string, project: string, asset: AssetEntry): AssetEditor { const key = libraryScope(owner, project, asset.id), saved = this.entries.get(key); if (!saved) return initialAssetEditor(asset); const restored = { ...saved, server: projectAssetSafety(saved.server, asset) }; const next: AssetEditor = saved.pending ? { ...restored, phase: 'uncertain', message: uiText('已恢复本页待确认操作，请使用原请求重试核对。') } : restored; this.entries.set(key, next); return next; }
   list(owner: string, project: string): AssetEditor[] { return [...this.entries.entries()].filter(([key]) => { const scope = JSON.parse(key); return scope[0] === owner && scope[1] === project; }).map(([, value]) => value); }
   hasUnsaved(): boolean { return this.entries.size > 0; }
 }

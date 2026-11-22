@@ -1,3 +1,4 @@
+import { uiText } from './locale';
 import type { Run } from './types';
 import { terminal } from './types';
 import { mergeModeratedText, moderationAllowsText } from './moderation';
@@ -95,4 +96,4 @@ export function validTurnTarget(draft: ChatDraft, messages: MessageNode[]): bool
   return !!parent && parent.role === 'assistant' && terminal(parent.status) && (draft.mode === 'reply' || moderationAllowsText(parent.moderation, parent.status) && !!parent.content.trim());
 }
 export function chatReadCurrent(alive: boolean, generation: number, ticket: number, selectedGeneration: number, selection?: number): boolean { return alive && generation === ticket && (selection === undefined || selectedGeneration === selection); }
-export function messageProviderLabel(run?: Run): string { return run?.provider_mode === 'demo' ? '演示输出' : run?.provider_mode === 'live' ? '模型输出' : '来源待核对'; }
+export function messageProviderLabel(run?: Run): string { return run?.provider_mode === 'demo' ? uiText('演示输出') : run?.provider_mode === 'live' ? uiText('模型输出') : uiText('来源待核对'); }

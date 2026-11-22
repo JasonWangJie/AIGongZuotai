@@ -11,7 +11,10 @@ import (
 
 // Private aggregate startup evidence, not a public capacity/heap metric.
 type recoveryStats struct {
-	ProjectPages, RunPages, TaskPages                   int
+	RunPages, TaskPages                                 int
+	RunRows, TaskRows                                   int
+	ReadBytes                                           int64
+	PageReadTotal, MaxPageRead                          time.Duration
 	MaxPageRecords                                      int
 	MaxPageEncodedBytes                                 int64
 	CachedRunsPeak, CachedTasksPeak, CachedProjectsPeak int
@@ -23,7 +26,6 @@ type recoveryRow struct {
 	body []byte
 }
 
-const recoveryProjectsSQL = `SELECT id,jsonb_build_object('id',id,'workspace_id',workspace_id,'name',name,'created_at',created_at) AS body FROM studio_projects WHERE id>$1 ORDER BY id LIMIT $2`
 const recoveryRunsSQL = `SELECT id,document AS body FROM studio_runs WHERE id>$1 AND document->>'status' NOT IN ('COMPLETED','FAILED','CANCELLED','INTERRUPTED') ORDER BY id LIMIT $2`
 const recoveryTasksSQL = `SELECT id,jsonb_build_object('task',document,'input',input,'handle',handle,'submission',submission,'next_poll',next_poll) AS body FROM studio_tasks WHERE id>$1 AND document->>'status' NOT IN ('SUCCEEDED','PARTIAL','FAILED','CANCELLED','SUBMIT_UNKNOWN','RECONCILE_REQUIRED') ORDER BY id LIMIT $2`
 
@@ -60,20 +62,23 @@ func readRecoveryRows(ctx context.Context, conn *pgx.Conn, source, after string,
 	return page, used, rows.Err()
 }
 
-func (a *App) observeRecoveryPage(kind string, count int, used int64) {
+func (a *App) observeRecoveryPage(kind string, count int, used int64, elapsed time.Duration) {
 	if count == 0 {
 		return
 	}
 	s := &a.recoveryStats
 	s.MaxPageRecords = max(s.MaxPageRecords, count)
 	s.MaxPageEncodedBytes = max(s.MaxPageEncodedBytes, used)
+	s.PageReadTotal += elapsed
+	s.MaxPageRead = max(s.MaxPageRead, elapsed)
+	s.ReadBytes += used
 	switch kind {
-	case "project":
-		s.ProjectPages++
 	case "run":
 		s.RunPages++
+		s.RunRows += count
 	case "task":
 		s.TaskPages++
+		s.TaskRows += count
 	}
 }
 func (a *App) observeRecoveryCache() {
@@ -82,9 +87,19 @@ func (a *App) observeRecoveryCache() {
 	s.CachedRunsPeak = max(s.CachedRunsPeak, len(a.runs))
 	s.CachedTasksPeak = max(s.CachedTasksPeak, len(a.tasks))
 }
-func recoveryBackpressure(err error) bool {
-	var op *operationError
-	return errors.As(err, &op) && op.code == "EVENT_BACKLOG_FULL"
+func (s *postgresStore) drainRecoveryPage(saveErr error) error {
+	if isEventBacklog(saveErr) {
+		// A rejected write can only be retried once a real event frees space.
+		// Fail startup if the durable counter and queue disagree.
+		n, err := s.projectOutboxBatch()
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return errors.New("recovery outbox reported full with no pending events to project")
+		}
+	}
+	return s.prepareOutbox()
 }
 
 // The caller holds the single control writer/owner locks and has fenced old
@@ -93,30 +108,6 @@ func recoveryBackpressure(err error) bool {
 func (s *postgresStore) restore(a *App) error {
 	if err := s.prepareOutbox(); err != nil {
 		return err
-	}
-	for after := ""; ; {
-		var page []recoveryRow
-		var used int64
-		err := s.do(func(ctx context.Context, conn *pgx.Conn) (err error) {
-			page, used, err = readRecoveryRows(ctx, conn, recoveryProjectsSQL, after, recoveryMediaPageRecords)
-			return err
-		})
-		if err != nil {
-			return err
-		}
-		if len(page) == 0 {
-			break
-		}
-		a.observeRecoveryPage("project", len(page), used)
-		for _, row := range page {
-			var p Project
-			if json.Unmarshal(row.body, &p) != nil || p.ID != row.id {
-				return errors.New("invalid recovery project")
-			}
-			a.projects[p.ID] = p
-			after = row.id
-		}
-		a.observeRecoveryCache()
 	}
 	if err := s.restoreRuns(a); err != nil {
 		return err
@@ -128,6 +119,7 @@ func (s *postgresStore) restoreRuns(a *App) error {
 	for after := ""; ; {
 		var page []recoveryRow
 		var used int64
+		started := time.Now()
 		err := s.do(func(ctx context.Context, conn *pgx.Conn) (err error) {
 			page, used, err = readRecoveryRows(ctx, conn, recoveryRunsSQL, after, recoveryMediaPageRecords)
 			return err
@@ -138,7 +130,7 @@ func (s *postgresStore) restoreRuns(a *App) error {
 		if len(page) == 0 {
 			return nil
 		}
-		a.observeRecoveryPage("run", len(page), used)
+		a.observeRecoveryPage("run", len(page), used, time.Since(started))
 		for _, row := range page {
 			var run Run
 			if json.Unmarshal(row.body, &run) != nil || run.ID != row.id {
@@ -150,23 +142,25 @@ func (s *postgresStore) restoreRuns(a *App) error {
 				run.Error = &APIError{Code: "PROCESS_RESTARTED", Message: "服务已重启，保留最后检查点；未自动重新请求模型"}
 				run.Seq += recoverySequenceGap
 				run.UpdatedAt = time.Now().UTC()
-				err = s.saveRunCandidate(&run)
-				if recoveryBackpressure(err) {
+				err = s.saveRecoveredRun(&run)
+				if isEventBacklog(err) {
 					break
 				}
 				if err != nil {
 					return err
 				}
 			}
-			r := &runRecord{Run: run, Subscribers: make(map[chan event]bool), LastCheckpoint: time.Now()}
-			r.Output.WriteString(run.Output)
-			a.runs[run.ID] = r
+			if len(a.runs) < a.config.MaxRecords {
+				r := &runRecord{Run: run, Subscribers: make(map[chan event]bool), LastCheckpoint: time.Now()}
+				r.Output.WriteString(run.Output)
+				a.cacheIdleRunLocked(r)
+			}
 			after = row.id
 			a.observeRecoveryCache()
 		}
 		// An outbox rejection has already rolled back and released store.mu.
 		// Reread from the last confirmed ID rather than mutating the old page.
-		if err = s.prepareOutbox(); err != nil {
+		if err = s.drainRecoveryPage(err); err != nil {
 			return err
 		}
 	}
@@ -257,6 +251,7 @@ func prepareRecoveredTask(a *App, t *taskRecord) bool {
 
 func (s *postgresStore) restoreTasks(a *App) error {
 	for after := ""; ; {
+		started := time.Now()
 		page, used, err := s.recoveryTaskPage(after)
 		if err != nil {
 			return err
@@ -264,7 +259,7 @@ func (s *postgresStore) restoreTasks(a *App) error {
 		if len(page) == 0 {
 			return nil
 		}
-		a.observeRecoveryPage("task", len(page), used)
+		a.observeRecoveryPage("task", len(page), used, time.Since(started))
 		for _, t := range page {
 			if prepareRecoveredTask(a, t) {
 				err = s.do(func(ctx context.Context, conn *pgx.Conn) error {
@@ -281,18 +276,18 @@ func (s *postgresStore) restoreTasks(a *App) error {
 					}
 					return tx.Commit(ctx)
 				})
-				if recoveryBackpressure(err) {
+				if isEventBacklog(err) {
 					break
 				}
 				if err != nil {
 					return err
 				}
 			}
-			a.tasks[t.Task.ID] = t
+			a.cacheIdleTaskLocked(t)
 			after = t.Task.ID
 			a.observeRecoveryCache()
 		}
-		if err = s.prepareOutbox(); err != nil {
+		if err = s.drainRecoveryPage(err); err != nil {
 			return err
 		}
 	}

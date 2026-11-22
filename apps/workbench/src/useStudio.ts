@@ -1,3 +1,4 @@
+import { uiText } from './locale';
 import { billingEnabled, billingScope, quoteMatches } from './billing';
 import type { QuoteRequest, QuotedRequest } from './billing';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -20,12 +21,17 @@ import type { AuthSession, Bootstrap, Project, Run, Task, ImageOperation } from 
 type Pending = PendingOperation;
 const unknownMessage = '本次请求可能已受理；请刷新当前项目历史核对，或使用“原请求重试”，不会创建新的操作键。';
 
+function messageText(value: string | Error) {
+  if (value instanceof ApiError) return value.displayMessage;
+  return value instanceof Error ? value.message : uiText(value);
+}
+
 export function useStudio() {
   const [bootstrap, setBootstrap] = useState<Bootstrap | null>(null);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [authState, setAuthState] = useState<'checking' | 'required' | 'ready'>('checking');
   const [authBusy, setAuthBusy] = useState(false);
-  const [authError, setAuthError] = useState('');
+  const [authError, setAuthError] = useState<string | Error>('');
   const [authIssue, setAuthIssue] = useState<ApiError | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -33,18 +39,18 @@ export function useStudio() {
   const [selectedRun, setSelectedRun] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setErrorText] = useState('');
+  const [error, setErrorText] = useState<{ message: string | Error; unknown?: boolean }>({ message: '' });
   const [requestError, setRequestError] = useState<ApiError | null>(null);
   const [submissionRetryAt, setSubmissionRetryAt] = useState(0);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState<ApiError | null>(null);
   const [catalogUpdatedAt, setCatalogUpdatedAt] = useState(0);
-  const setError = useCallback((message: string) => { setErrorText(message); setRequestError(null); }, []);
+  const setError = useCallback((message: string | Error) => { setErrorText({ message }); setRequestError(null); }, []);
   const [pending, setPending] = useState<Pending | null>(null);
   const [taskConnection, setTaskConnection] = useState('连接中');
   const [runConnection, setRunConnection] = useState('');
   const [reconnect, setReconnect] = useState(0);
-  const [updates, setUpdates] = useState({ activity: 0, library: 0, references: 0, draft: 0, conversations: 0 });
+  const [updates, setUpdates] = useState({ activity: 0, library: 0, references: 0, draft: 0, conversations: 0, workflow: 0, canvas: 0, canvasSources: 0 });
   const [syncNotice, setSyncNotice] = useState('');
   const feedSync = useRef<DurableFeedSync | null>(null), tasksRef = useRef<Task[]>([]), selectedRunRef = useRef(selectedRun); tasksRef.current = tasks; selectedRunRef.current = selectedRun;
   const historyFlights = useRef(new Map<number, Promise<void>>()), historyAbort = useRef(new AbortController());
@@ -68,7 +74,7 @@ export function useStudio() {
   const current = useCallback((token: ScopeToken) => alive.current && scope.current.current(token), []);
   const closeStreams = useCallback(() => { streams.current.forEach(stream => stream.close()); streams.current.clear(); }, []);
   const clearProject = useCallback(() => {
-    taskRefreshes.current.clear(); closeStreams(); feedSync.current?.stop(); feedSync.current = null; historyAbort.current.abort(); historyAbort.current = new AbortController(); historyFlights.current.clear(); tasksRef.current = []; bootstrapRef.current = null; runsRef.current = []; setUpdates({ activity: 0, library: 0, references: 0, draft: 0, conversations: 0 }); setSyncNotice('');
+    taskRefreshes.current.clear(); closeStreams(); feedSync.current?.stop(); feedSync.current = null; historyAbort.current.abort(); historyAbort.current = new AbortController(); historyFlights.current.clear(); tasksRef.current = []; bootstrapRef.current = null; runsRef.current = []; setUpdates({ activity: 0, library: 0, references: 0, draft: 0, conversations: 0, workflow: 0, canvas: 0, canvasSources: 0 }); setSyncNotice('');
     catalogSequence.current++; catalogAbort.current?.abort(); catalogLock.current = false; catalogRetryAt.current = 0; setCatalogLoading(false); setCatalogError(null); setCatalogUpdatedAt(0);
     setBootstrap(null); setTasks([]); setRuns([]); setSelectedRun(null); setPending(null); setSubmitting(false);
     setTaskConnection('连接中'); setRunConnection(''); setError(''); setSubmissionRetryAt(0);
@@ -81,7 +87,7 @@ export function useStudio() {
   const failure = useCallback((cause: unknown, token?: ScopeToken) => {
     if (token && !current(token)) return;
     if (cause instanceof ApiError && cause.status === 401) { setAuthIssue(cause); expireSession(); return; }
-    setErrorText(cause instanceof Error ? cause.message : '请求失败，请重试。'); setRequestError(cause instanceof ApiError ? cause : null);
+    setErrorText({ message: cause instanceof Error ? cause : '请求失败，请重试。' }); setRequestError(cause instanceof ApiError ? cause : null);
   }, [current, expireSession]);
   const updateRun = useCallback((run: Run, token: ScopeToken) => {
     if (!alive.current || !scope.current.accepts(token, run)) return;
@@ -118,8 +124,8 @@ export function useStudio() {
     try {
       const data = await api.bootstrap(projectId);
       if (!current(token)) return;
-      if (data.catalog_version && !validCatalog({ version: data.catalog_version, models: data.models })) throw new ApiError('模型目录格式不完整，已阻止使用未知参数提交。');
-      if (projectId && data.project.id !== projectId) throw new Error('服务端返回了不同项目，已阻止加载。');
+      if (data.catalog_version && !validCatalog({ version: data.catalog_version, models: data.models })) throw new ApiError({ ui: '模型目录格式不完整，已阻止使用未知参数提交。' });
+      if (projectId && data.project.id !== projectId) throw new ApiError({ ui: '服务端返回了不同项目，已阻止加载。' });
       const bound = scope.current.bind(token, data.project.id); if (!bound) return;
       token = bound; bootstrapRef.current = data; setBootstrap(data); setProjects(data.projects || [data.project]);
       catalogCache.current.seed(catalogScope(data.user?.id || 'demo', data.workspace.id), { version: data.catalog_version || 'legacy', models: data.models });
@@ -137,17 +143,81 @@ export function useStudio() {
     try {
       let data: AuthSession;
       try { data = await api.session(); } catch (cause) { if (cause instanceof ApiError && cause.status === 404) data = { auth_enabled: false, user: null }; else throw cause; }
-      if (!current(token)) return; setSession(data);
-      if (data.auth_enabled && !data.user) { setAuthState('required'); setLoading(false); return; }
-      setAuthState('ready'); await loadProject(readProjectPreference(data, browserProjectStorage()));
-    } catch (cause) { if (current(token)) { setAuthError(cause instanceof Error ? cause.message : '无法恢复会话'); setAuthIssue(cause instanceof ApiError ? cause : null); setAuthState('checking'); setLoading(false); } }
+      if (!current(token)) return;
+      setSession(data);
+      if (data.auth_enabled && !data.user) {
+        setAuthState('required');
+        setLoading(false);
+        return;
+      }
+      setAuthState('ready');
+      if (data.account_restricted) {
+        setProjects([]);
+        setLoading(false);
+        return;
+      }
+      await loadProject(readProjectPreference(data, browserProjectStorage()));
+    } catch (cause) { if (current(token)) { setAuthError(cause instanceof Error ? cause : '无法恢复会话'); setAuthIssue(cause instanceof ApiError ? cause : null); setAuthState('checking'); setLoading(false); } }
   }, [clearProject, current, loadProject]);
   useEffect(() => { alive.current = true; void connect(); return () => { alive.current = false; scope.current.transition(null); closeStreams(); }; }, [connect, closeStreams]);
+  const identity = useRef(session);
+  identity.current = session;
   const refreshIdentity = useCallback(async () => {
-    const token = scope.current.capture(), owner = bootstrapRef.current?.user?.id;
-    try { const value = await api.session(); if (!current(token)) return; if (value.auth_enabled && !value.user) { expireSession(); return; } if (owner !== value.user?.id) { await connect(); return; } setSession(value); if (bootstrapRef.current) { const next = { ...bootstrapRef.current, user: value.user, account_security: value.account_security }; bootstrapRef.current = next; setBootstrap(next); } }
-    catch (cause) { failure(cause, token); }
-  }, [current, expireSession, connect, failure]);
+    const token = scope.current.capture(),
+      owner = identity.current?.user?.id;
+    try {
+      const value = await api.session();
+      if (!current(token)) return;
+      if (value.auth_enabled && !value.user) {
+        expireSession();
+        return;
+      }
+      if (owner !== value.user?.id) {
+        await connect();
+        return;
+      }
+      if (value.account_restricted) {
+        scope.current.transition(null);
+        clearProject();
+        setProjects([]);
+        setSession(value);
+        setAuthState('ready');
+        setLoading(false);
+        return;
+      }
+      if (identity.current?.account_restricted) {
+        await connect();
+        return;
+      }
+      setSession(value);
+      if (bootstrapRef.current) {
+        const next = { ...bootstrapRef.current, user: value.user, account_security: value.account_security };
+        bootstrapRef.current = next;
+        setBootstrap(next);
+      }
+    } catch (cause) {
+      failure(cause, token);
+    }
+  }, [current, expireSession, connect, failure, clearProject]);
+  useEffect(() => {
+    if (authState !== 'ready' || !session?.auth_enabled || !session.user) return;
+    let reading = false;
+    const check = () => {
+      if (reading || document.visibilityState === 'hidden') return;
+      reading = true;
+      void refreshIdentity().finally(() => {
+        reading = false;
+      });
+    };
+    window.addEventListener('studio-account-restricted', check);
+    window.addEventListener('focus', check);
+    const timer = window.setInterval(check, 30000);
+    return () => {
+      window.removeEventListener('studio-account-restricted', check);
+      window.removeEventListener('focus', check);
+      window.clearInterval(timer);
+    };
+  }, [authState, session?.user?.id, session?.auth_enabled, refreshIdentity]);
   const refreshCatalog = useCallback(async () => {
     const token = scope.current.capture(), data = bootstrapRef.current;
     if (!data || !token.projectId || !current(token) || catalogLock.current || Date.now() < catalogRetryAt.current || document.visibilityState === 'hidden') return;
@@ -156,11 +226,11 @@ export function useStudio() {
     try {
       const result = await api.modelCatalog(token.projectId, catalogCache.current.get(identity), catalogAbort.current.signal);
       if (!current(token) || ticket !== catalogSequence.current) return;
-      if (!validCatalog(result.catalog)) throw new ApiError('模型目录格式不完整，继续保留上次有效目录。');
+      if (!validCatalog(result.catalog)) throw new ApiError({ ui: '模型目录格式不完整，继续保留上次有效目录。' });
       catalogCache.current.set({ scope: identity, catalog: result.catalog, etag: result.etag });
       if (bootstrapRef.current && bootstrapRef.current.catalog_version !== result.catalog.version) { const next = { ...bootstrapRef.current, models: result.catalog.models, catalog_version: result.catalog.version }; bootstrapRef.current = next; setBootstrap(next); }
       setCatalogError(null); catalogRetryAt.current = 0; setCatalogUpdatedAt(Date.now());
-    } catch (cause) { if (current(token) && ticket === catalogSequence.current) { if (cause instanceof ApiError && cause.status === 401) failure(cause, token); else { const issue = cause instanceof ApiError ? cause : new ApiError('模型目录刷新失败，现有选择已保留。'); setCatalogError(issue); catalogRetryAt.current = issue.retryAt; } } }
+    } catch (cause) { if (current(token) && ticket === catalogSequence.current) { if (cause instanceof ApiError && cause.status === 401) failure(cause, token); else { const issue = cause instanceof ApiError ? cause : new ApiError({ ui: '模型目录刷新失败，现有选择已保留。' }); setCatalogError(issue); catalogRetryAt.current = issue.retryAt; } } }
     finally { if (ticket === catalogSequence.current) { catalogLock.current = false; if (current(token)) setCatalogLoading(false); } }
   }, [current, failure]);
   useEffect(() => {
@@ -185,7 +255,8 @@ export function useStudio() {
     const sync = new DurableFeedSync(async batch => {
       if (!active()) return;
       const areas = batch.areas.filter(area => area !== 'history');
-      if (areas.length) setUpdates(old => active() ? { activity: old.activity + Number(areas.includes('activity')), library: old.library + Number(areas.includes('library')), references: old.references + Number(areas.includes('references')), draft: old.draft + Number(areas.includes('draft')), conversations: old.conversations + Number(areas.includes('conversations')) } : old);
+      const refreshCanvasSources=batch.resources.some(item=>item.type==='run');
+      if (areas.length || refreshCanvasSources) setUpdates(old => active() ? { activity: old.activity + Number(areas.includes('activity')), library: old.library + Number(areas.includes('library')), references: old.references + Number(areas.includes('references')), draft: old.draft + Number(areas.includes('draft')), conversations: old.conversations + Number(areas.includes('conversations')), workflow: old.workflow + Number(areas.includes('workflow')), canvas: old.canvas + Number(areas.includes('canvas')), canvasSources: old.canvasSources + Number(refreshCanvasSources) } : old);
       if (batch.areas.includes('history')) {
         if (!syncFailed) setSyncNotice('正在补齐项目状态…');
         // Refresh recent history and every already-loaded nonterminal resource in bounded follow-up batches.
@@ -200,8 +271,8 @@ export function useStudio() {
       await boundedReads(batch.resources, async hint => {
         if (!active()) return;
         try {
-          if (hint.type === 'task') { const task = await api.task(hint.id, projectId, abort.signal); if (!active()) return; if (!scope.current.accepts(token, task) || task.id !== hint.id) throw new ApiError('任务快照身份不匹配。'); if (!resourceHintCovered({ type: 'task', id: task.id, version: task.version, status: task.status }, hint)) throw new ApiError('任务快照尚未覆盖通知版本，正在核对。'); setTasks(old => { if (!active()) return old; const next = mergeTask(old, task); tasksRef.current = next; return next; }); sync.acknowledge({ type: 'task', id: task.id, version: task.version, status: task.status }); }
-          else { const run = await api.snapshot(hint.id, projectId, abort.signal); if (!active()) return; if (!scope.current.accepts(token, run) || run.id !== hint.id) throw new ApiError('对话快照身份不匹配。'); if (!resourceHintCovered({ type: 'run', id: run.id, version: run.seq, status: run.status }, hint)) throw new ApiError('对话快照尚未覆盖通知版本，正在核对。'); updateRun(run, token); }
+          if (hint.type === 'task') { const task = await api.task(hint.id, projectId, abort.signal); if (!active()) return; if (!scope.current.accepts(token, task) || task.id !== hint.id) throw new ApiError({ ui: '任务快照身份不匹配。' }); if (!resourceHintCovered({ type: 'task', id: task.id, version: task.version, status: task.status }, hint)) throw new ApiError({ ui: '任务快照尚未覆盖通知版本，正在核对。' }); setTasks(old => { if (!active()) return old; const next = mergeTask(old, task); tasksRef.current = next; return next; }); sync.acknowledge({ type: 'task', id: task.id, version: task.version, status: task.status }); }
+          else { const run = await api.snapshot(hint.id, projectId, abort.signal); if (!active()) return; if (!scope.current.accepts(token, run) || run.id !== hint.id) throw new ApiError({ ui: '对话快照身份不匹配。' }); if (!resourceHintCovered({ type: 'run', id: run.id, version: run.seq, status: run.status }, hint)) throw new ApiError({ ui: '对话快照尚未覆盖通知版本，正在核对。' }); updateRun(run, token); }
         } catch (cause) { if (cause instanceof ApiError && cause.status === 404) return; throw cause; }
       });
       if (active()) { syncFailed = false; setSyncNotice(''); }
@@ -269,7 +340,7 @@ export function useStudio() {
       pendingByProject.current.failed(operation, uncertain, current(token));
       if (!current(token)) return false;
       if (cause instanceof ApiError && cause.status === 401) { failure(cause, token); return false; }
-      if (current(token)) { setPending(uncertain ? operation : null); setErrorText((cause instanceof Error ? cause.message : '提交失败') + (uncertain ? ' ' + unknownMessage : '')); setRequestError(cause instanceof ApiError ? cause : null); setSubmissionRetryAt(cause instanceof ApiError ? cause.retryAt : 0); }
+      if (current(token)) { setPending(uncertain ? operation : null); setErrorText({ message: cause instanceof Error ? cause : '提交失败', unknown: uncertain }); setRequestError(cause instanceof ApiError ? cause : null); setSubmissionRetryAt(cause instanceof ApiError ? cause.retryAt : 0); }
       return false;
     } finally {
       inflight.current.release(projectId, flight);
@@ -277,11 +348,38 @@ export function useStudio() {
     }
   }, [current, failure, updateRun]);
   const authenticate = async (mode: 'login' | 'register', body: { email: string; password: string; name: string }) => {
-    if (authLock.current || Date.now() < (authIssue?.retryAt || 0)) return; authLock.current = true; setAuthBusy(true); setAuthError(''); setAuthIssue(null);
-    const token = scope.current.transition(null); clearProject();
-    try { const result = mode === 'register' ? await api.register(body) : await api.login({ email: body.email, password: body.password }); if (!current(token)) return; setSession(result); setAuthState('ready'); await loadProject(readProjectPreference(result, browserProjectStorage()) || result.project?.id); }
-    catch (cause) { if (current(token)) { setAuthError(cause instanceof Error ? cause.message : '登录失败'); setAuthIssue(cause instanceof ApiError ? cause : null); setAuthState('required'); setLoading(false); } }
-    finally { authLock.current = false; if (alive.current) setAuthBusy(false); }
+    if (authLock.current || Date.now() < (authIssue?.retryAt || 0)) return;
+    authLock.current = true;
+    setAuthBusy(true);
+    setAuthError('');
+    setAuthIssue(null);
+    const token = scope.current.transition(null);
+    clearProject();
+    try {
+      const result =
+        mode === 'register'
+          ? await api.register(body)
+          : await api.login({ email: body.email, password: body.password });
+      if (!current(token)) return;
+      setSession(result);
+      setAuthState('ready');
+      if (result.account_restricted) {
+        setProjects([]);
+        setLoading(false);
+        return;
+      }
+      await loadProject(readProjectPreference(result, browserProjectStorage()) || result.project?.id);
+    } catch (cause) {
+      if (current(token)) {
+        setAuthError(cause instanceof Error ? cause : '登录失败');
+        setAuthIssue(cause instanceof ApiError ? cause : null);
+        setAuthState('required');
+        setLoading(false);
+      }
+    } finally {
+      authLock.current = false;
+      if (alive.current) setAuthBusy(false);
+    }
   };
   const logout = async () => {
     if (authLock.current) return; authLock.current = true; setAuthBusy(true);
@@ -296,7 +394,7 @@ export function useStudio() {
     const data = bootstrapRef.current; if (!data || pending || Date.now() < submissionRetryAt) return false;
     if (kind !== 'chat' && moderationMediaBlocked(data.moderation)) { setError(moderationErrorMessage('MODERATION_MEDIA_UNSUPPORTED')!); return false; }
     const model = data.models.find(item => item.kind === kind && item.id === selection.modelId), declared = modelCapability(data, model);
-    if (!model || !declared.enabled) { setError(declared.reason || '所选模型已停用，请选择其他模型。'); return false; }
+    if (!model || !declared.enabled) { setError(declared.reason ? new Error(declared.reason) : '所选模型已停用，请选择其他模型。'); return false; }
     if (model.version !== selection.modelVersion) { setError('模型目录刚刚更新，请确认新的模型规格后再提交。'); return false; }
     if (promptBytes(prompt) > declared.max_prompt_bytes) { setError('描述超过当前模型的文本长度限制，请缩短后提交。'); return false; }
     const preset = declared.parameter_presets.find(item => item.id === selection.presetId);
@@ -311,7 +409,7 @@ export function useStudio() {
   const refreshTask = async (id: string) => {
     const token = scope.current.capture(); if (!token.projectId || taskRefreshes.current.has(id)) return;
     const attempt = Symbol('task-read'); taskRefreshes.current.set(id, attempt);
-    try { const value = await api.task(id, token.projectId); if (value.id !== id) throw new ApiError('任务快照身份不匹配。'); if (scope.current.accepts(token, value)) setTasks(old => current(token) ? mergeTask(old, value) : old); }
+    try { const value = await api.task(id, token.projectId); if (value.id !== id) throw new ApiError({ ui: '任务快照身份不匹配。' }); if (scope.current.accepts(token, value)) setTasks(old => current(token) ? mergeTask(old, value) : old); }
     catch (cause) { failure(cause, token); }
     finally { if (taskRefreshes.current.get(id) === attempt) taskRefreshes.current.delete(id); }
   };
@@ -344,9 +442,9 @@ export function useStudio() {
     try { const value = await api.reconcileTask(id, token.projectId); if (scope.current.accepts(token, value)) setTasks(old => current(token) ? mergeTask(old, value) : old); }
     catch (cause) { failure(cause, token); }
   };
-  return { bootstrap, session, authState, authBusy, authError, authIssue, authenticate, logout, expireSession, refreshIdentity, projects, createProject, switchProject: loadProject,
+  return { bootstrap, session, authState, authBusy, authError: messageText(authError), authIssue, authenticate, logout, expireSession, refreshIdentity, projects, createProject, switchProject: loadProject,
     updates, syncNotice, historyOffsets, historyLoading, loadMore, catalogLoading, catalogError, catalogUpdatedAt, refreshCatalog,
-    receiveRun: (run: Run) => updateRun(run, scope.current.capture()), tasks, runs, selectedRun, setSelectedRun, loading, submitting, error, setError, requestError, submissionRetryAt, pending, taskConnection, runConnection,
+    receiveRun: (run: Run) => updateRun(run, scope.current.capture()), tasks, runs, selectedRun, setSelectedRun, loading, submitting, error: messageText(error.message) + (error.unknown ? ' ' + uiText(unknownMessage) : ''), setError, requestError, submissionRetryAt, pending, taskConnection, runConnection,
     connect, create, cancel, reconcileTask, refreshTask, retry: () => pending && Date.now() >= submissionRetryAt && submitPending(pending),
     refresh: async () => { feedSync.current?.resume(); const token = scope.current.capture(); try { await refreshFor(token); if (current(token) && !pending) setError(''); } catch (cause) { failure(cause, token); } },
     recover: () => { feedSync.current?.resume(); setReconnect(n => n + 1); },

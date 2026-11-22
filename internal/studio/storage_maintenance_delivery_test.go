@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"net/http/httptest"
 	"os"
@@ -226,8 +227,8 @@ func TestPostgresDeliveryMigrationRequiresOwnerAndProtectsEveryPlan(t *testing.T
 	}
 }
 
-func TestPostgresDeliveryOfflineToolsRequireExact020(t *testing.T) {
-	for _, mode := range []string{"legacy019", "gap019", "future021"} {
+func TestPostgresDeliveryOfflineToolsRequireExactCurrentSchema(t *testing.T) {
+	for _, mode := range []string{"previous", "gap019", "future"} {
 		t.Run(mode, func(t *testing.T) {
 			database := testDatabase(t)
 			conn, err := pgx.Connect(context.Background(), database)
@@ -241,7 +242,7 @@ func TestPostgresDeliveryOfflineToolsRequireExact020(t *testing.T) {
 				t.Fatal(err)
 			}
 			for _, name := range names {
-				if mode == "legacy019" && strings.Contains(name, "/020_") || mode == "gap019" && strings.Contains(name, "/019_") {
+				if mode == "previous" && strings.Contains(name, fmt.Sprintf("/%03d_", maintenanceSchemaVersion)) || mode == "gap019" && strings.Contains(name, "/019_") {
 					continue
 				}
 				body, readErr := migrationFiles.ReadFile(name)
@@ -273,8 +274,8 @@ func TestPostgresDeliveryOfflineToolsRequireExact020(t *testing.T) {
 			if err = tx.Commit(context.Background()); err != nil {
 				t.Fatal(err)
 			}
-			if mode == "future021" {
-				if _, err = conn.Exec(context.Background(), "INSERT INTO studio_schema_versions(version) VALUES(21)"); err != nil {
+			if mode == "future" {
+				if _, err = conn.Exec(context.Background(), "INSERT INTO studio_schema_versions(version) VALUES($1)", maintenanceSchemaVersion+1); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -286,6 +287,22 @@ func TestPostgresDeliveryOfflineToolsRequireExact020(t *testing.T) {
 			}
 			if _, err = AdministerOperations(context.Background(), OperationsAdminConfig{DatabaseURL: database, Action: "inspect", WorkspaceID: newID("ws"), UserID: newID("usr")}); err == nil || !strings.Contains(err.Error(), "schema") {
 				t.Fatal("roles accepted incompatible schema", err)
+			}
+
+			// Build otherwise valid statement material and a real workspace, so
+			// an incompatible schema is the only reason to reject this read.
+			cfg := reconCfg()
+			cfg.DatabaseURL = database
+			if _, err := conn.Exec(context.Background(), "INSERT INTO studio_workspaces(id,name) VALUES($1,'fixture')", cfg.WorkspaceID); err != nil {
+				t.Fatal(err)
+			}
+			cfg.Statement = filepath.Join(t.TempDir(), "statement.json")
+			material := evidenceJSON(t, cfg, []evidenceEvent{reconPayment("ord_"+strings.Repeat("b", 32), "fixture-event", "fixture-pay")})
+			if err := os.WriteFile(cfg.Statement, material, 0600); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := ReconcileOrderEvidence(context.Background(), cfg); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("format %03d", maintenanceSchemaVersion)) {
+				t.Fatal("read-only reconciliation accepted incompatible schema", err)
 			}
 			ownerID, err := storageOwnerID(context.Background(), conn)
 			if err != nil {

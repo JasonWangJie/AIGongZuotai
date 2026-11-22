@@ -14,6 +14,24 @@ info:
 servers:
 - url: http://127.0.0.1:8080
 paths:
+  /api/locale:
+    get:
+      operationId: initialDisplayLanguage
+      security: []
+      description: 登录前按访客 IP 归属返回界面语言。未知、内网和其他地区默认英文。
+      responses:
+        '200':
+          description: 当前访问的默认语言
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [locale]
+                properties:
+                  locale: { type: string, enum: [zh-CN, zh-TW, en, ja] }
   /healthz:
     get:
       operationId: health
@@ -269,17 +287,23 @@ paths:
     - $ref: '#/components/parameters/ResourceID'
     get:
       operationId: subscribeRun
-      description: 'SSE id为Run.seq；message.delta={run_id,seq,delta}。终态run.completed/run.cancelled/run.failed/run.interrupted={run_id,seq,status}。超窗或重启后run.snapshot为完整Run。Last-Event-ID优先after；历史已落PG但事件环未持久，提供完整快照。seq单调允许恢复跳号，恢复保留段严格超过可能未持久的事件上界。
-        工作区SSE上限429 ADMISSION_STREAM_LIMIT，全局128上限503 STREAM_LIMIT，两者Retry-After:3。断开释放，非取消生成。
-
-        有审核摘要的运行不发未审message.delta；输出仅在全文允许及COMPLETED提交后以run.snapshot完整交付，终态可只读补GET。关闭配置不放行旧隔离内容。'
+      description: >-
+        SSE id 为 Run.seq。message.delta 携带 run_id、seq 和 delta，终态事件携带 run_id、seq 和 status。
+        从 PG 021 起，新 Run 从已提交的原游标继续，最多保留 256 条事件和 1 MiB 载荷。窗口过期或省略游标且缺少热回放起点时可返回完整 run.snapshot。
+        PG 022 的执行租约失效时，保留已提交的公开前缀，按原游标可以补读中断终态。原键重放不会重新调用模型。
+        Last-Event-ID 优先于 after，显式零从窗口起点尝试补读；游标超过当前序号返回 409 CURSOR_AHEAD。
+        旧 020 Run 用原快照和恢复序号间隔补读，内存演示重启后丢失。
+        启用输出审核的 Run 只在全文允许且 COMPLETED 提交后以快照公开正文。断线后用 GET 重连，生成请求保持原身份。
+        工作区 SSE 上限返回 429 ADMISSION_STREAM_LIMIT，全局 128 个订阅上限返回 503 STREAM_LIMIT，两者均返回三秒 Retry-After。
+        开启独立 PG 回放连接后，首个回放页等候超时或读连接暂时不可用返回 503 RUN_REPLAY_UNAVAILABLE。
+        已开始的 SSE 在回放失败时结束，客户端可用原游标重新 GET。
       parameters:
       - in: query
         name: after
         schema:
           type: integer
           minimum: 0
-          default: 0
+        description: 最近已消费的 Run 序号。有 Last-Event-ID 时使用后者。
       - in: header
         name: Last-Event-ID
         schema:
@@ -847,6 +871,1567 @@ paths:
                 type: string
                 pattern: ^req_[a-f0-9]{32}$
               description: 服务端生成。标准静态文件/Range错误可通过此头反馈。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/risk/eligibility:
+    get:
+      operationId: readCreditRiskEligibility
+      summary: 检查本人原报价触发的规则及可复核状态
+      parameters:
+      - $ref: '#/components/parameters/RiskProject'
+      - $ref: '#/components/parameters/RiskQuote'
+      responses:
+        '200':
+          description: 检查本人原报价触发的规则及可复核状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRiskEligibility'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/risk/appeals:
+    post:
+      operationId: fileCreditRiskAppeal
+      summary: 基于原报价提交单次例外申请
+      parameters:
+      - $ref: '#/components/parameters/RiskOriginalKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditRiskAppealInput'
+      responses:
+        '201':
+          description: 基于原报价提交单次例外申请
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRiskAppeal'
+        default:
+          $ref: '#/components/responses/Error'
+    get:
+      operationId: listOwnCreditRiskAppeals
+      summary: 列出当前项目内本人的申请摘要
+      parameters:
+      - $ref: '#/components/parameters/RiskProject'
+      - $ref: '#/components/parameters/RiskState'
+      - $ref: '#/components/parameters/GenerationAppealLimit'
+      - $ref: '#/components/parameters/RiskCursor'
+      responses:
+        '200':
+          description: 列出当前项目内本人的申请摘要
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRiskAppealPage'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/risk/appeals/receipt:
+    get:
+      operationId: readOriginalCreditRiskAppeal
+      summary: 按原操作键查询本人提交结果
+      parameters:
+      - $ref: '#/components/parameters/RiskProject'
+      - $ref: '#/components/parameters/RiskOriginalKey'
+      responses:
+        '200':
+          description: 按原操作键查询本人提交结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRiskAppeal'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/risk/appeals/{id}:
+    get:
+      operationId: readOwnCreditRiskAppeal
+      summary: 查看本人原申请及一次许可状态
+      parameters:
+      - $ref: '#/components/parameters/RiskProject'
+      - $ref: '#/components/parameters/RiskAppeal'
+      responses:
+        '200':
+          description: 查看本人原申请及一次许可状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRiskAppeal'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/risk-appeals:
+    get:
+      operationId: listCreditRiskReviewQueue
+      summary: 按独立授权列出工作区申请摘要
+      parameters:
+      - $ref: '#/components/parameters/GenerationWorkspace'
+      - $ref: '#/components/parameters/RiskState'
+      - $ref: '#/components/parameters/GenerationAppealLimit'
+      - $ref: '#/components/parameters/RiskCursor'
+      responses:
+        '200':
+          description: 按独立授权列出工作区申请摘要
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRiskAppealPage'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/risk-appeals/{id}:
+    get:
+      operationId: readCreditRiskReview
+      summary: 获授权的审议人读取原申请
+      parameters:
+      - $ref: '#/components/parameters/GenerationWorkspace'
+      - $ref: '#/components/parameters/RiskAppeal'
+      responses:
+        '200':
+          description: 获授权的审议人读取原申请
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRiskAppeal'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/risk-appeals/{id}/plans:
+    post:
+      operationId: previewCreditRiskReview
+      summary: 预演目标报价的一次批准或拒绝
+      parameters:
+      - $ref: '#/components/parameters/RiskAppeal'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditRiskPlanInput'
+      responses:
+        '201':
+          description: 预演目标报价的一次批准或拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRiskPlan'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/risk-appeals/{id}/execute:
+    post:
+      operationId: executeCreditRiskReview
+      summary: 重新核验密码与原计划并保存审批
+      parameters:
+      - $ref: '#/components/parameters/RiskAppeal'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditRiskExecuteInput'
+      responses:
+        '200':
+          description: 重新核验密码与原计划并保存审批
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRiskReceipt'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/risk-appeals/{id}/plans/{plan}/receipt:
+    get:
+      operationId: readCreditRiskDecisionReceipt
+      summary: 只读核对原计划的正式审批收据
+      parameters:
+      - $ref: '#/components/parameters/RiskAppeal'
+      - $ref: '#/components/parameters/RiskPlan'
+      - $ref: '#/components/parameters/GenerationWorkspace'
+      responses:
+        '200':
+          description: 只读核对原计划的正式审批收据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRiskReceipt'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/account/access:
+    get:
+      operationId: readOwnAccountControl
+      summary: 本人查看当前账户限制及本轮申诉资格
+      responses:
+        '200':
+          description: 本人查看当前账户限制及本轮申诉资格
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountGovernanceAccess'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/account/appeals:
+    get:
+      operationId: listOwnAccountAppeals
+      summary: 分页读取本人的账户申诉摘要
+      parameters:
+      - $ref: '#/components/parameters/GenerationAppealState'
+      - $ref: '#/components/parameters/GenerationAppealLimit'
+      - $ref: '#/components/parameters/AccountGovernanceCursor'
+      responses:
+        '200':
+          description: 分页读取本人的账户申诉摘要
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountGovernanceAppealPage'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: fileOwnAccountAppeal
+      summary: 就本人的原限制轮次提交申诉
+      parameters:
+      - $ref: '#/components/parameters/AccountGovernanceKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountGovernanceAppealInput'
+      responses:
+        '201':
+          description: 就本人的原限制轮次提交申诉
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountGovernanceAppeal'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/account/appeals/receipt:
+    get:
+      operationId: readOwnAccountAppealReceipt
+      summary: 用原申请键读取本人申诉
+      parameters:
+      - $ref: '#/components/parameters/AccountGovernanceKey'
+      responses:
+        '200':
+          description: 用原申请键读取本人申诉
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountGovernanceAppeal'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/account/appeals/{id}:
+    get:
+      operationId: readOwnAccountAppeal
+      summary: 本人读取申请原文及正式答复
+      parameters:
+      - $ref: '#/components/parameters/AccountGovernanceAppeal'
+      responses:
+        '200':
+          description: 本人读取申请原文及正式答复
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountGovernanceAppeal'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/account-targets:
+    get:
+      operationId: listGrantedAccountTargets
+      summary: 列出当前运营人员已获独立授权的目标账户
+      responses:
+        '200':
+          description: 列出当前运营人员已获独立授权的目标账户
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountGovernanceTargets'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/account-targets/{target}:
+    get:
+      operationId: readGrantedAccountControl
+      summary: 读取明确授权的目标账户限制状态
+      parameters:
+      - $ref: '#/components/parameters/AccountGovernanceTarget'
+      responses:
+        '200':
+          description: 读取明确授权的目标账户限制状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountGovernanceAccess'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/account-targets/{target}/appeals:
+    get:
+      operationId: listGrantedAccountAppeals
+      summary: 分页查看获授目标账户的申请摘要
+      parameters:
+      - $ref: '#/components/parameters/AccountGovernanceTarget'
+      - $ref: '#/components/parameters/GenerationAppealState'
+      - $ref: '#/components/parameters/GenerationAppealLimit'
+      - $ref: '#/components/parameters/AccountGovernanceCursor'
+      responses:
+        '200':
+          description: 分页查看获授目标账户的申请摘要
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountGovernanceAppealPage'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/account-targets/{target}/appeals/{id}:
+    get:
+      operationId: readGrantedAccountAppeal
+      summary: 读取目标账户指定申诉的原文与答复
+      parameters:
+      - $ref: '#/components/parameters/AccountGovernanceTarget'
+      - $ref: '#/components/parameters/AccountGovernanceAppeal'
+      responses:
+        '200':
+          description: 读取目标账户指定申诉的原文与答复
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountGovernanceAppeal'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/account-targets/{target}/plans:
+    post:
+      operationId: previewAccountGovernance
+      summary: 预演指定账户的限制、维持答复或解除
+      parameters:
+      - $ref: '#/components/parameters/AccountGovernanceTarget'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountGovernancePlanInput'
+      responses:
+        '201':
+          description: 预演指定账户的限制、维持答复或解除
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountGovernancePlan'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/account-targets/{target}/execute:
+    post:
+      operationId: executeAccountGovernance
+      summary: 核对原摘要、当前状态及操作人密码并执行
+      parameters:
+      - $ref: '#/components/parameters/AccountGovernanceTarget'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountGovernanceExecuteInput'
+      responses:
+        '200':
+          description: 核对原摘要、当前状态及操作人密码并执行
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountGovernanceReceipt'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/account-targets/{target}/plans/{plan}/receipt:
+    get:
+      operationId: readAccountGovernanceReceipt
+      summary: 查询指定账户与原计划的正式收据
+      parameters:
+      - $ref: '#/components/parameters/AccountGovernanceTarget'
+      - $ref: '#/components/parameters/AccountGovernancePlan'
+      responses:
+        '200':
+          description: 查询指定账户与原计划的正式收据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountGovernanceReceipt'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/content-appeals:
+    get:
+      operationId: listMyContentAppeals
+      description: 按当前账户和项目分页，只返回去敏摘要。
+      parameters:
+      - name: project_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - OPEN
+          - RESOLVED
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        '200':
+          description: 按当前账户和项目分页，只返回去敏摘要。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAppealPage'
+        default:
+          description: 请求无效、当前身份无权读取、版本冲突或提交结果需要核对。
+    post:
+      operationId: fileContentAppeal
+      description: 本人针对已执行输出的原审核版本提出申诉。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_id:
+                  type: string
+                resource_type:
+                  type: string
+                  enum:
+                  - run
+                  - task
+                resource_id:
+                  type: string
+                moderation_version:
+                  type: integer
+                  minimum: 2
+                reason_code:
+                  type: string
+                statement:
+                  type: string
+              required:
+              - project_id
+              - resource_type
+              - resource_id
+              - moderation_version
+              - reason_code
+              additionalProperties: false
+      responses:
+        '201':
+          description: 本人针对已执行输出的原审核版本提出申诉。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAppeal'
+        default:
+          description: 请求无效、当前身份无权读取、版本冲突或提交结果需要核对。
+  /api/v1/content-appeals/{id}:
+    get:
+      operationId: readMyContentAppeal
+      description: 读取自己的申请及真实财务处理进度。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project_id
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 读取自己的申请及真实财务处理进度。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAppeal'
+        default:
+          description: 请求无效、当前身份无权读取、版本冲突或提交结果需要核对。
+  /api/v1/content-appeals/receipt:
+    get:
+      operationId: readMyContentAppealReceipt
+      description: 通过原键读取本人已提交的申请。
+      parameters:
+      - name: project_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 通过原键读取本人已提交的申请。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAppeal'
+        default:
+          description: 请求无效、当前身份无权读取、版本冲突或提交结果需要核对。
+  /api/v1/operations/content-appeals:
+    get:
+      operationId: listModerationAppeals
+      description: 授权 moderator 分页查阅工作区申诉摘要。
+      parameters:
+      - name: workspace_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: project_id
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - OPEN
+          - RESOLVED
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        '200':
+          description: 授权 moderator 分页查阅工作区申诉摘要。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAppealPage'
+        default:
+          description: 请求无效、当前身份无权读取、版本冲突或提交结果需要核对。
+  /api/v1/operations/content-appeals/{id}:
+    get:
+      operationId: inspectModerationAppeal
+      description: 授权 moderator 获取指定申请的证据摘要和申请说明。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: workspace_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: project_id
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 授权 moderator 获取指定申请的证据摘要和申请说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAppeal'
+        default:
+          description: 请求无效、当前身份无权读取、版本冲突或提交结果需要核对。
+  /api/v1/operations/content-appeals/{id}/plans:
+    post:
+      operationId: previewModerationAppeal
+      description: 预演独立复核结论并绑定证据、当前授权与版本。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workspace_id:
+                  type: string
+                expected_version:
+                  type: integer
+                  minimum: 1
+                action:
+                  type: string
+                  enum:
+                  - uphold
+                  - record_opinion
+                  - refer_finance
+                evidence_ref:
+                  type: string
+                public_reply:
+                  type: string
+              required:
+              - workspace_id
+              - expected_version
+              - action
+              - evidence_ref
+              - public_reply
+              additionalProperties: false
+      responses:
+        '201':
+          description: 预演独立复核结论并绑定证据、当前授权与版本。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAppealPlan'
+        default:
+          description: 请求无效、当前身份无权读取、版本冲突或提交结果需要核对。
+  /api/v1/operations/content-appeals/{id}/execute:
+    post:
+      operationId: executeModerationAppeal
+      description: 核验当前密码和仍有效的计划后记录独立复核。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workspace_id:
+                  type: string
+                plan_id:
+                  type: string
+                plan_digest:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                  writeOnly: true
+              required:
+              - workspace_id
+              - plan_id
+              - plan_digest
+              - password
+              additionalProperties: false
+      responses:
+        '200':
+          description: 核验当前密码和仍有效的计划后记录独立复核。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAppealReceipt'
+        default:
+          description: 请求无效、当前身份无权读取、版本冲突或提交结果需要核对。
+  /api/v1/operations/content-appeals/{id}/plans/{plan}/receipt:
+    get:
+      operationId: readModerationAppealReceipt
+      description: 只读原审议计划的已提交收据。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: plan
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: workspace_id
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 只读原审议计划的已提交收据。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAppealReceipt'
+        default:
+          description: 请求无效、当前身份无权读取、版本冲突或提交结果需要核对。
+  /api/v1/operations/content-appeals/finance:
+    get:
+      operationId: listReferredFinancialAppeals
+      description: finance 独立读取转交队列，省略申请正文。
+      parameters:
+      - name: workspace_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        '200':
+          description: finance 独立读取转交队列，省略申请正文。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAppealFinancePage'
+        default:
+          description: 请求无效、当前身份无权读取、版本冲突或提交结果需要核对。
+  /api/v1/operations/content-appeals/{id}/finance-case:
+    post:
+      operationId: linkFinancialAppealCase
+      description: 由 finance 建立或关联同资源工单，保持原冻结待核实。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workspace_id:
+                  type: string
+                expected_version:
+                  type: integer
+                  minimum: 1
+              required:
+              - workspace_id
+              - expected_version
+              additionalProperties: false
+      responses:
+        '201':
+          description: 由 finance 建立或关联同资源工单，保持原冻结待核实。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAppealFinanceLink'
+        default:
+          description: 请求无效、当前身份无权读取、版本冲突或提交结果需要核对。
+    get:
+      operationId: readFinancialAppealCase
+      description: 查询当前财务工单，携带原键时核对本人原操作。
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: workspace_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 查询当前财务工单，携带原键时核对本人原操作。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAppealFinanceLink'
+        default:
+          description: 请求无效、当前身份无权读取、版本冲突或提交结果需要核对。
+  /api/v1/operations/cases/{case}/content-appeal:
+    get:
+      operationId: readAppealForFinancialCase
+      description: 按现有工单查阅相应的内容申诉财务联系。
+      parameters:
+      - name: case
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: workspace_id
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 按现有工单查阅相应的内容申诉财务联系。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAppealFinanceLink'
+        default:
+          description: 请求无效、当前身份无权读取、版本冲突或提交结果需要核对。
+  /api/v1/projects/{project}/canvas:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: getProjectCanvas
+      description: 读取当前项目的自由画布和当下允许查看的来源投影。
+      responses:
+        '200':
+          description: 读取当前项目的自由画布和当下允许查看的来源投影。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanvasVersion'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      operationId: saveProjectCanvas
+      description: 使用当前修订、原键和完整图保存。最大请求 2 MiB，每图最多绑定 16 个私有图片及 16 个运行。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CanvasSave'
+      responses:
+        '200':
+          description: 使用当前修订、原键和完整图保存。最大请求 2 MiB，每图最多绑定 16 个私有图片及 16 个运行。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanvasVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/canvas/receipt:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: getProjectCanvasReceipt
+      description: 用作者原键核对已提交的保存，按当前授权返回来源。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 用作者原键核对已提交的保存，按当前授权返回来源。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanvasVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/canvas/revisions:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: listProjectCanvasRevisions
+      description: 降序读取不可变修订摘要。
+      parameters:
+      - name: before_revision
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 64
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      responses:
+        '200':
+          description: 降序读取不可变修订摘要。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanvasHistory'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/canvas/revisions/{revision}:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: revision
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 64
+    get:
+      operationId: getProjectCanvasRevision
+      description: 读取授权项目的指定修订。
+      responses:
+        '200':
+          description: 读取授权项目的指定修订。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanvasVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/canvas/revisions/{revision}/sources:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: revision
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 64
+    get:
+      operationId: getProjectCanvasSources
+      description: 按节点读取当前授权的预览可用性、内容版本及运行状态。
+      responses:
+        '200':
+          description: 按节点读取当前授权的预览可用性、内容版本及运行状态。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanvasSources'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/canvas/revisions/{revision}/nodes/{node}/thumbnail:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: revision
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 64
+    - name: node
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[A-Za-z0-9_-]{1,48}$
+    get:
+      operationId: getProjectCanvasThumbnail
+      description: 重新核验原内容版本及当前权限，读取该节点的私有缩略图。
+      responses:
+        '200':
+          description: 重新核验原内容版本及当前权限，读取该节点的私有缩略图。
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-definitions:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: listWorkflowDefinitions
+      description: 当前项目的最新定义版本。工作流需要 PostgreSQL 和登录会话。
+      responses:
+        '200':
+          description: 当前项目的最新定义版本。工作流需要 PostgreSQL 和登录会话。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WorkflowDefinition'
+                required:
+                - items
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: saveWorkflowDefinition
+      description: 保存不可变版本。新建 expected_version 为 0；编辑须提供 definition_id 和当前版本。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                definition_id:
+                  type: string
+                expected_version:
+                  type: integer
+                  minimum: 0
+                graph:
+                  $ref: '#/components/schemas/WorkflowGraph'
+              required:
+              - expected_version
+              - graph
+              additionalProperties: false
+      responses:
+        '201':
+          description: 保存不可变版本。新建 expected_version 为 0；编辑须提供 definition_id 和当前版本。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDefinition'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-definitions/receipt:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: getWorkflowDefinitionReceipt
+      description: 按原保存键只读查询不可变版本。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 按原保存键只读查询不可变版本。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDefinition'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-definitions/{definition}/versions/{version}:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: definition
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: version
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    get:
+      operationId: getWorkflowDefinitionVersion
+      description: 读取同一项目内的固定版本。
+      responses:
+        '200':
+          description: 读取同一项目内的固定版本。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDefinition'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-runs:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: listProjectWorkflowRuns
+      description: 读取项目内的运行记录。
+      responses:
+        '200':
+          description: 读取项目内的运行记录。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WorkflowExecution'
+                required:
+                - items
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: startProjectWorkflow
+      description: 冻结定义版本、用户输入和模型能力；生成节点由用户逐个显式授权。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                definition_id:
+                  type: string
+                definition_version:
+                  type: integer
+                  minimum: 1
+                input:
+                  type: string
+              required:
+              - definition_id
+              - definition_version
+              - input
+              additionalProperties: false
+      responses:
+        '201':
+          description: 冻结定义版本、用户输入和模型能力；生成节点由用户逐个显式授权。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowExecution'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-runs/receipt:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: getWorkflowStartReceipt
+      description: 用原启动键读取已受理的流程。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 用原启动键读取已受理的流程。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowExecution'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-runs/{workflow}:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: workflow
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: getProjectWorkflow
+      description: 读取原子资源、状态和可见候选，刷新不会生成。
+      responses:
+        '200':
+          description: 读取原子资源、状态和可见候选，刷新不会生成。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDetail'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-runs/{workflow}/rerun/preview:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: workflow
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: previewWorkflowRerun
+      description: 列出所选起点受影响与可继承的节点。
+      parameters:
+      - name: from_node
+        in: query
+        required: true
+        schema:
+          type: string
+          maxLength: 40
+      responses:
+        '200':
+          description: 列出所选起点受影响与可继承的节点。
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  source_workflow_id:
+                    type: string
+                  source_version:
+                    type: integer
+                    minimum: 1
+                  from_node:
+                    type: string
+                    maxLength: 40
+                  affected_nodes:
+                    type: array
+                    items:
+                      type: string
+                      maxLength: 40
+                  inherited_nodes:
+                    type: array
+                    items:
+                      type: string
+                      maxLength: 40
+                required:
+                - source_workflow_id
+                - source_version
+                - from_node
+                - affected_nodes
+                - inherited_nodes
+                additionalProperties: false
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-runs/{workflow}/rerun:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: workflow
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      operationId: rerunProjectWorkflow
+      description: 从指定节点创建独立的新尝试。需要生成的每一步由用户另行授权。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expected_version:
+                  type: integer
+                  minimum: 1
+                from_node:
+                  type: string
+                  maxLength: 40
+                prompt:
+                  type: string
+                  description: 可选，起点生成指令最多 4096 UTF-8 字节。
+                input:
+                  type: string
+                  description: 仅文本起点，最多 16000 UTF-8 字节。
+              required:
+              - expected_version
+              - from_node
+              additionalProperties: false
+      responses:
+        '201':
+          description: 从指定节点创建独立的新尝试。需要生成的每一步由用户另行授权。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowExecution'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-runs/{workflow}/rerun/receipt:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: workflow
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: readWorkflowRerunReceipt
+      description: 按原键只读该源运行创建的新尝试。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 按原键只读该源运行创建的新尝试。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowExecution'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-runs/{workflow}/cancel:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: workflow
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      operationId: cancelProjectWorkflow
+      description: 停止该运行的后续步骤，返回原子任务的实际状态。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expected_version:
+                  type: integer
+                  minimum: 1
+              required:
+              - expected_version
+              additionalProperties: false
+      responses:
+        '200':
+          description: 停止该运行的后续步骤，返回原子任务的实际状态。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDetail'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-runs/{workflow}/cancel/receipt:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: workflow
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: readWorkflowCancelReceipt
+      description: 按原键只读取消收据和原工作流详情。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 按原键只读取消收据和原工作流详情。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDetail'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-runs/{workflow}/nodes/{node}/input:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: workflow
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: node
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: getWorkflowStepInput
+      description: 返回该节点实际冻结的完整子请求，供展示及按原权益接口报价。
+      responses:
+        '200':
+          description: 返回该节点实际冻结的完整子请求，供展示及按原权益接口报价。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowStepInput'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-runs/{workflow}/nodes/{node}/execute:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: workflow
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: node
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      operationId: executeWorkflowStep
+      description: 确认文本、图片或已选首帧的视频节点。启用权益时须提交该步骤完整输入的有效报价。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expected_version:
+                  type: integer
+                  minimum: 1
+                quote_id:
+                  type: string
+              required:
+              - expected_version
+              additionalProperties: false
+      responses:
+        '200':
+          description: 确认文本、图片或已选首帧的视频节点。启用权益时须提交该步骤完整输入的有效报价。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDetail'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-runs/{workflow}/nodes/{node}/confirm:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: workflow
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: node
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      operationId: confirmWorkflowSelection
+      description: 按当前流程及资产修订确认原候选图片。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expected_version:
+                  type: integer
+                  minimum: 1
+                asset_id:
+                  type: string
+                revision:
+                  type: integer
+                  minimum: 1
+              required:
+              - expected_version
+              - asset_id
+              - revision
+              additionalProperties: false
+      responses:
+        '200':
+          description: 按当前流程及资产修订确认原候选图片。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDetail'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/workflow-runs/{workflow}/nodes/{node}/receipt:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: workflow
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: node
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: getWorkflowStepReceipt
+      description: 读取原操作键的子资源或选图结果。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 读取原操作键的子资源或选图结果。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDetail'
         default:
           $ref: '#/components/responses/Error'
   /api/v1/projects/{project}/draft:
@@ -3275,8 +4860,2109 @@ paths:
           type: string
           pattern: ^gplan_[a-f0-9]{32}$
       - $ref: '#/components/parameters/GenerationWorkspace'
+  /api/v1/projects/{project}/presentations:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: listPresentations
+      description: 当前项目文稿的最新修订摘要。
+      responses:
+        '200':
+          description: 返回指定项目文稿信息。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresentationPage'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+    post:
+      operationId: savePresentation
+      description: 按原键保存。新建的 expected_version 为 0；编辑需文稿 ID 与当前版本。最多 4 个图片页。
+      responses:
+        '201':
+          description: 返回指定项目文稿信息。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresentationVersion'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresentationSaveRequest'
+  /api/v1/projects/{project}/presentations/receipt:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      operationId: readPresentationReceipt
+      description: 按保存时的原键读取原修订。
+      responses:
+        '200':
+          description: 返回指定项目文稿信息。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresentationVersion'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /api/v1/projects/{project}/presentations/{presentation}/versions:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: presentation
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^pres_[0-9a-f]{32}$
+    get:
+      operationId: listPresentationHistory
+      description: 按版本倒序分页回读文稿历史。
+      responses:
+        '200':
+          description: 返回指定项目文稿信息。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresentationHistoryPage'
+        default:
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      - name: before_version
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 128
+  /api/v1/projects/{project}/presentations/{presentation}/versions/{version}:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: presentation
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^pres_[0-9a-f]{32}$
+    - name: version
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 128
+    get:
+      operationId: readPresentationVersion
+      description: 固定版本与当前图片可读状态。
+      responses:
+        '200':
+          description: 返回指定项目文稿信息。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresentationVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/presentations/{presentation}/versions/{version}/export:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: presentation
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^pres_[0-9a-f]{32}$
+    - name: version
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 128
+    get:
+      operationId: readPresentationExport
+      description: 导出前验证整稿的当前图片权限和原内容身份。
+      responses:
+        '200':
+          description: 返回指定项目文稿信息。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresentationExportManifest'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/presentations/{presentation}/versions/{version}/slides/{slide}/image:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: presentation
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^pres_[0-9a-f]{32}$
+    - name: version
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 128
+    - name: slide
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[A-Za-z0-9_-]{1,48}$
+    get:
+      operationId: readPresentationSlideImage
+      description: 按冻结版本和稳定页 ID 读取原件。最终校验账户、项目、来源、SHA-256、类型及像素。每页至多 8 MiB、1600 万像素。
+      responses:
+        '200':
+          description: 已核验的同源私图。
+          headers:
+            X-Image-Width:
+              schema:
+                type: integer
+                minimum: 1
+            X-Image-Height:
+              schema:
+                type: integer
+                minimum: 1
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/video-timelines:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    get:
+      operationId: listVideoTimelines
+      description: 仅列当前工作区、项目最新的剪辑稿，按创建时间及 ID 降序。
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 1024
+        description: 使用上一页返回的游标。
+      responses:
+        '200':
+          description: 最新修订摘要。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoTimelinePage'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: saveVideoTimeline
+      description: 会话、项目权限、原键与请求摘要复核。新建省略 timeline_id 且 expected_version=0，后续保存传当前版本。每稿 128 版，每项目 64 稿，全站 4096 稿。请求最多 64 KiB。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: 保存取得的固定版本。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoTimelineVersion'
+          headers:
+            Idempotency-Replayed:
+              description: 原键与原请求摘要完全相同时为 true。
+              schema:
+                type: boolean
+        '409':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+        '415':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoTimelineSaveRequest'
+  /api/v1/projects/{project}/video-timelines/receipt:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    get:
+      operationId: readVideoTimelineReceipt
+      description: 按原保存者、项目和 Idempotency-Key 查询原修订。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 原键所属版本及当前素材可用性。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoTimelineVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/video-timelines/capabilities:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    get:
+      operationId: readVideoTimelineCapabilities
+      description: 持久化账户模式返回本项目剪辑与本机导出能力。
+      responses:
+        '200':
+          description: 本次请求时的能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoTimelineCapabilities'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/video-timelines/{timeline}/versions:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    - name: timeline
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^vtl_[a-f0-9]{32}$
+    get:
+      operationId: listVideoTimelineVersions
+      description: 本稿历史由新到旧，使用上一页返回的版本继续。
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: before_version
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 128
+      responses:
+        '200':
+          description: 版本摘要。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoTimelineHistoryPage'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/video-timelines/{timeline}/versions/{version}:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    - name: timeline
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^vtl_[a-f0-9]{32}$
+    - name: version
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 128
+    get:
+      operationId: readVideoTimelineVersion
+      description: 读取指定不可变剪辑顺序、裁点与登记的素材身份。每次重新检查 asset_available。
+      responses:
+        '200':
+          description: 固定版本与素材当前可见性。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoTimelineVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/video-timelines/{timeline}/versions/{version}/clips/{clip}/source:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    - name: timeline
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^vtl_[a-f0-9]{32}$
+    - name: version
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 128
+    - name: clip
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[A-Za-z0-9_-]{1,48}$
+    get:
+      operationId: readVideoTimelineClipSource
+      description: 只读取所选已保存镜头的完整原片。服务端核对私有登记、字节及当前权限，原片最大 32 MiB。
+      parameters:
+      - name: Range
+        in: header
+        required: false
+        schema:
+          type: string
+        description: 例如 bytes=0-1023。
+      responses:
+        '200':
+          description: 完整私有 MP4。
+          headers:
+            Accept-Ranges:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        '206':
+          description: 授权原片的字节范围。
+          headers:
+            Accept-Ranges:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+            Content-Range:
+              schema:
+                type: string
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        '416':
+          description: 请求的范围无法满足。
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/video-timelines/{timeline}/versions/{version}/export:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    - name: timeline
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^vtl_[a-f0-9]{32}$
+    - name: version
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 128
+    post:
+      operationId: exportVideoTimeline
+      description: 用户显式提交空正文，一次同步合成固定版本。请求断开后应先 GET 原版本；再次合成需要新的显式操作。维持原账务、审核和生成任务。
+      responses:
+        '200':
+          description: 核验后的 MP4 附件。响应头给出全部字节的 SHA-256 和实际成片时长。
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+            Content-Length:
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 33554432
+            X-Content-SHA256:
+              schema:
+                type: string
+                pattern: ^[a-f0-9]{64}$
+            X-Video-Duration-Ms:
+              schema:
+                type: integer
+                minimum: 1
+            Cache-Control:
+              schema:
+                type: string
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '501':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/comic:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    get:
+      operationId: readCurrentComic
+      description: 读取本项目当前分镜本，新项目返回 404。
+      responses:
+        '200':
+          description: 读取本项目当前分镜本，新项目返回 404。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComicVersion'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: saveComicVersion
+      description: 在预期版本上保存原故事、角色、场景、镜头及当前批准的私图。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComicSaveInput'
+      responses:
+        '201':
+          description: 在预期版本上保存原故事、角色、场景、镜头及当前批准的私图。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComicVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/comic/receipt:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    get:
+      operationId: readComicReceipt
+      description: 按原作者、项目、操作和原键只读核对已提交的版本。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: operation
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - save
+          - confirm
+      responses:
+        '200':
+          description: 按原作者、项目、操作和原键只读核对已提交的版本。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComicReceipt'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/comic/versions:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    get:
+      operationId: listComicVersions
+      description: 按版本倒序分页读取。
+      parameters:
+      - name: before_version
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 128
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      responses:
+        '200':
+          description: 按版本倒序分页读取。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComicHistory'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/comic/versions/{version}:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    - name: version
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 128
+    get:
+      operationId: readComicVersion
+      description: 读取固定版的角色、镜头、作者确认状态与当前图片可用性。
+      responses:
+        '200':
+          description: 读取固定版的角色、镜头、作者确认状态与当前图片可用性。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComicVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/comic/versions/{version}/confirm:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    - name: version
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 128
+    post:
+      operationId: confirmComicVersion
+      description: 原作者显式确认已保存的当前版。请求正文为空。原操作键可以查回旧确认。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 原作者显式确认已保存的当前版。请求正文为空。原操作键可以查回旧确认。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComicVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/comic/versions/{version}/export:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    - name: version
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 128
+    get:
+      operationId: readConfirmedComicExport
+      description: 在当前项目权限下读取指定已确认版本的语义页和私有图片路径。
+      responses:
+        '200':
+          description: 在当前项目权限下读取指定已确认版本的语义页和私有图片路径。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComicExport'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/comic/versions/{version}/panels/{panel}/image:
+    parameters:
+    - name: project
+      in: path
+      required: true
+      schema:
+        type: string
+    - $ref: '#/components/parameters/ProjectHeader'
+    - name: version
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 128
+    - name: panel
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[A-Za-z0-9_-]{1,48}$
+    get:
+      operationId: readConfirmedComicImage
+      description: 复核冻结身份、真实字节及当前访问权限后传输。
+      responses:
+        '200':
+          description: 原始图片
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '206':
+          description: 请求的字节范围
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/collaboration/invitations:
+    parameters: []
+    get:
+      operationId: listPersonalProjectInvitations
+      description: 读取本人未过期的站内邀请。
+      responses:
+        '200':
+          description: 读取本人未过期的站内邀请。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaborationPage'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/collaboration/shared-projects:
+    parameters: []
+    get:
+      operationId: listAcceptedSharedProjects
+      description: 只列本人已接受且仍有效的项目。
+      responses:
+        '200':
+          description: 只列本人已接受且仍有效的项目。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaborationPage'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/collaboration/members:
+    parameters:
+    - name: project
+      in: path
+      schema:
+        type: string
+      required: true
+    get:
+      operationId: listOwnedProjectMembers
+      description: 仅项目所有者可列成员，按指定目标用户可核对旧关系的版本。
+      parameters:
+      - name: target_user_id
+        in: query
+        schema:
+          type: string
+        required: false
+      responses:
+        '200':
+          description: 仅项目所有者可列成员，按指定目标用户可核对旧关系的版本。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaborationPage'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/collaboration/invitations:
+    parameters:
+    - name: project
+      in: path
+      schema:
+        type: string
+      required: true
+    post:
+      operationId: inviteAccountToProject
+      description: 按现有用户 ID 邀请，绑定角色及预期关系版本。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollaborationInviteInput'
+      responses:
+        '201':
+          description: 按现有用户 ID 邀请，绑定角色及预期关系版本。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaborationReceipt'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/collaboration/invitations/{invitation}/accept:
+    parameters:
+    - name: invitation
+      in: path
+      schema:
+        type: string
+      required: true
+    post:
+      operationId: acceptPersonalProjectInvitation
+      description: 本人显式接受未过期的该轮邀请。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollaborationAcceptInput'
+      responses:
+        '200':
+          description: 本人显式接受未过期的该轮邀请。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaborationReceipt'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/collaboration/members/{user}/withdraw:
+    parameters:
+    - name: project
+      in: path
+      schema:
+        type: string
+      required: true
+    - name: user
+      in: path
+      schema:
+        type: string
+      required: true
+    post:
+      operationId: withdrawProjectMembership
+      description: 项目所有者撤回该轮待接受的邀请。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollaborationChangeInput'
+      responses:
+        '200':
+          description: 项目所有者撤回该轮待接受的邀请。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaborationReceipt'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/collaboration/members/{user}/downgrade:
+    parameters:
+    - name: project
+      in: path
+      schema:
+        type: string
+      required: true
+    - name: user
+      in: path
+      schema:
+        type: string
+      required: true
+    post:
+      operationId: downgradeProjectMembership
+      description: 项目所有者将已接受编辑角色降为只读。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollaborationChangeInput'
+      responses:
+        '200':
+          description: 项目所有者将已接受编辑角色降为只读。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaborationReceipt'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/collaboration/members/{user}/revoke:
+    parameters:
+    - name: project
+      in: path
+      schema:
+        type: string
+      required: true
+    - name: user
+      in: path
+      schema:
+        type: string
+      required: true
+    post:
+      operationId: revokeProjectMembership
+      description: 项目所有者撤销该轮成员授权。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollaborationChangeInput'
+      responses:
+        '200':
+          description: 项目所有者撤销该轮成员授权。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaborationReceipt'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/collaboration/receipt:
+    parameters: []
+    get:
+      operationId: readOwnCollaborationReceipt
+      description: 按本人原操作与原键读取当时确认的授权操作；返回历史收据不会恢复权限。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: operation
+        in: query
+        schema:
+          type: string
+          enum:
+          - invite
+          - accept
+          - withdraw
+          - downgrade
+          - revoke
+        required: true
+      responses:
+        '200':
+          description: 按本人原操作与原键读取当时确认的授权操作；返回历史收据不会恢复权限。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaborationReceipt'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/collaboration/projects/{project}/draft:
+    parameters:
+    - name: project
+      in: path
+      schema:
+        type: string
+      required: true
+    get:
+      operationId: readSharedProjectDraft
+      description: 按个体会话与当前项目关系读取共享节点草稿。禁止传入宿主项目选择头。
+      responses:
+        '200':
+          description: 按个体会话与当前项目关系读取共享节点草稿。禁止传入宿主项目选择头。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDraft'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      operationId: saveSharedProjectDraft
+      description: 具有编辑权限的当前成员按预期修订和本人原键写同一份项目草稿。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftSaveInput'
+      responses:
+        '200':
+          description: 具有编辑权限的当前成员按预期修订和本人原键写同一份项目草稿。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDraft'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/collaboration/projects/{project}/draft/revisions:
+    parameters:
+    - name: project
+      in: path
+      schema:
+        type: string
+      required: true
+    get:
+      operationId: listSharedDraftRevisions
+      description: 当前有项目读权才可读取草稿修订摘要。
+      parameters:
+      - name: before_revision
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+        required: false
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+        required: false
+      responses:
+        '200':
+          description: 当前有项目读权才可读取草稿修订摘要。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftRevisionPage'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/collaboration/projects/{project}/draft/revisions/{revision}:
+    parameters:
+    - name: project
+      in: path
+      schema:
+        type: string
+      required: true
+    - name: revision
+      in: path
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+      required: true
+    get:
+      operationId: readSharedDraftRevision
+      description: 按固定修订读取该项目的节点，不返回宿主其他数据。
+      responses:
+        '200':
+          description: 按固定修订读取该项目的节点，不返回宿主其他数据。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDraft'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/collaboration/projects/{project}/draft/receipt:
+    parameters:
+    - name: project
+      in: path
+      schema:
+        type: string
+      required: true
+    get:
+      operationId: readOwnSharedDraftReceipt
+      description: 按原操作者与原键查询保存结果；每次检查当前项目读权。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 按原操作者与原键查询保存结果；每次检查当前项目读权。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDraft'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/order-intents/catalog:
+    parameters: []
+    get:
+      operationId: getOrderIntentCatalog
+      description: 当前可信目录，可否新建与可否查看管理本人历史分别返回。
+      responses:
+        '200':
+          description: 当前可信目录，可否新建与可否查看管理本人历史分别返回。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderIntentCatalog'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/order-intents:
+    parameters: []
+    get:
+      operationId: listOwnOrderIntents
+      description: 按当前用户和工作区倒序分页。
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+        required: false
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+        required: false
+      responses:
+        '200':
+          description: 按当前用户和工作区倒序分页。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderIntentPage'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createOrderIntent
+      description: 根据服务端商品、目录摘要和商品摘要冻结原条款，只创建意向。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderIntentCreateInput'
+      responses:
+        '201':
+          description: 根据服务端商品、目录摘要和商品摘要冻结原条款，只创建意向。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderIntent'
+        default:
+          $ref: '#/components/responses/Error'
+        '200':
+          description: 原键返回首次创建时的快照。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderIntent'
+  /api/v1/order-intents/receipt:
+    parameters: []
+    get:
+      operationId: getOwnOrderIntentReceipt
+      description: 从原操作与原键核对当时状态，不执行该操作。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: operation
+        in: query
+        schema:
+          type: string
+          enum:
+          - create
+          - cancel
+        required: true
+      responses:
+        '200':
+          description: 从原操作与原键核对当时状态，不执行该操作。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderIntent'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/order-intents/{order}:
+    parameters:
+    - name: order
+      in: path
+      schema:
+        type: string
+      required: true
+    get:
+      operationId: getOwnOrderIntent
+      description: 读取本人此笔意向的当前状态和当时商品价格。
+      responses:
+        '200':
+          description: 读取本人此笔意向的当前状态和当时商品价格。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderIntent'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/order-intents/{order}/payment-status:
+    parameters:
+    - name: order
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^ord_[0-9a-f]{32}$'
+    get:
+      operationId: getOwnOrderPaymentStatus
+      description: 以当前普通账户会话及其工作区核对原订单、已认证资金记录和实际 CREDIT 处理。商品目录关闭后仍可读。查询无需原操作键。
+      responses:
+        '200':
+          description: 原订单存在。未绑定来源或尚无收款证据时也返回对应状态。
+          headers:
+            Cache-Control:
+              schema: {type: string, const: 'no-store'}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPaymentProjection'
+        '401':
+          $ref: '#/components/responses/Error'
+          description: 当前普通账户会话缺失或已失效。
+        '403':
+          $ref: '#/components/responses/Error'
+          description: 账户受限或同源检查拒绝请求。
+        '404':
+          $ref: '#/components/responses/Error'
+          description: ORDER_INTENT_NOT_FOUND，当前用户与工作区下找不到此订单。
+        '501':
+          $ref: '#/components/responses/Error'
+          description: ORDER_INTENT_STORAGE_REQUIRED，需要 PostgreSQL 和真实账户鉴权。
+        '503':
+          $ref: '#/components/responses/Error'
+          description: 服务停止接单或数据库不可用。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/order-intents/{order}/cancel:
+    parameters:
+    - name: order
+      in: path
+      schema:
+        type: string
+      required: true
+    post:
+      operationId: cancelOwnOrderIntent
+      description: 对仍待处理的本人意向做版本核对并取消。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderIntentCancelInput'
+      responses:
+        '200':
+          description: 对仍待处理的本人意向做版本核对并取消。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderIntent'
+        '409':
+          $ref: '#/components/responses/Error'
+          description: 新取消遇到已认证资金记录时返回 ORDER_PAYMENT_RECORDED；原键重放仍按原收据处理，另有原键冲突或版本冲突。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/auth/data-export:
+    post:
+      operationId: downloadOwnAccountData
+      security:
+      - SessionCookie: []
+      description: 本人三类资料逐页下载，每页核验当前密码与有效会话。支持受限账户。附件至多 512 KiB。下一页使用同分区原游标，首页确定创建截止时间。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountExportInput'
+      responses:
+        '200':
+          description: 本人 UTF-8 JSON 附件
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: private, no-store
+            Content-Disposition:
+              required: true
+              schema:
+                type: string
+                example: attachment; filename="account-profile.json"
+            Content-Length:
+              required: true
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 524288
+            X-Content-SHA256:
+              required: true
+              schema:
+                type: string
+                pattern: ^[0-9a-f]{64}$
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountExportDocument'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/support/tickets:
+    get:
+      operationId: listOwnSupportTickets
+      description: 按当前会话工作区和本人列出工单。每页固定 20 条，按创建时间及 ID 倒序。查询仅接受 cursor，列表仅含摘要。
+      parameters:
+        - $ref: '#/components/parameters/SupportTicketCursor'
+      responses:
+        '200':
+          description: 有界工单摘要及后续游标。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketPage'
+        '400':
+          $ref: '#/components/responses/Error'
+          description: 无效的查询字段、游标、操作或原键，或 GET 请求带正文。
+        '401':
+          $ref: '#/components/responses/Error'
+          description: 缺少有效登录会话。
+        '403':
+          $ref: '#/components/responses/Error'
+          description: 账户受限或请求被同源保护拒绝。
+        '501':
+          $ref: '#/components/responses/Error'
+          description: 环境不具备持久账户模式。
+        '503':
+          $ref: '#/components/responses/Error'
+          description: 数据库不可用或已提交的消息明细不完整。
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createOwnSupportTicket
+      description: 创建本人站内工单。当前工作区每人最多 8 笔开放工单；原键重放先于容量检查。
+      parameters:
+        - $ref: '#/components/parameters/SupportTicketOriginalKey'
+      requestBody:
+        required: true
+        description: 最大 32 KiB 的单个 UTF-8 JSON 对象，拒绝重复、未知、大小写别名或 null 字段。
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportTicketCreateInput'
+      responses:
+        '201':
+          description: 已创建本人工单。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketDetail'
+        '200':
+          description: 同键同请求的原创建结果。
+          headers:
+            Idempotency-Replayed:
+              description: 匹配原键与原请求时返回。
+              schema: {type: string, const: 'true'}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketDetail'
+        '400':
+          $ref: '#/components/responses/Error'
+          description: 查询、JSON 或原键格式无效。
+        '401':
+          $ref: '#/components/responses/Error'
+          description: 缺少有效登录会话。
+        '403':
+          $ref: '#/components/responses/Error'
+          description: 账户受限或请求被同源保护拒绝。
+        '409':
+          $ref: '#/components/responses/Error'
+          description: 原键已绑定不同的创建请求。
+        '413':
+          $ref: '#/components/responses/Error'
+          description: 单份请求超过 32 KiB。
+        '415':
+          $ref: '#/components/responses/Error'
+          description: 请求须为 application/json。
+        '422':
+          $ref: '#/components/responses/Error'
+          description: 字段取值、文本长度、预期版本或密码格式无效。
+        '429':
+          $ref: '#/components/responses/Error'
+          description: SUPPORT_TICKET_OPEN_LIMIT，本人在该工作区已有 8 笔开放工单。
+        '501':
+          $ref: '#/components/responses/Error'
+          description: 环境不具备持久账户模式。
+        '503':
+          $ref: '#/components/responses/Error'
+          description: 数据库不可用或已提交的消息明细不完整。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/support/tickets/receipt:
+    get:
+      operationId: getOwnSupportTicketReceipt
+      description: 仅用本人会话和原操作键读取当时提交的工单版本及截至该版本的消息。响应不明时用此查询核对，不重复提交。
+      parameters:
+        - $ref: '#/components/parameters/SupportTicketOwnerOperation'
+        - $ref: '#/components/parameters/SupportTicketOriginalKey'
+      responses:
+        '200':
+          description: 当前详情或此次原操作对应的版本。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketDetail'
+        '400':
+          $ref: '#/components/responses/Error'
+          description: 无效的查询字段、游标、操作或原键，或 GET 请求带正文。
+        '401':
+          $ref: '#/components/responses/Error'
+          description: 缺少有效登录会话。
+        '403':
+          $ref: '#/components/responses/Error'
+          description: 账户受限或请求被同源保护拒绝。
+        '404':
+          $ref: '#/components/responses/Error'
+          description: 目标工单、有效工作区授权或本人对应收据不存在。
+        '501':
+          $ref: '#/components/responses/Error'
+          description: 环境不具备持久账户模式。
+        '503':
+          $ref: '#/components/responses/Error'
+          description: 数据库不可用或已提交的消息明细不完整。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/support/tickets/{ticket}:
+    parameters:
+    - $ref: '#/components/parameters/SupportTicketID'
+    get:
+      operationId: getOwnSupportTicket
+      description: 读取当前会话工作区的本人原工单及按版本排序的消息。
+      responses:
+        '200':
+          description: 当前详情或此次原操作对应的版本。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketDetail'
+        '400':
+          $ref: '#/components/responses/Error'
+          description: 无效的查询字段、游标、操作或原键，或 GET 请求带正文。
+        '401':
+          $ref: '#/components/responses/Error'
+          description: 缺少有效登录会话。
+        '403':
+          $ref: '#/components/responses/Error'
+          description: 账户受限或请求被同源保护拒绝。
+        '404':
+          $ref: '#/components/responses/Error'
+          description: 目标工单、有效工作区授权或本人对应收据不存在。
+        '501':
+          $ref: '#/components/responses/Error'
+          description: 环境不具备持久账户模式。
+        '503':
+          $ref: '#/components/responses/Error'
+          description: 数据库不可用或已提交的消息明细不完整。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/support/tickets/{ticket}/followup:
+    parameters:
+    - $ref: '#/components/parameters/SupportTicketID'
+    post:
+      operationId: addOwnSupportTicketFollowup
+      description: 本人向开放工单补充消息。原键重放先于版本比较；工单至多 31 条非关闭消息，最后一个版本预留给关闭。
+      parameters:
+        - $ref: '#/components/parameters/SupportTicketOriginalKey'
+      requestBody:
+        required: true
+        description: 最大 32 KiB 的单个 UTF-8 JSON 对象，拒绝重复、未知、大小写别名或 null 字段。
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportTicketFollowupInput'
+      responses:
+        '200':
+          description: 当前详情或此次原操作对应的版本。
+          headers:
+            Idempotency-Replayed:
+              description: 匹配原键与原请求时返回。
+              schema: {type: string, const: 'true'}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketDetail'
+        '400':
+          $ref: '#/components/responses/Error'
+          description: 查询、JSON 或原键格式无效。
+        '401':
+          $ref: '#/components/responses/Error'
+          description: 缺少有效登录会话。
+        '403':
+          $ref: '#/components/responses/Error'
+          description: 账户受限或请求被同源保护拒绝。
+        '404':
+          $ref: '#/components/responses/Error'
+          description: 目标工单、有效工作区授权或本人对应收据不存在。
+        '409':
+          $ref: '#/components/responses/Error'
+          description: 原键对应不同操作参数，或工单版本已变化、已关闭。
+        '413':
+          $ref: '#/components/responses/Error'
+          description: 单份请求超过 32 KiB。
+        '415':
+          $ref: '#/components/responses/Error'
+          description: 请求须为 application/json。
+        '422':
+          $ref: '#/components/responses/Error'
+          description: 字段取值、文本长度、预期版本或密码格式无效。
+        '429':
+          $ref: '#/components/responses/Error'
+          description: SUPPORT_TICKET_MESSAGE_LIMIT，已到非关闭消息上限，仍可关闭工单。
+        '501':
+          $ref: '#/components/responses/Error'
+          description: 环境不具备持久账户模式。
+        '503':
+          $ref: '#/components/responses/Error'
+          description: 数据库不可用或已提交的消息明细不完整。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/support/tickets/{ticket}/close:
+    parameters:
+    - $ref: '#/components/parameters/SupportTicketID'
+    post:
+      operationId: closeOwnSupportTicket
+      description: 本人显式关闭开放工单。请求只含 expected_version，不含对话文字。核对版本后追加关闭记录，已关闭工单可继续查询。
+      parameters:
+        - $ref: '#/components/parameters/SupportTicketOriginalKey'
+      requestBody:
+        required: true
+        description: 最大 32 KiB 的单个 UTF-8 JSON 对象，拒绝重复、未知、大小写别名或 null 字段。
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportTicketCloseInput'
+      responses:
+        '200':
+          description: 当前详情或此次原操作对应的版本。
+          headers:
+            Idempotency-Replayed:
+              description: 匹配原键与原请求时返回。
+              schema: {type: string, const: 'true'}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketDetail'
+        '400':
+          $ref: '#/components/responses/Error'
+          description: 查询、JSON 或原键格式无效。
+        '401':
+          $ref: '#/components/responses/Error'
+          description: 缺少有效登录会话。
+        '403':
+          $ref: '#/components/responses/Error'
+          description: 账户受限或请求被同源保护拒绝。
+        '404':
+          $ref: '#/components/responses/Error'
+          description: 目标工单、有效工作区授权或本人对应收据不存在。
+        '409':
+          $ref: '#/components/responses/Error'
+          description: 原键对应不同操作参数，或工单版本已变化、已关闭。
+        '413':
+          $ref: '#/components/responses/Error'
+          description: 单份请求超过 32 KiB。
+        '415':
+          $ref: '#/components/responses/Error'
+          description: 请求须为 application/json。
+        '422':
+          $ref: '#/components/responses/Error'
+          description: 字段取值、文本长度、预期版本或密码格式无效。
+        '501':
+          $ref: '#/components/responses/Error'
+          description: 环境不具备持久账户模式。
+        '503':
+          $ref: '#/components/responses/Error'
+          description: 数据库不可用或已提交的消息明细不完整。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/support/tickets:
+    get:
+      operationId: listWorkspaceSupportTickets
+      description: 按明确获授 support_ticket 的指定工作区列工单摘要。需启用运营。每页固定 20 条，按创建时间及 ID 倒序，查询仅接受 workspace_id 和 cursor。
+      parameters:
+        - $ref: '#/components/parameters/SupportTicketWorkspace'
+        - $ref: '#/components/parameters/SupportTicketCursor'
+      responses:
+        '200':
+          description: 有界工单摘要及后续游标。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketPage'
+        '400':
+          $ref: '#/components/responses/Error'
+          description: 无效的查询字段、游标、操作或原键，或 GET 请求带正文。
+        '401':
+          $ref: '#/components/responses/Error'
+          description: 缺少有效登录会话。
+        '403':
+          $ref: '#/components/responses/Error'
+          description: 账户受限或请求被同源保护拒绝。
+        '404':
+          $ref: '#/components/responses/Error'
+          description: 目标工单、有效工作区授权或本人对应收据不存在。
+        '409':
+          $ref: '#/components/responses/Error'
+          description: 运营功能未启用。
+        '501':
+          $ref: '#/components/responses/Error'
+          description: 环境不具备持久账户模式。
+        '503':
+          $ref: '#/components/responses/Error'
+          description: 数据库不可用或已提交的消息明细不完整。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/support/tickets/receipt:
+    get:
+      operationId: getWorkspaceSupportReplyReceipt
+      description: 以当前授权、原客服身份和原键只读查询该次回复提交时的工单与消息。无密码、无请求正文，不能用于核对其他客服的操作。
+      parameters:
+        - $ref: '#/components/parameters/SupportTicketWorkspace'
+        - $ref: '#/components/parameters/SupportTicketReplyOperation'
+        - $ref: '#/components/parameters/SupportTicketOriginalKey'
+      responses:
+        '200':
+          description: 当前详情或此次原操作对应的版本。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketDetail'
+        '400':
+          $ref: '#/components/responses/Error'
+          description: 无效的查询字段、游标、操作或原键，或 GET 请求带正文。
+        '401':
+          $ref: '#/components/responses/Error'
+          description: 缺少有效登录会话。
+        '403':
+          $ref: '#/components/responses/Error'
+          description: 账户受限或请求被同源保护拒绝。
+        '404':
+          $ref: '#/components/responses/Error'
+          description: 目标工单、有效工作区授权或本人对应收据不存在。
+        '409':
+          $ref: '#/components/responses/Error'
+          description: 运营功能未启用。
+        '501':
+          $ref: '#/components/responses/Error'
+          description: 环境不具备持久账户模式。
+        '503':
+          $ref: '#/components/responses/Error'
+          description: 数据库不可用或已提交的消息明细不完整。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/support/tickets/{ticket}:
+    parameters:
+    - $ref: '#/components/parameters/SupportTicketID'
+    get:
+      operationId: getWorkspaceSupportTicket
+      description: 显式指定工作区，实时核验 support_ticket 后读取该区原工单及按版本排序的消息。
+      parameters:
+        - $ref: '#/components/parameters/SupportTicketWorkspace'
+      responses:
+        '200':
+          description: 当前详情或此次原操作对应的版本。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketDetail'
+        '400':
+          $ref: '#/components/responses/Error'
+          description: 无效的查询字段、游标、操作或原键，或 GET 请求带正文。
+        '401':
+          $ref: '#/components/responses/Error'
+          description: 缺少有效登录会话。
+        '403':
+          $ref: '#/components/responses/Error'
+          description: 账户受限或请求被同源保护拒绝。
+        '404':
+          $ref: '#/components/responses/Error'
+          description: 目标工单、有效工作区授权或本人对应收据不存在。
+        '409':
+          $ref: '#/components/responses/Error'
+          description: 运营功能未启用。
+        '501':
+          $ref: '#/components/responses/Error'
+          description: 环境不具备持久账户模式。
+        '503':
+          $ref: '#/components/responses/Error'
+          description: 数据库不可用或已提交的消息明细不完整。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/operations/support/tickets/{ticket}/reply:
+    parameters:
+    - $ref: '#/components/parameters/SupportTicketID'
+    post:
+      operationId: replyToWorkspaceSupportTicket
+      description: 工作区 support 角色只具 support_ticket。当前密码通过核验后，事务内再次核验会话、凭据和当前授权。原键匹配的 POST 同样需要当前密码。响应不明时，仅用 GET 原回复收据核对。
+      parameters:
+        - $ref: '#/components/parameters/SupportTicketOriginalKey'
+      requestBody:
+        required: true
+        description: 最大 32 KiB 的单个 UTF-8 JSON 对象，拒绝重复、未知、大小写别名或 null 字段。
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportTicketReplyInput'
+      responses:
+        '200':
+          description: 当前详情或此次原操作对应的版本。
+          headers:
+            Idempotency-Replayed:
+              description: 匹配原键与原请求时返回。
+              schema: {type: string, const: 'true'}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketDetail'
+        '400':
+          $ref: '#/components/responses/Error'
+          description: 查询、JSON 或原键格式无效。
+        '401':
+          $ref: '#/components/responses/Error'
+          description: 缺少有效登录会话。
+        '403':
+          $ref: '#/components/responses/Error'
+          description: 账户受限或请求被同源保护拒绝。客服密码不正确或其凭据已失效时亦拒绝。
+        '404':
+          $ref: '#/components/responses/Error'
+          description: 目标工单、有效工作区授权或本人对应收据不存在。
+        '409':
+          $ref: '#/components/responses/Error'
+          description: 原键对应不同操作参数，或工单版本已变化、已关闭。运营功能未启用时亦可返回此状态。
+        '413':
+          $ref: '#/components/responses/Error'
+          description: 单份请求超过 32 KiB。
+        '415':
+          $ref: '#/components/responses/Error'
+          description: 请求须为 application/json。
+        '422':
+          $ref: '#/components/responses/Error'
+          description: 字段取值、文本长度、预期版本或密码格式无效。
+        '429':
+          $ref: '#/components/responses/Error'
+          description: 工单消息已满，或密码校验超过频率、并发限制。
+        '503':
+          $ref: '#/components/responses/Error'
+          description: 数据库不可用或已提交的消息明细不完整。
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/comic/versions/{version}/panels/{panel}/videos:
+    parameters:
+    - $ref: '#/components/parameters/ProjectHeader'
+    - name: project
+      in: path
+      required: true
+      schema: {type: string}
+    - name: version
+      in: path
+      required: true
+      schema: {type: integer, minimum: 1, maximum: 128}
+    - name: panel
+      in: path
+      required: true
+      schema: {type: string, pattern: '^[A-Za-z0-9_-]{1,48}$'}
+    get:
+      operationId: listPanelVideoAttempts
+      description: 按尝试序号倒序读取固定分镜的项目视频任务。
+      parameters:
+      - name: before_attempt
+        in: query
+        schema: {type: integer, minimum: 1, maximum: 33}
+      - name: limit
+        in: query
+        schema: {type: integer, minimum: 1, maximum: 32, default: 16}
+      responses:
+        '200':
+          description: 受理尝试与下一页游标。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PanelVideoPage'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: submitPanelVideo
+      description: 用预览的原键、模型和规格显式生成这一镜。受理时核对原确认版、预期尝试、上一尝试终态和适用报价。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PanelVideoSubmit'
+      responses:
+        '201':
+          description: 媒体任务及其已提交的分镜关联。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PanelVideoAttempt'
+        '200':
+          description: 同一作者、来源与请求的原受理回执。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PanelVideoAttempt'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/comic/versions/{version}/panels/{panel}/videos/quote:
+    parameters:
+    - $ref: '#/components/parameters/ProjectHeader'
+    - name: project
+      in: path
+      required: true
+      schema: {type: string}
+    - name: version
+      in: path
+      required: true
+      schema: {type: integer, minimum: 1, maximum: 128}
+    - name: panel
+      in: path
+      required: true
+      schema: {type: string, pattern: '^[A-Za-z0-9_-]{1,48}$'}
+    post:
+      operationId: previewPanelVideo
+      description: 从该确认版构造提示词并解析视频规格。启用权益时签发与本次原键和尝试绑定的报价。该操作不提交生成。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PanelVideoOptions'
+      responses:
+        '200':
+          description: 提示词、规格、预期尝试与可选报价。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PanelVideoPreview'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/comic/versions/{version}/panels/{panel}/videos/receipt:
+    parameters:
+    - $ref: '#/components/parameters/ProjectHeader'
+    - name: project
+      in: path
+      required: true
+      schema: {type: string}
+    - name: version
+      in: path
+      required: true
+      schema: {type: integer, minimum: 1, maximum: 128}
+    - name: panel
+      in: path
+      required: true
+      schema: {type: string, pattern: '^[A-Za-z0-9_-]{1,48}$'}
+    get:
+      operationId: readPanelVideoReceipt
+      description: 在当前项目内按原作者、固定来源和原键核对已受理任务。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 原任务及当前状态。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PanelVideoAttempt'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/projects/{project}/video-timelines/{timeline}/versions/{version}/clips/{clip}/replace-from-panel:
+    parameters:
+    - $ref: '#/components/parameters/ProjectHeader'
+    - name: project
+      in: path
+      required: true
+      schema: {type: string}
+    - name: timeline
+      in: path
+      required: true
+      schema: {type: string}
+    - name: version
+      in: path
+      required: true
+      schema: {type: integer, minimum: 1, maximum: 128}
+    - name: clip
+      in: path
+      required: true
+      schema: {type: string, pattern: '^[A-Za-z0-9_-]{1,48}$'}
+    post:
+      operationId: replaceClipFromPanelVideo
+      description: 检查已绑定的分镜任务、私有成片资格和资产修订，按指定剪辑基版替换一镜。结果可从现有剪辑原键回执读取。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PanelClipReplacement'
+      responses:
+        '201':
+          description: 保存的新剪辑版。原键重放返回同一版本，Idempotency-Replayed 为 true。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoTimelineVersion'
+        default:
+          $ref: '#/components/responses/Error'
 components:
   parameters:
+    SupportTicketID:
+      name: ticket
+      in: path
+      required: true
+      schema: {type: string, pattern: '^tkt_[a-f0-9]{32}$'}
+    SupportTicketWorkspace:
+      name: workspace_id
+      in: query
+      required: true
+      description: 客服 GET 显式选择的已授权工作区。
+      schema: {type: string, pattern: '^ws_[a-f0-9]{32}$'}
+    SupportTicketCursor:
+      name: cursor
+      in: query
+      description: 可省略。沿用本人、工作区和本人或客服视图的原分页游标。页长固定为 20。
+      schema: {type: string, maxLength: 640}
+    SupportTicketOriginalKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: 同工作区、同操作者和同操作独立核对。回应不明时携原键只读相应收据。
+      schema: {type: string, minLength: 8, maxLength: 128, pattern: '^[A-Za-z0-9._:-]+$'}
+    SupportTicketOwnerOperation:
+      name: operation
+      in: query
+      required: true
+      schema: {type: string, enum: [create, followup, close]}
+    SupportTicketReplyOperation:
+      name: operation
+      in: query
+      required: true
+      schema: {type: string, const: reply}
+    RiskProject:
+      name: project_id
+      in: query
+      required: true
+      schema:
+        type: string
+        pattern: ^prj_[a-f0-9]{32}$
+    RiskQuote:
+      name: quote_id
+      in: query
+      required: true
+      schema:
+        type: string
+        pattern: ^quo_[a-f0-9]{32}$
+    RiskAppeal:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^rskrev_[a-f0-9]{32}$
+    RiskPlan:
+      name: plan
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^rskpl_[a-f0-9]{32}$
+    RiskCursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 2048
+    RiskState:
+      name: state
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+        - all
+        - OPEN
+        - APPROVED
+        - DENIED
+    RiskOriginalKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+        pattern: ^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$
+      description: 绑定本人原报价及完整复核申请。确认不明时用同一原键查询。
+    AccountGovernanceTarget:
+      in: path
+      name: target
+      required: true
+      schema:
+        type: string
+        pattern: ^usr_[a-f0-9]{32}$
+    AccountGovernanceAppeal:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        pattern: ^aapl_[a-f0-9]{32}$
+    AccountGovernancePlan:
+      in: path
+      name: plan
+      required: true
+      schema:
+        type: string
+        pattern: ^aplan_[a-f0-9]{32}$
+    AccountGovernanceKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+        pattern: ^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$
+      description: 绑定当前申请人、原账户限制轮次和原始输入。响应未知时使用同一键查询回执。
+    AccountGovernanceCursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+        maxLength: 2048
+      description: 绑定操作人、目标账户、列表模式与筛选状态的分页游标。
     ResourceID:
       in: path
       name: id
@@ -3365,6 +7051,3023 @@ components:
             minimum: 1
           description: 认证限流900秒、bcrypt槽位或资源准入繁忙3秒；只对实际带此头的响应生效。
   schemas:
+    PanelVideoOptions:
+      type: object
+      additionalProperties: false
+      required: [model_id, model_version, parameters]
+      properties:
+        model_id: {type: string, minLength: 1, maxLength: 256}
+        model_version: {type: string, minLength: 1, maxLength: 128}
+        parameters:
+          allOf:
+          - $ref: '#/components/schemas/TaskParameters'
+          - type: object
+            required: [count]
+            properties:
+              count: {const: 1}
+    PanelVideoSubmit:
+      type: object
+      additionalProperties: false
+      required: [model_id, model_version, parameters, expected_attempt]
+      properties:
+        model_id: {type: string, minLength: 1, maxLength: 256}
+        model_version: {type: string, minLength: 1, maxLength: 128}
+        parameters:
+          allOf:
+          - $ref: '#/components/schemas/TaskParameters'
+          - type: object
+            required: [count]
+            properties:
+              count: {const: 1}
+        expected_attempt: {type: integer, minimum: 1, maximum: 32}
+        quote_id: {type: string, maxLength: 128}
+    PanelVideoPreview:
+      type: object
+      additionalProperties: false
+      required: [model_id, model_version, parameters, prompt, attempt, billing_enabled]
+      properties:
+        model_id: {type: string, minLength: 1, maxLength: 256}
+        model_version: {type: string, minLength: 1, maxLength: 128}
+        parameters:
+          allOf:
+          - $ref: '#/components/schemas/TaskParameters'
+          - type: object
+            required: [count]
+            properties:
+              count: {const: 1}
+        prompt: {type: string, description: 从已确认分镜生成，最多 16000 UTF-8 字节。}
+        attempt: {type: integer, minimum: 1, maximum: 32}
+        billing_enabled: {type: boolean}
+        quote:
+          $ref: '#/components/schemas/BillingQuote'
+    PanelVideoAttempt:
+      type: object
+      additionalProperties: false
+      required: [project_id, comic_version, panel_id, model_id, model_version, parameters, attempt, task_id, status, created_at]
+      properties:
+        model_id: {type: string, minLength: 1, maxLength: 256}
+        model_version: {type: string, minLength: 1, maxLength: 128}
+        parameters:
+          allOf:
+          - $ref: '#/components/schemas/TaskParameters'
+          - type: object
+            required: [count]
+            properties:
+              count: {const: 1}
+        project_id: {type: string}
+        comic_version: {type: integer, minimum: 1, maximum: 128}
+        panel_id: {type: string}
+        attempt: {type: integer, minimum: 1, maximum: 32}
+        task_id: {type: string}
+        status: {type: string}
+        quote_id: {type: string, maxLength: 128}
+        created_at: {type: string, format: date-time}
+    PanelVideoPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 32
+          items:
+            $ref: '#/components/schemas/PanelVideoAttempt'
+        next_before_attempt: {type: integer, minimum: 1, maximum: 32}
+    PanelClipReplacement:
+      type: object
+      additionalProperties: false
+      required: [comic_version, panel_id, task_id, asset_id, asset_revision, in_ms, out_ms]
+      properties:
+        comic_version: {type: integer, minimum: 1, maximum: 128}
+        panel_id: {type: string, pattern: '^[A-Za-z0-9_-]{1,48}$'}
+        task_id: {type: string}
+        asset_id: {type: string}
+        asset_revision: {type: integer, minimum: 1, maximum: 1000}
+        in_ms: {type: integer, minimum: 0, maximum: 299999}
+        out_ms: {type: integer, minimum: 1, maximum: 300000, description: 必须晚于入点，整稿总时长最多 30 秒。}
+    SupportTicketCategory:
+      type: string
+      enum: [account, billing, generation, other]
+    SupportTicketSubject:
+      type: string
+      minLength: 1
+      maxLength: 120
+      allOf:
+      - pattern: '\S'
+      - pattern: '^[^\u0000-\u001f\u007f-\u009f]*$'
+      description: 至少包含一个非空白字符，禁用控制字符。UTF-8 至多 480 字节。
+    SupportTicketText:
+      type: string
+      minLength: 1
+      maxLength: 2000
+      x-max-utf8-bytes: 6000
+      allOf:
+      - pattern: '\S'
+      - pattern: '^[^\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]*$'
+      description: UTF-8 至多 6000 字节。至少包含一个非空白字符，控制字符仅可使用制表符、回车和换行。
+    SupportTicketVersion:
+      type: integer
+      minimum: 1
+      maximum: 32
+    SupportTicketCreateInput:
+      type: object
+      additionalProperties: false
+      required: [category, subject, body]
+      properties:
+        category: {$ref: '#/components/schemas/SupportTicketCategory'}
+        subject: {$ref: '#/components/schemas/SupportTicketSubject'}
+        body: {$ref: '#/components/schemas/SupportTicketText'}
+    SupportTicketFollowupInput:
+      type: object
+      additionalProperties: false
+      required: [expected_version, body]
+      properties:
+        expected_version: {$ref: '#/components/schemas/SupportTicketVersion'}
+        body: {$ref: '#/components/schemas/SupportTicketText'}
+    SupportTicketCloseInput:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      properties:
+        expected_version: {$ref: '#/components/schemas/SupportTicketVersion'}
+    SupportTicketReplyInput:
+      type: object
+      additionalProperties: false
+      required: [workspace_id, expected_version, body, password]
+      properties:
+        workspace_id: {type: string, pattern: '^ws_[a-f0-9]{32}$'}
+        expected_version: {$ref: '#/components/schemas/SupportTicketVersion'}
+        body: {$ref: '#/components/schemas/SupportTicketText'}
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          minLength: 1
+          maxLength: 72
+          pattern: '^[^\u0000]*$'
+          x-min-utf8-bytes: 10
+          x-max-utf8-bytes: 72
+          description: 当前登录客服的密码。服务器按 UTF-8 字节计数，须为 10 至 72 字节。仅本次回复使用。
+    SupportTicketFields:
+      type: object
+      required: [id, workspace_id, category, subject, state, version, created_at, updated_at]
+      properties:
+        id: {type: string, pattern: '^tkt_[a-f0-9]{32}$'}
+        workspace_id: {type: string, pattern: '^ws_[a-f0-9]{32}$'}
+        category: {$ref: '#/components/schemas/SupportTicketCategory'}
+        subject: {$ref: '#/components/schemas/SupportTicketSubject'}
+        state: {type: string, enum: [OPEN, CLOSED]}
+        version: {$ref: '#/components/schemas/SupportTicketVersion'}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    SupportTicketCard:
+      allOf:
+      - $ref: '#/components/schemas/SupportTicketFields'
+      unevaluatedProperties: false
+    SupportTicketMessage:
+      type: object
+      additionalProperties: false
+      required: [version, kind, body, created_at]
+      properties:
+        version: {$ref: '#/components/schemas/SupportTicketVersion'}
+        kind: {type: string, enum: [created, followup, reply, closed]}
+        body: {type: string}
+        created_at: {type: string, format: date-time}
+      if:
+        properties:
+          kind: {const: closed}
+      then:
+        properties:
+          body: {const: ''}
+      else:
+        properties:
+          body: {$ref: '#/components/schemas/SupportTicketText'}
+    SupportTicketDetail:
+      allOf:
+      - $ref: '#/components/schemas/SupportTicketFields'
+      - type: object
+        required: [messages]
+        properties:
+          messages:
+            type: array
+            minItems: 1
+            maxItems: 32
+            items: {$ref: '#/components/schemas/SupportTicketMessage'}
+            description: 按版本升序。原键收据只含截至该次提交的对话。
+      unevaluatedProperties: false
+    SupportTicketPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items: {$ref: '#/components/schemas/SupportTicketCard'}
+        next_cursor:
+          type: [string, 'null']
+          maxLength: 640
+    AccountExportInput:
+      type: object
+      additionalProperties: false
+      required:
+      - section
+      - password
+      properties:
+        section:
+          type: string
+          enum:
+          - profile
+          - security_events
+          - account_appeals
+        password:
+          type: string
+          format: password
+          writeOnly: true
+        cursor:
+          type: string
+          minLength: 1
+          maxLength: 1024
+    AccountExportProfile:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - email
+      - created_at
+      - email_verified_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        email_verified_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    AccountExportAppeal:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - restriction_id
+      - state
+      - outcome
+      - version
+      - reason_code
+      - statement
+      - public_reply
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        restriction_id:
+          type: string
+        state:
+          type: string
+        outcome:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        reason_code:
+          type: string
+        statement:
+          type: string
+        public_reply:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AccountExportDocument:
+      type: object
+      additionalProperties: false
+      required:
+      - format
+      - account_id
+      - section
+      - read_at
+      - created_through
+      - items
+      - next_cursor
+      properties:
+        format:
+          const: studio.account-export.v1
+        account_id:
+          type: string
+        section:
+          enum:
+          - profile
+          - security_events
+          - account_appeals
+        read_at:
+          type: string
+          format: date-time
+        created_through:
+          type: string
+          format: date-time
+        items:
+          type: array
+          maxItems: 100
+        next_cursor:
+          type:
+          - string
+          - 'null'
+      allOf:
+      - if:
+          properties:
+            section:
+              const: profile
+        then:
+          properties:
+            items:
+              items:
+                $ref: '#/components/schemas/AccountExportProfile'
+              minItems: 1
+              maxItems: 1
+            next_cursor:
+              type: 'null'
+      - if:
+          properties:
+            section:
+              const: security_events
+        then:
+          properties:
+            items:
+              items:
+                $ref: '#/components/schemas/AccountSecurityEvent'
+      - if:
+          properties:
+            section:
+              const: account_appeals
+        then:
+          properties:
+            items:
+              items:
+                $ref: '#/components/schemas/AccountExportAppeal'
+    OrderIntentProduct:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        catalog_version:
+          type: string
+        catalog_digest:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        product_digest:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        currency:
+          type: string
+        currency_exponent:
+          type: integer
+          minimum: 0
+          maximum: 3
+        amount_minor:
+          type: string
+          pattern: ^[1-9][0-9]*$
+        credit_micros:
+          type: string
+          pattern: ^[1-9][0-9]*$
+      required:
+      - id
+      - name
+      - catalog_version
+      - catalog_digest
+      - product_digest
+      - currency
+      - currency_exponent
+      - amount_minor
+      - credit_micros
+    OrderIntentCatalog:
+      type: object
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+        can_create:
+          type: boolean
+        can_manage:
+          type: boolean
+        catalog_version:
+          type: string
+        catalog_digest:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        items:
+          type: array
+          maxItems: 32
+          items:
+            $ref: '#/components/schemas/OrderIntentProduct'
+      required:
+      - enabled
+      - can_create
+      - can_manage
+      - items
+    OrderIntentCreateInput:
+      type: object
+      additionalProperties: false
+      properties:
+        product_id:
+          type: string
+        catalog_digest:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        product_digest:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+      required:
+      - product_id
+      - catalog_digest
+      - product_digest
+    OrderIntentCancelInput:
+      type: object
+      additionalProperties: false
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+          maximum: 2
+      required:
+      - expected_version
+    OrderPaymentProjection:
+      type: object
+      additionalProperties: false
+      description: 本人订单的已认证经济事实、绑定环境与 CREDIT 处理结果。测试环境的结果单独标为 test。所有金额均使用十进制整数字符串。
+      required: [order_id, currency, currency_exponent, environment, payment_state, refund_state, credit_state, paid_minor, refunded_minor, granted_credit_micros, reversed_credit_micros]
+      properties:
+        order_id:
+          type: string
+          pattern: '^ord_[0-9a-f]{32}$'
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: 该订单冻结的币种。
+        currency_exponent:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: 从最小货币单位换算为主要单位时使用的十进制位数。
+        environment:
+          type: string
+          enum: ['', test, live]
+          description: 无独立绑定时为空字符串；已绑定时返回来源环境。
+        payment_state:
+          type: string
+          enum: [UNBOUND, AWAITING, RECEIVED, REVIEW]
+          description: UNBOUND 表示无绑定，AWAITING 表示已有绑定但尚待收款证据；RECEIVED 表示已记录收款，REVIEW 表示须核实。意向登记与欠款义务分别判断。
+        refund_state:
+          type: string
+          enum: [NONE, PENDING_MATCH, PARTIAL, FULL, REVIEW]
+          description: 分别表示没有已记录的退款、退款待匹配原支付、部分退款、全额退款及退款须核实。
+        credit_state:
+          type: string
+          enum: [NOT_ISSUED, ISSUED, REVIEW]
+          description: 该笔订单的 CREDIT 分别处于未发放、已发放或待核实状态。
+        paid_minor:
+          type: string
+          pattern: '^(0|[1-9][0-9]*)$'
+          description: 归属明确、与本订单币种匹配的已记录收款总额，单位为该币种最小单位。
+        refunded_minor:
+          type: string
+          pattern: '^(0|[1-9][0-9]*)$'
+          description: 本订单已记录且归属和币种明确的退款金额，单位同 paid_minor。退款先到时可为正数，PENDING_MATCH 表示尚待匹配原收款。
+        granted_credit_micros:
+          type: string
+          pattern: '^(0|[1-9][0-9]*)$'
+          description: 原账本实际发放的 CREDIT 微点。每 1000000 微点等于 1 CREDIT；退款需复核时仍可核对此数。
+        reversed_credit_micros:
+          type: string
+          const: '0'
+          description: 已冲回的 CREDIT 微点。035 对退款保留原发放，当前恒为零。
+    OrderIntent:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        product:
+          $ref: '#/components/schemas/OrderIntentProduct'
+        state:
+          type: string
+          enum:
+          - PENDING
+          - CANCELLED
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2
+        created_at:
+          type: string
+          format: date-time
+        cancelled_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - product
+      - state
+      - version
+      - created_at
+    OrderIntentPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/OrderIntent'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+      required:
+      - items
+      - next_cursor
+    CollaborationEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        project_id:
+          type: string
+        project_name:
+          type: string
+        target_user_id:
+          type: string
+        inviter_name:
+          type: string
+        invitation_id:
+          type: string
+        role:
+          type: string
+          enum:
+          - viewer
+          - editor
+        state:
+          type: string
+          enum:
+          - PENDING
+          - ACTIVE
+          - WITHDRAWN
+          - REVOKED
+          - EXPIRED
+        round:
+          type: integer
+          minimum: 1
+          maximum: 128
+        version:
+          type: integer
+          minimum: 1
+          maximum: 512
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - project_id
+      - project_name
+      - target_user_id
+      - inviter_name
+      - invitation_id
+      - role
+      - state
+      - round
+      - version
+    CollaborationReceipt:
+      type: object
+      additionalProperties: false
+      properties:
+        project_id:
+          type: string
+        project_name:
+          type: string
+        target_user_id:
+          type: string
+        inviter_name:
+          type: string
+        invitation_id:
+          type: string
+        role:
+          type: string
+          enum:
+          - viewer
+          - editor
+        state:
+          type: string
+          enum:
+          - PENDING
+          - ACTIVE
+          - WITHDRAWN
+          - REVOKED
+          - EXPIRED
+        round:
+          type: integer
+          minimum: 1
+          maximum: 128
+        version:
+          type: integer
+          minimum: 1
+          maximum: 512
+        expires_at:
+          type: string
+          format: date-time
+        operation:
+          type: string
+          enum:
+          - invite
+          - accept
+          - withdraw
+          - downgrade
+          - revoke
+      required:
+      - project_id
+      - project_name
+      - target_user_id
+      - inviter_name
+      - invitation_id
+      - role
+      - state
+      - round
+      - version
+      - operation
+    CollaborationPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 128
+          items:
+            $ref: '#/components/schemas/CollaborationEntry'
+      required:
+      - items
+    CollaborationInviteInput:
+      type: object
+      additionalProperties: false
+      properties:
+        target_user_id:
+          type: string
+        role:
+          type: string
+          enum:
+          - viewer
+          - editor
+        expected_version:
+          type: integer
+          minimum: 0
+          maximum: 512
+      required:
+      - target_user_id
+      - role
+      - expected_version
+    CollaborationAcceptInput:
+      type: object
+      additionalProperties: false
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+          maximum: 512
+      required:
+      - expected_version
+    CollaborationChangeInput:
+      type: object
+      additionalProperties: false
+      properties:
+        invitation_id:
+          type: string
+        expected_version:
+          type: integer
+          minimum: 1
+          maximum: 512
+      required:
+      - invitation_id
+      - expected_version
+    ComicCard:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      properties:
+        id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        name:
+          type: string
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 1000
+    ComicPanelInput:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - scene_id
+      - character_ids
+      - action
+      properties:
+        id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        title:
+          type: string
+          maxLength: 120
+        scene_id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        character_ids:
+          type: array
+          items:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{1,48}$
+          minItems: 0
+          maxItems: 8
+        action:
+          type: string
+          maxLength: 1000
+        dialogue:
+          type: string
+          maxLength: 1000
+        asset_id:
+          type: string
+        asset_revision:
+          type: integer
+          minimum: 1
+    ComicPanelView:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - scene_id
+      - character_ids
+      - action
+      properties:
+        id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        title:
+          type: string
+          maxLength: 120
+        scene_id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        character_ids:
+          type: array
+          items:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{1,48}$
+          minItems: 0
+          maxItems: 8
+        action:
+          type: string
+          maxLength: 1000
+        dialogue:
+          type: string
+          maxLength: 1000
+        asset_id:
+          type: string
+        asset_revision:
+          type: integer
+          minimum: 1
+        content_version:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        asset_available:
+          type: boolean
+    ComicDocumentInput:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - story
+      - characters
+      - scenes
+      - panels
+      properties:
+        title:
+          type: string
+          maxLength: 120
+        story:
+          type: string
+          maxLength: 4000
+        characters:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComicCard'
+          minItems: 1
+          maxItems: 16
+        scenes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComicCard'
+          minItems: 1
+          maxItems: 16
+        panels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComicPanelInput'
+          minItems: 1
+          maxItems: 12
+    ComicDocumentView:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - story
+      - characters
+      - scenes
+      - panels
+      properties:
+        title:
+          type: string
+          maxLength: 120
+        story:
+          type: string
+          maxLength: 4000
+        characters:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComicCard'
+          minItems: 1
+          maxItems: 16
+        scenes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComicCard'
+          minItems: 1
+          maxItems: 16
+        panels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComicPanelView'
+          minItems: 1
+          maxItems: 12
+    ComicSaveInput:
+      type: object
+      additionalProperties: false
+      required:
+      - expected_version
+      - document
+      properties:
+        expected_version:
+          type: integer
+          minimum: 0
+          maximum: 128
+        document:
+          $ref: '#/components/schemas/ComicDocumentInput'
+    ComicVersion:
+      type: object
+      additionalProperties: false
+      required:
+      - project_id
+      - version
+      - document
+      - confirmed
+      - created_at
+      properties:
+        project_id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+          maximum: 128
+        document:
+          $ref: '#/components/schemas/ComicDocumentView'
+        confirmed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    ComicReceipt:
+      type: object
+      additionalProperties: false
+      required:
+      - project_id
+      - version
+      - document
+      - confirmed
+      - created_at
+      - operation
+      properties:
+        project_id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+          maximum: 128
+        document:
+          $ref: '#/components/schemas/ComicDocumentView'
+        confirmed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        operation:
+          type: string
+          enum:
+          - save
+          - confirm
+    ComicSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - project_id
+      - version
+      - title
+      - panel_count
+      - confirmed
+      - created_at
+      properties:
+        project_id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+          maximum: 128
+        title:
+          type: string
+          maxLength: 120
+        panel_count:
+          type: integer
+          minimum: 1
+          maximum: 12
+        confirmed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    ComicHistory:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_before_version
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComicSummary'
+          minItems: 0
+          maxItems: 50
+        next_before_version:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 128
+          - type: 'null'
+    ComicSlide:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - layout
+      - body
+      - notes
+      properties:
+        id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        title:
+          type: string
+          maxLength: 120
+        asset_id:
+          type: string
+        asset_revision:
+          type: integer
+          minimum: 1
+        layout:
+          enum:
+          - content
+          - image
+        body:
+          type: string
+        notes:
+          type: string
+        content_version:
+          type: string
+        asset_available:
+          type: boolean
+    ComicExport:
+      type: object
+      additionalProperties: false
+      required:
+      - source
+      - project_id
+      - version
+      - created_at
+      - document
+      - image_urls
+      properties:
+        source:
+          const: comic
+        project_id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+          maximum: 128
+        created_at:
+          type: string
+          format: date-time
+        document:
+          type: object
+          additionalProperties: false
+          required:
+          - title
+          - theme
+          - slides
+          properties:
+            title:
+              type: string
+              maxLength: 120
+            theme:
+              const: paper
+            slides:
+              type: array
+              items:
+                $ref: '#/components/schemas/ComicSlide'
+              minItems: 1
+              maxItems: 12
+        image_urls:
+          type: object
+          additionalProperties:
+            type: string
+    VideoTimelineClipInput:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - asset_id
+      - asset_revision
+      - in_ms
+      - out_ms
+      properties:
+        id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        asset_id:
+          type: string
+          pattern: ^lib_[a-f0-9]{64}$
+        asset_revision:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        in_ms:
+          type: integer
+          minimum: 0
+          maximum: 299999
+        out_ms:
+          type: integer
+          minimum: 1
+          maximum: 300000
+    VideoTimelineClipView:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - asset_id
+      - asset_revision
+      - in_ms
+      - out_ms
+      - content_version
+      - asset_available
+      properties:
+        id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        asset_id:
+          type: string
+          pattern: ^lib_[a-f0-9]{64}$
+        asset_revision:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        in_ms:
+          type: integer
+          minimum: 0
+          maximum: 299999
+        out_ms:
+          type: integer
+          minimum: 1
+          maximum: 300000
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+          readOnly: true
+        asset_available:
+          type: boolean
+          readOnly: true
+    VideoTimelineDocumentInput:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - clips
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        clips:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items:
+            $ref: '#/components/schemas/VideoTimelineClipInput'
+      description: 按数组顺序剪辑。镜头 ID 在稿内唯一，入点小于出点。累计毫秒按 24 fps 四舍五入到边界，每镜至少贡献一帧，合计最多 30000 毫秒。
+    VideoTimelineDocumentView:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - clips
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        clips:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items:
+            $ref: '#/components/schemas/VideoTimelineClipView'
+      description: 按数组顺序剪辑。镜头 ID 在稿内唯一，入点小于出点。累计毫秒按 24 fps 四舍五入到边界，每镜至少贡献一帧，合计最多 30000 毫秒。
+    VideoTimelineSaveRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - expected_version
+      - document
+      properties:
+        timeline_id:
+          type: string
+          pattern: ^vtl_[a-f0-9]{32}$
+        expected_version:
+          type: integer
+          minimum: 0
+          maximum: 128
+        document:
+          $ref: '#/components/schemas/VideoTimelineDocumentInput'
+    VideoTimelineVersion:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - project_id
+      - version
+      - created_at
+      - document
+      properties:
+        id:
+          type: string
+          pattern: ^vtl_[a-f0-9]{32}$
+        project_id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+          maximum: 128
+        created_at:
+          type: string
+          format: date-time
+        document:
+          $ref: '#/components/schemas/VideoTimelineDocumentView'
+    VideoTimelineSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - project_id
+      - version
+      - created_at
+      - title
+      - clip_count
+      properties:
+        id:
+          type: string
+          pattern: ^vtl_[a-f0-9]{32}$
+        project_id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+          maximum: 128
+        created_at:
+          type: string
+          format: date-time
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        clip_count:
+          type: integer
+          minimum: 1
+          maximum: 8
+    VideoTimelinePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          minItems: 0
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/VideoTimelineSummary'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    VideoTimelineHistoryPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_before_version
+      properties:
+        items:
+          type: array
+          minItems: 0
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/VideoTimelineSummary'
+        next_before_version:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 128
+    VideoTimelineCapabilities:
+      type: object
+      additionalProperties: false
+      required:
+      - editable
+      - export_enabled
+      - max_clips
+      - max_duration_ms
+      properties:
+        editable:
+          const: true
+        export_enabled:
+          type: boolean
+        max_clips:
+          const: 8
+        max_duration_ms:
+          const: 30000
+    PresentationSlideInput:
+      type: object
+      required:
+      - id
+      - layout
+      - title
+      - body
+      - notes
+      properties:
+        id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        layout:
+          type: string
+          enum:
+          - title
+          - content
+          - image
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        body:
+          type: string
+          maxLength: 4000
+        notes:
+          type: string
+          maxLength: 2000
+        asset_id:
+          type: string
+        asset_revision:
+          type: integer
+          minimum: 1
+      additionalProperties: false
+    PresentationSlideView:
+      type: object
+      required:
+      - id
+      - layout
+      - title
+      - body
+      - notes
+      properties:
+        id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        layout:
+          type: string
+          enum:
+          - title
+          - content
+          - image
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        body:
+          type: string
+          maxLength: 4000
+        notes:
+          type: string
+          maxLength: 2000
+        asset_id:
+          type: string
+        asset_revision:
+          type: integer
+          minimum: 1
+        content_version:
+          type: string
+        asset_available:
+          type: boolean
+    PresentationDocumentInput:
+      type: object
+      required:
+      - title
+      - theme
+      - slides
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        theme:
+          type: string
+          enum:
+          - paper
+          - midnight
+          - mint
+        slides:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresentationSlideInput'
+          minItems: 1
+          maxItems: 30
+      additionalProperties: false
+    PresentationDocumentView:
+      type: object
+      required:
+      - title
+      - theme
+      - slides
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        theme:
+          type: string
+          enum:
+          - paper
+          - midnight
+          - mint
+        slides:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresentationSlideView'
+          minItems: 1
+          maxItems: 30
+      additionalProperties: false
+    PresentationSaveRequest:
+      type: object
+      required:
+      - expected_version
+      - document
+      properties:
+        presentation_id:
+          type: string
+          pattern: ^pres_[0-9a-f]{32}$
+        expected_version:
+          type: integer
+          minimum: 0
+          maximum: 128
+        document:
+          $ref: '#/components/schemas/PresentationDocumentInput'
+      additionalProperties: false
+    PresentationVersion:
+      type: object
+      required:
+      - id
+      - project_id
+      - version
+      - created_at
+      - document
+      properties:
+        id:
+          type: string
+          pattern: ^pres_[0-9a-f]{32}$
+        project_id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+          maximum: 128
+        created_at:
+          type: string
+          format: date-time
+        document:
+          $ref: '#/components/schemas/PresentationDocumentView'
+    PresentationExportManifest:
+      type: object
+      required:
+      - id
+      - project_id
+      - version
+      - created_at
+      - document
+      - image_urls
+      properties:
+        id:
+          type: string
+          pattern: ^pres_[0-9a-f]{32}$
+        project_id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+          maximum: 128
+        created_at:
+          type: string
+          format: date-time
+        document:
+          $ref: '#/components/schemas/PresentationDocumentView'
+        image_urls:
+          type: object
+          additionalProperties:
+            type: string
+            format: uri-reference
+          description: 以页 ID 为键，仅含当前可读的同源版本图片路径。
+    PresentationSummary:
+      type: object
+      required:
+      - id
+      - project_id
+      - version
+      - title
+      - slide_count
+      - created_at
+      properties:
+        id:
+          type: string
+          pattern: ^pres_[0-9a-f]{32}$
+        project_id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+          maximum: 128
+        title:
+          type: string
+        slide_count:
+          type: integer
+          minimum: 1
+          maximum: 30
+        created_at:
+          type: string
+          format: date-time
+    PresentationPage:
+      type: object
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresentationSummary'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    PresentationHistoryPage:
+      type: object
+      required:
+      - items
+      - next_before_version
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresentationSummary'
+        next_before_version:
+          type:
+          - integer
+          - 'null'
+    CreditRiskEligibility:
+      type: object
+      additionalProperties: false
+      required:
+      - workspace_id
+      - project_id
+      - quote_id
+      - reason_codes
+      - policy_version
+      - amount_micros
+      - expires_at
+      - allowed_to_appeal
+      properties:
+        workspace_id:
+          type: string
+          pattern: ^ws_[a-f0-9]{32}$
+        project_id:
+          type: string
+          pattern: ^prj_[a-f0-9]{32}$
+        quote_id:
+          type: string
+          pattern: ^quo_[a-f0-9]{32}$
+        reason_codes:
+          type: array
+          maxItems: 2
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+            - HELD_LIMIT
+            - RATE_LIMIT
+        policy_version:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        amount_micros:
+          type: string
+          pattern: ^[1-9][0-9]*$
+          description: 原报价的微 CREDIT 整数。
+        expires_at:
+          type: string
+          format: date-time
+        allowed_to_appeal:
+          type: boolean
+        appeal_id:
+          type: string
+          pattern: ^rskrev_[a-f0-9]{32}$
+    CreditRiskAppealInput:
+      type: object
+      additionalProperties: false
+      required:
+      - project_id
+      - quote_id
+      - reason_code
+      properties:
+        project_id:
+          type: string
+          pattern: ^prj_[a-f0-9]{32}$
+        quote_id:
+          type: string
+          pattern: ^quo_[a-f0-9]{32}$
+        reason_code:
+          type: string
+          enum:
+          - request_review
+          - limit_error
+          - billing_concern
+        statement:
+          type: string
+          x-max-utf8-bytes: 1024
+          maxLength: 1024
+    CreditRiskAppeal:
+      type: object
+      additionalProperties: false
+      required:
+      - workspace_id
+      - project_id
+      - quote_id
+      - reason_codes
+      - policy_version
+      - amount_micros
+      - expires_at
+      - id
+      - reason_code
+      - state
+      - version
+      - created_at
+      - updated_at
+      properties:
+        workspace_id:
+          type: string
+          pattern: ^ws_[a-f0-9]{32}$
+        project_id:
+          type: string
+          pattern: ^prj_[a-f0-9]{32}$
+        quote_id:
+          type: string
+          pattern: ^quo_[a-f0-9]{32}$
+        reason_codes:
+          type: array
+          maxItems: 2
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+            - HELD_LIMIT
+            - RATE_LIMIT
+        policy_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        amount_micros:
+          type: string
+          pattern: ^[1-9][0-9]*$
+          description: 原报价的微 CREDIT 整数。
+        expires_at:
+          type: string
+          format: date-time
+        id:
+          type: string
+          pattern: ^rskrev_[a-f0-9]{32}$
+        reason_code:
+          type: string
+          enum:
+          - request_review
+          - limit_error
+          - billing_concern
+        state:
+          type: string
+          enum:
+          - OPEN
+          - APPROVED
+          - DENIED
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        statement:
+          type: string
+          x-max-utf8-bytes: 1024
+          maxLength: 1024
+        public_reply:
+          type: string
+          x-max-utf8-bytes: 1024
+          maxLength: 1024
+        exemption_state:
+          type: string
+          enum:
+          - AVAILABLE
+          - CONSUMED
+          - EXPIRED
+          - INACTIVE
+    CreditRiskAppealPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditRiskAppeal'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    CreditRiskPlanInput:
+      type: object
+      additionalProperties: false
+      required:
+      - workspace_id
+      - expected_version
+      - action
+      - public_reply
+      - evidence_ref
+      properties:
+        workspace_id:
+          type: string
+          pattern: ^ws_[a-f0-9]{32}$
+        expected_version:
+          type: integer
+          const: 1
+        action:
+          type: string
+          enum:
+          - approve
+          - deny
+        public_reply:
+          type: string
+          x-max-utf8-bytes: 1024
+          maxLength: 1024
+          minLength: 1
+        evidence_ref:
+          type: string
+          minLength: 1
+          maxLength: 128
+    CreditRiskExecuteInput:
+      type: object
+      additionalProperties: false
+      required:
+      - workspace_id
+      - plan_id
+      - plan_digest
+      - password
+      properties:
+        workspace_id:
+          type: string
+          pattern: ^ws_[a-f0-9]{32}$
+        plan_id:
+          type: string
+          pattern: ^rskpl_[a-f0-9]{32}$
+        plan_digest:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          minLength: 1
+          maxLength: 72
+          x-min-utf8-bytes: 10
+          x-max-utf8-bytes: 72
+          description: 当前密码，实际校验10至72个UTF-8字节；只在当前请求内使用，不能放入恢复仓、日志或持久计划。
+    CreditRiskPlan:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^rskpl_[a-f0-9]{32}$
+        workspace_id:
+          type: string
+          pattern: ^ws_[a-f0-9]{32}$
+        appeal_id:
+          type: string
+          pattern: ^rskrev_[a-f0-9]{32}$
+        action:
+          type: string
+          enum:
+          - approve
+          - deny
+        outcome:
+          type: string
+          enum:
+          - APPROVED
+          - DENIED
+        expected_version:
+          type: integer
+          minimum: 1
+        plan_digest:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - workspace_id
+      - appeal_id
+      - action
+      - outcome
+      - expected_version
+      - plan_digest
+      - expires_at
+      additionalProperties: false
+    CreditRiskReceipt:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^rskrc_[a-f0-9]{32}$
+        workspace_id:
+          type: string
+          pattern: ^ws_[a-f0-9]{32}$
+        appeal_id:
+          type: string
+          pattern: ^rskrev_[a-f0-9]{32}$
+        plan_id:
+          type: string
+          pattern: ^rskpl_[a-f0-9]{32}$
+        action:
+          type: string
+          enum:
+          - approve
+          - deny
+        outcome:
+          type: string
+          enum:
+          - APPROVED
+          - DENIED
+        version:
+          type: integer
+          minimum: 1
+        executed_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - workspace_id
+      - appeal_id
+      - plan_id
+      - action
+      - outcome
+      - version
+      - executed_at
+      additionalProperties: false
+    AccountGovernanceRestriction:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - reason_code
+      - public_notice
+      - created_at
+      properties:
+        id:
+          type: string
+          pattern: ^arst_[a-f0-9]{32}$
+        reason_code:
+          type: string
+          enum:
+          - manual_review
+          - policy_concern
+          - abuse_concern
+        public_notice:
+          type: string
+          maxLength: 1024
+          x-max-utf8-bytes: 1024
+        created_at:
+          type: string
+          format: date-time
+    AccountGovernanceAccess:
+      type: object
+      additionalProperties: false
+      required:
+      - target_user_id
+      - state
+      - version
+      - can_appeal
+      properties:
+        target_user_id:
+          type: string
+          pattern: ^usr_[a-f0-9]{32}$
+        state:
+          type: string
+          enum:
+          - OPEN
+          - SUSPENDED
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        restriction:
+          $ref: '#/components/schemas/AccountGovernanceRestriction'
+        can_appeal:
+          type: boolean
+    AccountGovernanceAppealInput:
+      type: object
+      additionalProperties: false
+      required:
+      - reason_code
+      - restriction_id
+      properties:
+        reason_code:
+          type: string
+          enum:
+          - request_review
+          - restriction_error
+          - issue_resolved
+        statement:
+          type: string
+          maxLength: 1024
+          x-max-utf8-bytes: 1024
+          description: 可省略或为空；最多1024个UTF-8字节，不是1024个汉字。允许换行LF，拒绝其他Unicode控制字符和格式字符；须为有效UTF-8。
+        restriction_id:
+          type: string
+          pattern: ^arst_[a-f0-9]{32}$
+    AccountGovernanceAppealSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - target_user_id
+      - restriction_id
+      - state
+      - version
+      - reason_code
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^aapl_[a-f0-9]{32}$
+        target_user_id:
+          type: string
+          pattern: ^usr_[a-f0-9]{32}$
+        restriction_id:
+          type: string
+          pattern: ^arst_[a-f0-9]{32}$
+        state:
+          type: string
+          enum:
+          - OPEN
+          - RESOLVED
+        outcome:
+          type: string
+          enum:
+          - UPHELD
+          - LIFTED
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2
+        reason_code:
+          type: string
+          enum:
+          - request_review
+          - restriction_error
+          - issue_resolved
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AccountGovernanceAppeal:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - target_user_id
+      - restriction_id
+      - state
+      - version
+      - reason_code
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^aapl_[a-f0-9]{32}$
+        target_user_id:
+          type: string
+          pattern: ^usr_[a-f0-9]{32}$
+        restriction_id:
+          type: string
+          pattern: ^arst_[a-f0-9]{32}$
+        state:
+          type: string
+          enum:
+          - OPEN
+          - RESOLVED
+        outcome:
+          type: string
+          enum:
+          - UPHELD
+          - LIFTED
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2
+        reason_code:
+          type: string
+          enum:
+          - request_review
+          - restriction_error
+          - issue_resolved
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        statement:
+          type: string
+          maxLength: 1024
+          x-max-utf8-bytes: 1024
+        public_reply:
+          type: string
+          maxLength: 1024
+          x-max-utf8-bytes: 1024
+    AccountGovernanceAppealPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/AccountGovernanceAppealSummary'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 2048
+    AccountGovernanceEffect:
+      type: object
+      additionalProperties: false
+      required:
+      - from_state
+      - to_state
+      - version
+      - restriction_id
+      - affected_appeals
+      properties:
+        from_state:
+          type: string
+          enum:
+          - OPEN
+          - SUSPENDED
+        to_state:
+          type: string
+          enum:
+          - OPEN
+          - SUSPENDED
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        restriction_id:
+          type: string
+          pattern: ^arst_[a-f0-9]{32}$
+        affected_appeals:
+          type: integer
+          minimum: 0
+          maximum: 1
+    AccountGovernancePlanInput:
+      type: object
+      additionalProperties: false
+      required:
+      - action
+      - expected_version
+      - reason_code
+      - evidence_ref
+      - public_reply
+      properties:
+        action:
+          type: string
+          enum:
+          - suspend
+          - lift
+          - uphold
+        expected_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        restriction_id:
+          anyOf:
+          - type: string
+            const: ''
+          - type: string
+            pattern: ^arst_[a-f0-9]{32}$
+        appeal_id:
+          anyOf:
+          - type: string
+            const: ''
+          - type: string
+            pattern: ^aapl_[a-f0-9]{32}$
+        expected_appeal_version:
+          type: integer
+          minimum: 0
+          maximum: 1
+        reason_code:
+          type: string
+          enum:
+          - manual_review
+          - policy_concern
+          - abuse_concern
+          - review_complete
+          - restriction_error
+        evidence_ref:
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$
+          description: 内部安全ASCII短标识，禁止包含://，不得填URL、密码、密钥或正文。
+        public_reply:
+          type: string
+          maxLength: 1024
+          x-max-utf8-bytes: 1024
+          description: 必须含非空白内容；最多1024个UTF-8字节，不是1024个汉字。允许换行LF，拒绝其他Unicode控制字符和格式字符；须为有效UTF-8。
+      allOf:
+      - if:
+          properties:
+            action:
+              const: suspend
+        then:
+          properties:
+            restriction_id:
+              const: ''
+            appeal_id:
+              const: ''
+            expected_appeal_version:
+              const: 0
+            reason_code:
+              type: string
+              enum:
+              - manual_review
+              - policy_concern
+              - abuse_concern
+      - if:
+          properties:
+            action:
+              const: lift
+        then:
+          required:
+          - restriction_id
+          properties:
+            restriction_id:
+              type: string
+              pattern: ^arst_[a-f0-9]{32}$
+            appeal_id:
+              const: ''
+            expected_appeal_version:
+              const: 0
+            reason_code:
+              type: string
+              enum:
+              - review_complete
+              - restriction_error
+      - if:
+          properties:
+            action:
+              const: uphold
+        then:
+          required:
+          - restriction_id
+          - appeal_id
+          - expected_appeal_version
+          properties:
+            restriction_id:
+              type: string
+              pattern: ^arst_[a-f0-9]{32}$
+            appeal_id:
+              type: string
+              pattern: ^aapl_[a-f0-9]{32}$
+            expected_appeal_version:
+              const: 1
+            reason_code:
+              type: string
+              enum:
+              - manual_review
+              - policy_concern
+              - abuse_concern
+    AccountGovernancePlan:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - target_user_id
+      - action
+      - expected_version
+      - plan_digest
+      - expires_at
+      - effect
+      - restriction_id
+      properties:
+        id:
+          type: string
+          pattern: ^aplan_[a-f0-9]{32}$
+        target_user_id:
+          type: string
+          pattern: ^usr_[a-f0-9]{32}$
+        action:
+          type: string
+          enum:
+          - suspend
+          - lift
+          - uphold
+        expected_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        restriction_id:
+          type: string
+          pattern: ^arst_[a-f0-9]{32}$
+        appeal_id:
+          type: string
+          pattern: ^aapl_[a-f0-9]{32}$
+        plan_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        expires_at:
+          type: string
+          format: date-time
+        effect:
+          $ref: '#/components/schemas/AccountGovernanceEffect'
+    AccountGovernanceExecuteInput:
+      type: object
+      additionalProperties: false
+      required:
+      - plan_id
+      - plan_digest
+      - password
+      properties:
+        plan_id:
+          type: string
+          pattern: ^aplan_[a-f0-9]{32}$
+        plan_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          minLength: 1
+          maxLength: 72
+          x-min-utf8-bytes: 10
+          x-max-utf8-bytes: 72
+          description: 当前密码，实际校验10至72个UTF-8字节；只在当前请求内使用，不能放入恢复仓、日志或持久计划。
+    AccountGovernanceReceipt:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - plan_id
+      - target_user_id
+      - action
+      - effect
+      - executed_at
+      properties:
+        id:
+          type: string
+          pattern: ^arec_[a-f0-9]{32}$
+        plan_id:
+          type: string
+          pattern: ^aplan_[a-f0-9]{32}$
+        target_user_id:
+          type: string
+          pattern: ^usr_[a-f0-9]{32}$
+        action:
+          type: string
+          enum:
+          - suspend
+          - lift
+          - uphold
+        effect:
+          $ref: '#/components/schemas/AccountGovernanceEffect'
+        executed_at:
+          type: string
+          format: date-time
+    AccountGovernanceTargets:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          maxItems: 64
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - target_user_id
+            - version
+            properties:
+              target_user_id:
+                type: string
+                pattern: ^usr_[a-f0-9]{32}$
+              version:
+                type: integer
+                minimum: 1
+    ContentAppealFinanceStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - REFERRED
+          - RESOLVED_OTHER
+          - RELEASED
+        receipt_id:
+          type: string
+        released_micros:
+          type: string
+          pattern: ^[0-9]+$
+      required:
+      - status
+      additionalProperties: false
+    ContentAppeal:
+      type: object
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        project_id:
+          type: string
+        resource_type:
+          type: string
+          enum:
+          - run
+          - task
+        resource_id:
+          type: string
+        moderation_version:
+          type: integer
+          minimum: 1
+        reason_code:
+          type: string
+        resource_version:
+          type: integer
+          minimum: 0
+        decision:
+          type: string
+          enum:
+          - BLOCKED
+          - REVIEW
+        decision_reason:
+          type: string
+        policy_id:
+          type: string
+        policy_version:
+          type: string
+        state:
+          type: string
+          enum:
+          - OPEN
+          - RESOLVED
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        statement:
+          type: string
+        public_reply:
+          type: string
+        outcome:
+          type: string
+          enum:
+          - UPHELD
+          - OPINION_RECORDED
+          - FINANCE_REFERRED
+        finance:
+          $ref: '#/components/schemas/ContentAppealFinanceStatus'
+      required:
+      - id
+      - workspace_id
+      - project_id
+      - resource_type
+      - resource_id
+      - moderation_version
+      - reason_code
+      - resource_version
+      - decision
+      - decision_reason
+      - policy_id
+      - policy_version
+      - state
+      - version
+      - created_at
+      - updated_at
+      additionalProperties: false
+    ContentAppealPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentAppeal'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+      required:
+      - items
+      - next_cursor
+      additionalProperties: false
+    ContentAppealPlan:
+      type: object
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        appeal_id:
+          type: string
+        action:
+          type: string
+          enum:
+          - uphold
+          - record_opinion
+          - refer_finance
+        outcome:
+          type: string
+          enum:
+          - UPHELD
+          - OPINION_RECORDED
+          - FINANCE_REFERRED
+        expected_version:
+          type: integer
+          minimum: 1
+        plan_digest:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - workspace_id
+      - appeal_id
+      - action
+      - outcome
+      - expected_version
+      - plan_digest
+      - expires_at
+      additionalProperties: false
+    ContentAppealReceipt:
+      type: object
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        appeal_id:
+          type: string
+        plan_id:
+          type: string
+        action:
+          type: string
+          enum:
+          - uphold
+          - record_opinion
+          - refer_finance
+        outcome:
+          type: string
+          enum:
+          - UPHELD
+          - OPINION_RECORDED
+          - FINANCE_REFERRED
+        version:
+          type: integer
+          minimum: 1
+        executed_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - workspace_id
+      - appeal_id
+      - plan_id
+      - action
+      - outcome
+      - version
+      - executed_at
+      additionalProperties: false
+    ContentAppealFinanceItem:
+      type: object
+      properties:
+        appeal_id:
+          type: string
+        project_id:
+          type: string
+        resource_type:
+          type: string
+          enum:
+          - run
+          - task
+        resource_id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        case_id:
+          type: string
+      required:
+      - appeal_id
+      - project_id
+      - resource_type
+      - resource_id
+      - version
+      - created_at
+      additionalProperties: false
+    ContentAppealFinancePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentAppealFinanceItem'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+      required:
+      - items
+      - next_cursor
+      additionalProperties: false
+    ContentAppealFinanceLink:
+      type: object
+      properties:
+        appeal_id:
+          type: string
+        case_id:
+          type: string
+        status:
+          type: string
+          enum:
+          - REFERRED
+          - RESOLVED_OTHER
+          - RELEASED
+        receipt_id:
+          type: string
+        released_micros:
+          type: string
+      required:
+      - appeal_id
+      - case_id
+      - status
+      additionalProperties: false
+    WorkflowNode:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+          - text
+          - image
+          - approval
+          - video
+        title:
+          type: string
+        prompt:
+          type: string
+        model_id:
+          type: string
+        model_version:
+          type: string
+        parameters:
+          $ref: '#/components/schemas/TaskParameters'
+      required:
+      - id
+      - kind
+      - title
+      additionalProperties: false
+    WorkflowEdge:
+      type: object
+      properties:
+        from:
+          type: string
+        from_port:
+          type: string
+        to:
+          type: string
+        to_port:
+          type: string
+      required:
+      - from
+      - from_port
+      - to
+      - to_port
+      additionalProperties: false
+    WorkflowGraph:
+      type: object
+      properties:
+        name:
+          type: string
+        template_id:
+          enum: [text-image-approval, text-image-approval-video]
+        template_version:
+          enum: ['1', '2']
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowNode'
+          minItems: 3
+          maxItems: 4
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowEdge'
+          minItems: 2
+          maxItems: 4
+      oneOf:
+      - properties:
+          template_id: {const: text-image-approval}
+          template_version: {const: '1'}
+          nodes: {minItems: 3, maxItems: 3}
+          edges: {minItems: 2, maxItems: 2}
+      - properties:
+          template_id: {const: text-image-approval-video}
+          template_version: {const: '2'}
+          nodes: {minItems: 4, maxItems: 4}
+          edges: {minItems: 4, maxItems: 4}
+      required:
+      - name
+      - template_id
+      - template_version
+      - nodes
+      - edges
+      additionalProperties: false
+    CanvasNode:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        x:
+          type: integer
+          minimum: -1000000
+          maximum: 1000000
+        y:
+          type: integer
+          minimum: -1000000
+          maximum: 1000000
+        note:
+          type: string
+          maxLength: 600
+        group_id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        asset_id:
+          type: string
+        asset_revision:
+          type: integer
+          minimum: 1
+        run_id:
+          type: string
+      required:
+      - id
+      - title
+      - x
+      - y
+      additionalProperties: false
+    CanvasEdge:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        from:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        to:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+      required:
+      - id
+      - from
+      - to
+      additionalProperties: false
+    CanvasGroup:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,48}$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        collapsed:
+          type: boolean
+      required:
+      - id
+      - title
+      - collapsed
+      additionalProperties: false
+    CanvasDocument:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CanvasNode'
+          maxItems: 2000
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/CanvasEdge'
+          maxItems: 4000
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/CanvasGroup'
+          maxItems: 128
+      required:
+      - title
+      - nodes
+      - edges
+      - groups
+      additionalProperties: false
+    CanvasSave:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+          maximum: 64
+        document:
+          $ref: '#/components/schemas/CanvasDocument'
+      required:
+      - expected_revision
+      - document
+      additionalProperties: false
+    CanvasSource:
+      type: object
+      properties:
+        available:
+          type: boolean
+        content_version:
+          type: string
+        thumbnail_url:
+          type: string
+        status:
+          type: string
+        seq:
+          type: integer
+          minimum: 0
+      required:
+      - available
+      additionalProperties: false
+    CanvasSources:
+      type: object
+      properties:
+        project_id:
+          type: string
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 64
+        sources:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/CanvasSource'
+      required:
+      - project_id
+      - revision
+      - sources
+      additionalProperties: false
+    CanvasVersion:
+      type: object
+      properties:
+        project_id:
+          type: string
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 64
+        sources:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/CanvasSource'
+        document:
+          $ref: '#/components/schemas/CanvasDocument'
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - project_id
+      - revision
+      - sources
+      - document
+      - created_at
+      additionalProperties: false
+    CanvasRevisionSummary:
+      type: object
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 64
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        node_count:
+          type: integer
+          minimum: 0
+          maximum: 2000
+        edge_count:
+          type: integer
+          minimum: 0
+          maximum: 4000
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - revision
+      - title
+      - node_count
+      - edge_count
+      - created_at
+      additionalProperties: false
+    CanvasHistory:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CanvasRevisionSummary'
+          maxItems: 50
+        next_before_revision:
+          type: integer
+          minimum: 1
+          maximum: 64
+      required:
+      - items
+      additionalProperties: false
+    WorkflowDefinition:
+      type: object
+      properties:
+        id:
+          type: string
+        project_id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        graph:
+          $ref: '#/components/schemas/WorkflowGraph'
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - project_id
+      - version
+      - graph
+    WorkflowCandidate:
+      type: object
+      properties:
+        asset_id:
+          type: string
+        artifact_id:
+          type: string
+        task_id:
+          type: string
+        revision:
+          type: integer
+          minimum: 1
+        content_version:
+          type: string
+      required:
+      - asset_id
+      - artifact_id
+      - task_id
+      - revision
+      - content_version
+    WorkflowExecution:
+      type: object
+      properties:
+        id:
+          type: string
+        project_id:
+          type: string
+        definition_id:
+          type: string
+        definition_version:
+          type: integer
+          minimum: 1
+        graph:
+          $ref: '#/components/schemas/WorkflowGraph'
+        input:
+          type: string
+        frozen_models:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Model'
+        provider_mode:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum:
+          - TEXT_READY
+          - TEXT_ACTIVE
+          - IMAGE_READY
+          - IMAGE_ACTIVE
+          - WAITING_APPROVAL
+          - VIDEO_READY
+          - VIDEO_ACTIVE
+          - COMPLETED
+          - CANCELLED
+          - FAILED
+          - REVIEW
+        source_workflow_id:
+          type: string
+        source_version:
+          type: integer
+          minimum: 1
+        from_node:
+          type: string
+        attempt:
+          type: integer
+          minimum: 1
+          maximum: 128
+        text_run_id:
+          type: string
+        image_task_id:
+          type: string
+        video_task_id:
+          type: string
+        video_artifacts:
+          type: array
+          maxItems: 1
+          items:
+            $ref: '#/components/schemas/WorkflowCandidate'
+        candidates:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/WorkflowCandidate'
+        selected:
+          $ref: '#/components/schemas/WorkflowCandidate'
+        error_code:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - project_id
+      - definition_id
+      - definition_version
+      - version
+      - status
+      - graph
+    WorkflowDetail:
+      allOf:
+      - $ref: '#/components/schemas/WorkflowExecution'
+      - type: object
+        properties:
+          text_run:
+            $ref: '#/components/schemas/Run'
+          image_task:
+            $ref: '#/components/schemas/Task'
+          video_task:
+            $ref: '#/components/schemas/Task'
+    WorkflowStepInput:
+      type: object
+      properties:
+        resource_type:
+          type: string
+          enum:
+          - run
+          - task
+        run_input:
+          $ref: '#/components/schemas/RunInput'
+        task_input:
+          $ref: '#/components/schemas/TaskInput'
+      required:
+      - resource_type
     ResourceError:
       type: object
       required:
@@ -3383,6 +10086,9 @@ components:
       - model_id
       - input
       properties:
+        workflow_attempt_id:
+          type: string
+          description: 派生尝试的步骤报价和受理绑定同一尝试，仅工作流可授权该步骤。
         project_id:
           type: string
           description: 必须属于当前认证工作区
@@ -3409,6 +10115,9 @@ components:
       - model_id
       - inputs
       properties:
+        workflow_attempt_id:
+          type: string
+          description: 派生尝试的步骤报价和受理绑定同一尝试，仅工作流可授权该步骤。
         project_id:
           type: string
           description: 必须属于当前认证工作区
@@ -3430,6 +10139,11 @@ components:
               type: string
               minLength: 1
               description: 非空白合法UTF-8，不超过模型max_prompt_bytes和平台16000字节上限。
+            workflow_id:
+              type: string
+              description: 仅首帧视频步骤，绑定原工作流身份。
+            first_frame:
+              $ref: '#/components/schemas/WorkflowCandidate'
             reference_asset_ids:
               type: array
               maxItems: 4
@@ -3447,7 +10161,8 @@ components:
           enum:
           - generate
           - edit
-          description: 省略按generate处理；edit只支持image，必须提供本项目1至4个有序且不重复的私有参考ID。
+          - first_frame
+          description: generate 为默认，edit 需同项目 1 至 4 个有序私有参考。first_frame 只能由工作流视频步骤受理，报价绑定该流程已选原件。
         quote_id:
           type: string
           maxLength: 128
@@ -3649,7 +10364,10 @@ components:
           enum:
           - generate
           - edit
-          description: 省略按generate处理；edit只支持image，必须提供本项目1至4个有序且不重复的私有参考ID。
+          - first_frame
+          description: generate 为默认，edit 需同项目 1 至 4 个有序私有参考。first_frame 只能由工作流视频步骤受理，报价绑定该流程已选原件。
+        first_frame:
+          $ref: '#/components/schemas/WorkflowCandidate'
         reference_asset_ids:
           type: array
           maxItems: 4
@@ -3716,9 +10434,13 @@ components:
       type: object
       required:
       - auth_enabled
+      - account_restricted
       - user
       - account_security
       properties:
+        account_restricted:
+          type: boolean
+          description: 受限时返回本人身份与账户安全能力。重新登录后进入独立的账户申诉入口。
         auth_enabled:
           type: boolean
         user:
@@ -3794,6 +10516,7 @@ components:
           - task.cancelled
           - task.reconcile_requested
           - draft.saved
+          - canvas.saved
           - reference.uploaded
           - asset.updated
           - asset.trashed
@@ -3810,6 +10533,8 @@ components:
           - reference
           - asset
           - conversation
+          - workflow
+          - canvas
         resource_id:
           type: string
         created_at:
@@ -4111,6 +10836,9 @@ components:
           items:
             $ref: '#/components/schemas/ParameterPreset'
           maxItems: 32
+        video_first_frame_supported:
+          type: boolean
+          description: 视频模型在私有目录中单独启用首帧 multipart 支持，缺省关闭。
         image_edit_supported:
           type: boolean
           description: 仅image可声明支持编辑；旧live配置未声明则关闭。
@@ -4154,6 +10882,9 @@ components:
           - video
         description:
           type: string
+        builtin_description:
+          type: boolean
+          description: 为 true 时界面可翻译内置模型说明。管理员提供的说明保留原文。
         enabled:
           type: boolean
         reason:
@@ -4475,6 +11206,7 @@ components:
           enum:
           - task.updated
           - run.updated
+          - workflow.updated
           - audit.created
         resource_type:
           type: string
@@ -4486,6 +11218,8 @@ components:
           - reference
           - asset
           - conversation
+          - workflow
+          - canvas
         resource_id:
           type: string
         resource_version:
@@ -4549,7 +11283,8 @@ components:
         node_count:
           type: integer
           minimum: 0
-          maximum: 256
+          maximum: 32768
+          description: 036 持久格式的会话总节点。默认新写上限 256，显式长会话配置上限 32768。
         created_at:
           type: string
           format: date-time
@@ -5435,6 +12170,8 @@ components:
           - operator
           - finance
           - moderator
+          - risk_reviewer
+          - support
         permissions:
           type: array
           items:
@@ -5446,11 +12183,13 @@ components:
             - finance
             - generation_restrict
             - appeal_resolve
+            - risk_review
+            - support_ticket
         version:
           type: integer
           minimum: 1
           maximum: 9007199254740991
-      description: 按目标工作区显式授予。moderator仅具有read、generation_restrict、appeal_resolve；既有observer/operator/finance不继承新权限。同一人可有多个独立角色，撤权在每次请求事务中重新核验。
+      description: 每个角色按工作区单独授予。risk_reviewer 仅提供风险申请审议权限。撤权在受保护的请求事务中重新核验。
     OperationsCapabilities:
       type: object
       additionalProperties: false

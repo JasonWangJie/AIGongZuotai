@@ -15,19 +15,30 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"aigongzuotai/internal/localeip"
+	"aigongzuotai/internal/videoexport"
+
 	"github.com/jackc/pgx/v5"
 )
 
 type Config struct {
+	LocaleTrustedProxies                                                                                    string
+	RunDeltaBatching                                                                                        bool
+	LongConversationHistory                                                                                 bool
+	RunReplayReadConnections                                                                                int
+	OrderCatalogFile                                                                                        string
+	VideoExport                                                                                             videoexport.Config
 	MediaDelivery                                                                                           MediaDeliveryConfig
 	MediaScheduling                                                                                         MediaSchedulingConfig
 	ChatScheduling                                                                                          ChatSchedulingConfig
+	ChatChildren                                                                                            ChatChildConfig
 	MediaModeration                                                                                         MediaModerationConfig
 	Moderation                                                                                              ModerationConfig
 	OperationsEnabled                                                                                       bool
 	BillingMode, BillingPriceFile                                                                           string
 	Mail                                                                                                    MailConfig
 	mailSender                                                                                              mailSender // In-package TLS SMTP fixtures only; no runtime switch.
+	RunLeaseDuration                                                                                        time.Duration
 	TaskLeaseDuration                                                                                       time.Duration
 	AssetStorage                                                                                            AssetStorageConfig
 	ReferenceDir                                                                                            string
@@ -48,6 +59,9 @@ type Config struct {
 func (c *Config) defaults() {
 	if c.BillingMode == "" {
 		c.BillingMode = "disabled"
+	}
+	if c.RunLeaseDuration == 0 {
+		c.RunLeaseDuration = 30 * time.Second
 	}
 	if c.TaskLeaseDuration == 0 {
 		c.TaskLeaseDuration = 30 * time.Second
@@ -101,6 +115,9 @@ func (c *Config) defaults() {
 }
 
 type runRecord struct {
+	leaseWatch     *runLeaseWatch
+	streamWrite    chan struct{} // Start, append or checkpoint in progress outside App.mu.
+	streamCancel   chan struct{} // A cancel waiting for that write takes precedence over another append.
 	ChatExecution  *chatExecution
 	UpstreamModel  string
 	CheckpointSeq  uint64
@@ -110,6 +127,7 @@ type runRecord struct {
 	EventStart     int
 	Output         strings.Builder
 	Subscribers    map[chan event]bool
+	streamReaders  int // Counts open SSE handlers, including a slow reader whose channel was closed.
 	Cancel         context.CancelFunc
 }
 type taskRecord struct {
@@ -138,6 +156,10 @@ type idemRecord struct {
 // App owns all in-memory resources and a fixed number of execution workers.
 // HTTP subscribers never own or restart generation; disconnecting is harmless.
 type App struct {
+	locales              localeip.Resolver
+	orderCatalog         *orderCatalog
+	timelineIO           *videoTimelineIO
+	workflowActions      workflowActionLocks
 	recoveryStats        recoveryStats
 	activeReviews        map[string]mediaReviewCancellation
 	delivery             *mediaDeliveryCipher
@@ -167,6 +189,7 @@ type App struct {
 	mu                   sync.Mutex
 	runs                 map[string]*runRecord
 	tasks                map[string]*taskRecord
+	activeTaskClaims     map[string]int
 	idem                 map[string]idemRecord
 	workspaceSubscribers map[chan event]subscriptionScope
 	projects             map[string]Project
@@ -175,17 +198,46 @@ type App struct {
 	bcryptSlots          chan struct{}
 	workspaceSeq         uint64
 	chat                 ChatProvider
+	chatChildren         *chatChildPool
+	runDeltaBatch        *runDeltaCoordinator
 	media                MediaProvider
 	execution            *executionScheduler
 	mediaExecution       *mediaExecutionLanes
 	mediaScheduler       *mediaScheduler
 	streamSlots          chan struct{}
+	streamSessions       *streamSessionMonitor
 	auditEvents          []AuditEvent
 	auditStart           int
 }
 
 func New(c Config) (*App, error) {
 	c.defaults()
+	locales, err := localeip.New(c.LocaleTrustedProxies)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.ChatChildren.validate(c); err != nil {
+		return nil, err
+	}
+	if c.Admission.GlobalStreams > 128 && (c.AuthMode != "required" || c.DatabaseURL == "" || c.RunReplayReadConnections < 1) {
+		return nil, errors.New("expanded SSE admission requires authentication, PostgreSQL and Run replay readers")
+	}
+	if c.RunDeltaBatching && c.DatabaseURL == "" {
+		return nil, errors.New("Run delta batching requires PostgreSQL")
+	}
+	if c.RunReplayReadConnections < 0 || c.RunReplayReadConnections > maxRunReplayConnections || c.RunReplayReadConnections > 0 && c.DatabaseURL == "" {
+		return nil, errors.New("separate Run replay readers require PostgreSQL and a connection count between 1 and 4 (0 disables)")
+	}
+	if c.LongConversationHistory && c.DatabaseURL == "" {
+		return nil, errors.New("long conversation history requires PostgreSQL")
+	}
+	orders, err := loadOrderCatalog(c.OrderCatalogFile, c.AuthMode, c.DatabaseURL)
+	if err != nil {
+		return nil, err
+	}
+	if c.RunLeaseDuration < 3*time.Second || c.RunLeaseDuration > 5*time.Minute {
+		return nil, errors.New("run lease duration must be between 3 seconds and 5 minutes")
+	}
 	if err := c.ChatScheduling.normalize(c.RunWorkers, c.QueueSize); err != nil {
 		return nil, err
 	}
@@ -296,14 +348,22 @@ func New(c Config) (*App, error) {
 		_ = lease.Close()
 		return nil, err
 	}
+	var timelineIO *videoTimelineIO
 	initialized := false
 	defer func() {
 		if !initialized {
+			if timelineIO != nil {
+				timelineIO.close()
+			}
 			_ = references.Close()
 			_ = assets.Close()
 			_ = lease.Close()
 		}
 	}()
+	timelineIO, err = newVideoTimelineIO(c)
+	if err != nil {
+		return nil, err
+	}
 	var chat ChatProvider = demoChat{delay: c.DemoTokenDelay}
 	var media MediaProvider = demoMedia{duration: c.DemoTaskDuration}
 	if c.Mode == "demo" && mediaModeration != nil && c.mediaProvider == nil {
@@ -331,6 +391,9 @@ func New(c Config) (*App, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	if c.mediaProvider != nil {
 		media = c.mediaProvider
+		if native, ok := media.(*AsyncMediaProvider); ok && native.bodies == nil {
+			native.bodies = references
+		}
 	}
 	_, phased := media.(MediaDeliveryProvider)
 	delivery, deliveryErr := newMediaDeliveryCipher(c.MediaDelivery.EncryptionKey, phased, c.DatabaseURL == "")
@@ -344,7 +407,10 @@ func New(c Config) (*App, error) {
 		}
 		return nil, deliveryErr
 	}
-	a := &App{config: c, ctx: ctx, cancel: cancel, runs: make(map[string]*runRecord), tasks: make(map[string]*taskRecord), idem: make(map[string]idemRecord), workspaceSubscribers: make(map[chan event]subscriptionScope), projects: make(map[string]Project), limiter: newLoginLimiter(), bcryptSlots: make(chan struct{}, 4), chat: chat, media: media, execution: newExecutionScheduler(c.ChatScheduling), mediaExecution: newMediaExecutionLanes(c.MediaScheduling), streamSlots: make(chan struct{}, 128)}
+	a := &App{config: c, ctx: ctx, cancel: cancel, runs: make(map[string]*runRecord), tasks: make(map[string]*taskRecord), idem: make(map[string]idemRecord), workspaceSubscribers: make(map[chan event]subscriptionScope), projects: make(map[string]Project), limiter: newLoginLimiter(), bcryptSlots: make(chan struct{}, 4), chat: chat, media: media, execution: newExecutionScheduler(c.ChatScheduling), mediaExecution: newMediaExecutionLanes(c.MediaScheduling), streamSlots: make(chan struct{}, c.Admission.GlobalStreams)}
+	a.locales = locales
+	a.timelineIO = timelineIO
+	a.orderCatalog = orders
 	a.delivery = delivery
 	a.mediaScheduler = newMediaScheduler(c.MediaScheduling)
 	a.moderation = moderation
@@ -362,7 +428,9 @@ func New(c Config) (*App, error) {
 	a.referenceItems = make(map[string]referenceRecord)
 	a.referenceIdem = make(map[string]idemRecord)
 	a.editPrepareSlots = make(chan struct{}, 2)
-	a.projects["prj_demo"] = Project{ID: "prj_demo", WorkspaceID: "ws_demo", Name: "未命名创意项目", CreatedAt: time.Now().UTC()}
+	if c.DatabaseURL == "" {
+		a.projects["prj_demo"] = Project{ID: "prj_demo", WorkspaceID: "ws_demo", Name: "未命名创意项目", CreatedAt: time.Now().UTC()}
+	}
 	if c.DatabaseURL != "" {
 		store, err := openPostgres(c.DatabaseURL)
 		if err != nil {
@@ -394,17 +462,34 @@ func New(c Config) (*App, error) {
 			cancel()
 			return nil, err
 		}
-		if err = a.initTaskLeases(); err == nil {
-			err = store.restore(a)
-		}
-		if err == nil {
-			a.mail, err = newMailDelivery(c.Mail, store)
-			if err == nil && a.mail != nil && c.mailSender != nil {
+		a.mail, err = newMailDelivery(c.Mail, store)
+		if err == nil && a.mail != nil {
+			if c.mailSender != nil {
 				a.mail.sender = c.mailSender
 			}
+			// Validate the existing queue before fencing leases or persisting
+			// recovery. Queue maintenance and delivery still wait for restore.
+			err = store.do(func(ctx context.Context, conn *pgx.Conn) error {
+				return a.mail.checkPendingKey(ctx, conn)
+			})
+		}
+		if err == nil && c.RunReplayReadConnections > 0 {
+			err = store.openRunReplayPool(a.ctx, c.RunReplayReadConnections)
+		}
+		if err == nil && c.Admission.GlobalStreams > 128 {
+			store.streamAuth, err = store.newVerifiedReadPool(a.ctx, 1)
+		}
+		if err == nil {
+			err = a.initTaskLeases()
+		}
+		if err == nil {
+			err = store.restore(a)
 		}
 		if err == nil && a.mail != nil {
 			err = a.mail.prepare()
+		}
+		if err == nil && c.ChatChildren.Processes > 0 {
+			a.chatChildren, err = startChatChildPool(a.ctx, c)
 		}
 		if err != nil {
 			a.taskLeases.close()
@@ -422,9 +507,22 @@ func New(c Config) (*App, error) {
 		cancel()
 		return nil, err
 	}
-	for range c.RunWorkers {
+	if c.Admission.GlobalStreams > 128 {
+		a.streamSessions = newStreamSessionMonitor(a.ctx, min(c.Heartbeat, 5*time.Second), a.store.validateStreamSessions)
+		a.wg.Go(a.streamSessions.run)
+	}
+	if c.RunDeltaBatching {
+		a.runDeltaBatch = newRunDeltaCoordinator(a.ctx, a.store.appendRunDeltaBatch)
+		a.wg.Go(a.runDeltaBatch.run)
+	}
+	if a.chatChildren != nil {
 		a.wg.Add(1)
-		go a.runWorker()
+		go a.runManagedChatScheduler()
+	} else {
+		for range c.RunWorkers {
+			a.wg.Add(1)
+			go a.runWorker()
+		}
 	}
 	for range c.MediaScheduling.SubmitWorkers {
 		a.wg.Add(1)
@@ -460,12 +558,27 @@ func New(c Config) (*App, error) {
 
 func (a *App) Close() {
 	a.cancel()
+	if a.chatChildren != nil {
+		a.chatChildren.close()
+	}
+	if a.timelineIO != nil {
+		a.timelineIO.close()
+	}
 	a.wg.Wait()
 	a.taskLeases.close()
 	a.mu.Lock()
 	for _, r := range a.runs {
 		if !terminal(r.Run.Status) {
-			_ = a.finishRunLocked(r, "INTERRUPTED")
+			err := a.finishRunLocked(r, "INTERRUPTED")
+			// The outbox worker has stopped. Only a confirmed backlog rollback
+			// and real projection progress authorize retrying the interruption.
+			for isEventBacklog(err) {
+				n, projectErr := a.store.projectOutboxBatch()
+				if projectErr != nil || n == 0 {
+					break
+				}
+				err = a.finishRunLocked(r, "INTERRUPTED")
+			}
 		}
 	}
 	a.mu.Unlock()
@@ -514,22 +627,28 @@ func (a *App) createRun(input RunInput, key string, actorIDs ...string) (Run, bo
 }
 
 func (a *App) createRunContext(ctx context.Context, input RunInput, key string, actorIDs ...string) (Run, bool, error) {
+	if err := authorizeWorkflowAttempt(ctx, input.WorkflowAttemptID, "text"); err != nil {
+		return Run{}, false, err
+	}
 	approval := &runModerationAdmission{}
-	run, replayed, err := a.createRunApproved(input, key, approval, actorIDs...)
+	run, replayed, err := a.createRunApproved(ctx, input, key, approval, actorIDs...)
 	if !isModerationPreparation(err) {
 		return run, replayed, err
 	}
 	approval.check(ctx, a.moderation)
-	return a.createRunApproved(input, key, approval, actorIDs...)
+	return a.createRunApproved(ctx, input, key, approval, actorIDs...)
 }
 
-func (a *App) createRunApproved(input RunInput, key string, approval *runModerationAdmission, actorIDs ...string) (Run, bool, error) {
+func (a *App) createRunApproved(ctx context.Context, input RunInput, key string, approval *runModerationAdmission, actorIDs ...string) (Run, bool, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.ctx.Err() != nil {
 		return Run{}, false, failure(503, "SHUTTING_DOWN", "服务正在停止")
 	}
-	project, ok := a.projects[input.ProjectID]
+	project, ok, err := a.projectLocked(input.ProjectID)
+	if err != nil {
+		return Run{}, false, err
+	}
 	if !ok {
 		return Run{}, false, failure(422, "PROJECT_NOT_FOUND", "项目不存在")
 	}
@@ -575,8 +694,7 @@ func (a *App) createRunApproved(input RunInput, key string, approval *runModerat
 	if err := a.checkAdmissionLocked(project.WorkspaceID, input.ModelID, "chat"); err != nil {
 		return Run{}, false, err
 	}
-	a.evictTerminalsLocked()
-	if len(a.runs) >= a.config.MaxRecords {
+	if a.store == nil && len(a.runs) >= a.config.MaxRecords {
 		return Run{}, false, failure(503, "LOCAL_STORE_FULL", "本地演示运行记录已达上限；重启将清空内存")
 	}
 	if err := a.execution.checkLocked(project.WorkspaceID); err != nil {
@@ -589,7 +707,7 @@ func (a *App) createRunApproved(input RunInput, key string, approval *runModerat
 	approval.attach(&run)
 	audit := newAuditEvent(run.WorkspaceID, run.ProjectID, firstActor(actorIDs), "run.accepted", "run", run.ID, AuditDetails{ToStatus: run.Status, ModelID: run.ModelID})
 	if a.store != nil {
-		if err := a.store.createRunCandidate(&run, index, hash, audit); err != nil {
+		if err := a.store.createGuardedRun(&run, index, hash, workflowChildFrom(ctx), accountRequestPrincipal(ctx), audit); err != nil {
 			return Run{}, false, err
 		}
 	}
@@ -607,6 +725,9 @@ func (a *App) createTask(input TaskInput, key string, actorIDs ...string) (Task,
 }
 
 func (a *App) createTaskContext(ctx context.Context, input TaskInput, key string, actorIDs ...string) (Task, bool, error) {
+	if err := authorizeWorkflowAttempt(ctx, input.WorkflowAttemptID, input.Kind); err != nil {
+		return Task{}, false, err
+	}
 	approval := &taskMediaModerationAdmission{}
 	task, replayed, err := a.createTaskApproved(ctx, input, key, approval, actorIDs...)
 	if !isMediaModerationPreparation(err) {
@@ -622,11 +743,18 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 	if a.ctx.Err() != nil {
 		return Task{}, false, failure(503, "SHUTTING_DOWN", "服务正在停止")
 	}
-	project, ok := a.projects[input.ProjectID]
+	project, ok, err := a.projectLocked(input.ProjectID)
+	if err != nil {
+		return Task{}, false, err
+	}
 	if !ok {
 		return Task{}, false, failure(422, "PROJECT_NOT_FOUND", "项目不存在")
 	}
 	index := project.WorkspaceID + ":tasks:" + key
+	panel := panelVideoGuardFrom(ctx)
+	if panel != nil {
+		index = panel.taskIndex()
+	}
 	hash := payloadHash(input)
 	old, found, lookupErr := a.findIdempotencyLocked(index)
 	if lookupErr != nil {
@@ -655,13 +783,10 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 	if err := a.validateBillingAdmission(input.QuoteID, false); err != nil {
 		return Task{}, false, err
 	}
-	billingHash := ledgerTaskRequestHash(input)
-	operation := input.Operation
-	if operation == "" {
-		operation = "generate"
-	}
-	if operation != "generate" && operation != "edit" || operation == "edit" && input.Kind != "image" || operation == "generate" && len(input.Inputs.ReferenceAssetIDs) != 0 {
-		return Task{}, false, failure(422, "INVALID_OPERATION", "仅图片编辑支持参考素材，普通生成不得附带引用")
+	billingHash := panel.quoteHash(input)
+	operation, err := taskOperation(input)
+	if err != nil {
+		return Task{}, false, err
 	}
 	model, err := a.resolveModel(input.ModelID, input.Kind, input.ModelVersion, input.Inputs.Prompt)
 	if err != nil {
@@ -671,6 +796,17 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 		return Task{}, false, failure(422, "MODEL_NOT_FOUND", "媒体任务需要图片或视频模型")
 	}
 	var refs []referenceRecord
+	var firstFrame *AssetInfo
+	if operation == "first_frame" {
+		guard := workflowChildFrom(ctx)
+		if guard == nil || guard.kind != "video" || guard.id != input.Inputs.WorkflowID || guard.scope != (subscriptionScope{project.WorkspaceID, input.ProjectID}) {
+			return Task{}, false, failure(409, "WORKFLOW_STEP_REQUIRED", "请从已确认图片的工作流提交视频节点")
+		}
+		firstFrame, err = a.firstFrameInfo(guard.scope, input, model.Model)
+		if err != nil {
+			return Task{}, false, err
+		}
+	}
 	if operation == "edit" {
 		if !model.Model.Capabilities.ImageEditSupported || len(input.Inputs.ReferenceAssetIDs) > model.Model.Capabilities.MaxReferenceImages {
 			return Task{}, false, failure(422, "IMAGE_EDIT_UNAVAILABLE", "当前模型不支持此数量的参考图编辑")
@@ -686,6 +822,7 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 	}
 	if a.mediaModeration != nil {
 		approval.workspaceID = project.WorkspaceID
+		approval.firstFrame = firstFrame
 		if err := approval.prepare(input, parameters, model, refs); err != nil {
 			return Task{}, false, err
 		}
@@ -699,13 +836,16 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 	if err := a.checkAdmissionLocked(project.WorkspaceID, input.ModelID, input.Kind); err != nil {
 		return Task{}, false, err
 	}
-	a.evictTerminalsLocked()
-	if len(a.tasks) >= a.config.MaxRecords {
+	if a.store == nil && len(a.tasks) >= a.config.MaxRecords {
 		return Task{}, false, failure(503, "LOCAL_STORE_FULL", "本地演示任务记录已达上限；重启将清空内存")
 	}
 	now := time.Now().UTC()
 	task := Task{ID: newID("task"), ProviderMode: a.config.Mode, WorkspaceID: project.WorkspaceID, ProjectID: input.ProjectID, Kind: input.Kind, ModelID: input.ModelID, Prompt: input.Inputs.Prompt, Status: "QUEUED", Version: 1, CreatedAt: now, UpdatedAt: now, Artifacts: []Artifact{}}
 	task.Operation = operation
+	if firstFrame != nil {
+		source := *input.Inputs.FirstFrame
+		task.FirstFrame = &source
+	}
 	task.BillingQuoteID, task.BillingRequestHash = input.QuoteID, billingHash
 	task.ReferenceAssetIDs = append([]string(nil), input.Inputs.ReferenceAssetIDs...)
 	task.ModelName, task.ModelVersion, task.ModelCapabilities, task.Parameters = model.Model.Name, model.Model.Version, copyCapabilities(&model.Model.Capabilities), &parameters
@@ -714,12 +854,16 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 	record := &taskRecord{Task: task, Input: input, NextPoll: now}
 	approval.attach(record)
 	task = record.Task
-	if operation == "edit" {
+	if operation == "edit" || operation == "first_frame" {
 		var prepareErr error
 		a.mu.Unlock()
 		func() {
 			defer a.mu.Lock()
-			record.Submission, prepareErr = a.prepareImageEdit(ctx, input, model.UpstreamModel, refs)
+			if firstFrame != nil {
+				record.Submission, prepareErr = a.prepareFirstFrame(ctx, input, model.UpstreamModel, *firstFrame)
+			} else {
+				record.Submission, prepareErr = a.prepareImageEdit(ctx, input, model.UpstreamModel, refs)
+			}
 		}()
 		// Another submission with the same key can finish while disk I/O is in
 		// progress. Its durable answer takes precedence over current conditions.
@@ -746,8 +890,10 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 		if prepareErr != nil {
 			return Task{}, false, prepareErr
 		}
-		if _, err := a.resolveReferencesLocked(project.WorkspaceID, input.ProjectID, input.Inputs.ReferenceAssetIDs); err != nil {
-			return Task{}, false, err
+		if operation == "edit" {
+			if _, err := a.resolveReferencesLocked(project.WorkspaceID, input.ProjectID, input.Inputs.ReferenceAssetIDs); err != nil {
+				return Task{}, false, err
+			}
 		}
 		if err := a.checkAdmissionLocked(project.WorkspaceID, input.ModelID, input.Kind); err != nil {
 			return Task{}, false, err
@@ -755,8 +901,7 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 		if err := a.checkMemoryLibraryCapacityLocked(parameters.Count); err != nil {
 			return Task{}, false, err
 		}
-		a.evictTerminalsLocked()
-		if len(a.tasks) >= a.config.MaxRecords {
+		if a.store == nil && len(a.tasks) >= a.config.MaxRecords {
 			return Task{}, false, failure(503, "LOCAL_STORE_FULL", "本地任务缓存已达上限")
 		}
 		now = time.Now().UTC()
@@ -775,12 +920,12 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 	}
 	audit := newAuditEvent(task.WorkspaceID, task.ProjectID, firstActor(actorIDs), "task.accepted", "task", task.ID, AuditDetails{ToStatus: task.Status, ModelID: task.ModelID, Kind: task.Kind})
 	if a.store != nil {
-		if err := a.store.createTask(record, index, hash, audit); err != nil {
+		if err := a.store.createSourcedTask(record, index, hash, workflowChildFrom(ctx), panel, accountRequestPrincipal(ctx), audit); err != nil {
 			return Task{}, false, err
 		}
 	}
 	task = record.Task
-	a.tasks[task.ID] = record
+	a.cacheIdleTaskLocked(record)
 	a.appendMemoryAuditLocked(audit)
 	if a.store == nil {
 		a.idem[index] = idemRecord{Hash: hash, ID: task.ID}
@@ -819,13 +964,11 @@ func (a *App) runWorker() {
 			return
 		}
 		job, ok := a.execution.pickLocked(time.Now())
+		record := a.runs[job.ID]
 		wake := a.execution.wake
 		a.mu.Unlock()
 		if ok {
-			func() {
-				defer func() { a.mu.Lock(); a.execution.releaseLocked(job.ID); a.mu.Unlock() }()
-				a.executeRun(job.ID)
-			}()
+			a.executePickedRun(job, record)
 			continue
 		}
 		select {
@@ -836,6 +979,23 @@ func (a *App) runWorker() {
 	}
 }
 
+func (a *App) executePickedRun(job executionJob, record *runRecord) {
+	a.executeScheduledRun(job, record, nil)
+}
+
+func (a *App) executeScheduledRun(job executionJob, record *runRecord, slot *chatChildSlot) {
+	defer func() {
+		if slot != nil {
+			slot.release()
+		}
+		a.mu.Lock()
+		a.execution.releaseLocked(job.ID)
+		a.releaseRunCacheLocked(record)
+		a.mu.Unlock()
+	}()
+	a.executeRunOn(job.ID, slot)
+}
+
 const maxRunOutputBytes = 128 << 10
 
 // Every published delta is nonempty and consumes at least one output byte.
@@ -844,15 +1004,26 @@ const maxRunOutputBytes = 128 << 10
 const recoverySequenceGap = maxRunOutputBytes + 2
 
 func (a *App) executeRun(id string) {
+	a.executeRunOn(id, nil)
+}
+
+func (a *App) executeRunOn(id string, slot *chatChildSlot) {
 	a.mu.Lock()
 	r := a.runs[id]
 	if r == nil {
 		a.mu.Unlock()
 		return
 	}
-	if terminal(r.Run.Status) || a.ctx.Err() != nil {
+	if r.Run.Status != "QUEUED" || r.streamWrite != nil || a.ctx.Err() != nil {
 		a.mu.Unlock()
 		return
+	}
+	var lease runLease
+	var owner string
+	if slot != nil {
+		owner = slot.owner()
+	} else if a.store != nil {
+		owner = newID("worker")
 	}
 	for {
 		next := r.Run
@@ -860,10 +1031,22 @@ func (a *App) executeRun(id string) {
 		next.UpdatedAt = time.Now().UTC()
 		var saveErr error
 		if a.store != nil {
-			saveErr = a.store.saveRunCandidate(&next)
+			r.streamWrite = make(chan struct{})
+			a.mu.Unlock()
+			lease, saveErr = a.store.claimRunLease(&next, owner, a.config.RunLeaseDuration)
+			a.mu.Lock()
+			close(r.streamWrite)
+			r.streamWrite = nil
 		}
 		if saveErr == nil {
 			r.Run = next
+			for r.streamCancel != nil {
+				a.waitRunWriteLocked(r.streamCancel)
+			}
+			if terminal(r.Run.Status) || a.ctx.Err() != nil {
+				a.mu.Unlock()
+				return
+			}
 			break
 		}
 		a.mu.Unlock()
@@ -878,6 +1061,11 @@ func (a *App) executeRun(id string) {
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, a.config.RunTimeout)
 	r.Cancel = cancel
+	var watch *runLeaseWatch
+	if a.store != nil {
+		watch = a.watchRunLease(r, lease, cancel)
+		r.leaseWatch = watch
+	}
 	r.LastCheckpoint = time.Now()
 	prompt := r.Run.Prompt
 	upstreamModel := r.UpstreamModel
@@ -886,6 +1074,20 @@ func (a *App) executeRun(id string) {
 	moderated := r.Run.Moderation != nil
 	policy := r.Run.ModerationPolicy
 	a.mu.Unlock()
+	if watch != nil {
+		defer a.stopRunLeaseWatch(r, watch)
+		// Cancel, shutdown, or a generation switch may have occurred between
+		// the start commit and this worker obtaining its local execution state.
+		if _, err := a.store.renewRunLease(lease, a.config.RunLeaseDuration); err != nil {
+			watch.reject(err)
+			cancel()
+			return
+		}
+	}
+	if ctx.Err() != nil {
+		cancel()
+		return
+	}
 	var candidateOutput strings.Builder
 	emit := func(delta string) error {
 		if delta == "" {
@@ -906,19 +1108,48 @@ func (a *App) executeRun(id string) {
 			candidateOutput.WriteString(delta)
 			return nil
 		}
+		a.waitRunStreamIdleLocked(r)
+		if ctx.Err() != nil || terminal(r.Run.Status) {
+			return context.Canceled
+		}
 		if len(r.Run.Output)+len(delta) > maxRunOutputBytes {
 			return errors.New("run output exceeded local size limit")
 		}
+		at := time.Now().UTC()
+		if a.store != nil {
+			expected := r.Run.Seq
+			r.streamWrite = make(chan struct{})
+			a.mu.Unlock()
+			var err error
+			if a.runDeltaBatch != nil {
+				err = a.runDeltaBatch.append(ctx, runDeltaAppend{Lease: lease, Expected: expected, Delta: delta, At: at})
+			} else {
+				err = a.store.appendLeasedRunDelta(lease, expected, delta, at)
+			}
+			watch.reject(err)
+			a.mu.Lock()
+			close(r.streamWrite)
+			r.streamWrite = nil
+			if err != nil {
+				return err
+			}
+		}
 		r.Output.WriteString(delta)
 		r.Run.Output = r.Output.String()
-		r.Run.UpdatedAt = time.Now().UTC()
+		r.Run.UpdatedAt = at
 		r.Run.Seq++
 		a.publishRunLocked(r, "message.delta", map[string]any{"run_id": id, "seq": r.Run.Seq, "delta": delta})
 		return nil
 	}
 	var err error
 	var usage *ChatUsage
-	if billed {
+	if slot != nil {
+		value, childErr := slot.stream(ctx, chatChildIdentity{RunID: id, Owner: lease.Owner, ExecutionID: lease.ExecutionID, Generation: lease.Generation, Epoch: lease.Epoch}, execution.UpstreamModel, execution.Request, billed, emit)
+		err = childErr
+		if billed {
+			usage = &value
+		}
+	} else if billed {
 		if provider, ok := a.chat.(ChatUsageProvider); ok && execution != nil {
 			value, e := provider.StreamMessagesUsage(ctx, execution.UpstreamModel, execution.Request, emit)
 			usage, err = &value, e
@@ -943,8 +1174,14 @@ func (a *App) executeRun(id string) {
 		err = errors.New("chat provider is unavailable")
 	}
 	decision := ModerationDecision{State: "REVIEW", ReasonCode: "execution_incomplete"}
+	if moderated && err == nil && watch != nil && ctx.Err() == nil {
+		// Check the database clock before starting another external operation;
+		// a provider may return after the last renewal has expired.
+		_, err = a.store.renewRunLease(lease, a.config.RunLeaseDuration)
+		watch.reject(err)
+	}
 	if moderated && err == nil {
-		if a.moderation != nil && policy != nil {
+		if a.moderation != nil && policy != nil && ctx.Err() == nil {
 			decision = a.moderation.CheckOutput(ctx, policy, candidateOutput.String())
 		} else {
 			decision.ReasonCode = "policy_unavailable"
@@ -955,6 +1192,7 @@ func (a *App) executeRun(id string) {
 	}
 	cancel()
 	a.mu.Lock()
+	a.waitRunStreamIdleLocked(r)
 	r.Cancel = nil
 	if terminal(r.Run.Status) {
 		a.mu.Unlock()
@@ -993,8 +1231,15 @@ func (a *App) executeRun(id string) {
 		}
 		next.Error = &APIError{Code: "PROCESS_STOPPED", Message: "服务停止；保留当前检查点，未自动重新请求模型"}
 	}
+	childLost := slot != nil && errors.Is(err, errChatChildInterrupted)
+	if childLost && a.ctx.Err() == nil {
+		status = "INTERRUPTED"
+		next.Error = &APIError{Code: "CHAT_CHILD_INTERRUPTED", Message: "模型执行进程已断开，已保留确认的输出"}
+	}
 	for {
-		saveErr := a.finishRunCandidateLocked(r, next, status)
+		// An interrupted child has no authoritative terminal output or usage.
+		// The control transaction rebuilds from the committed public prefix.
+		saveErr := a.saveFinishedRunLocked(r, next, status, childLost)
 		a.mu.Unlock()
 		// The model has already completed. Retain its result and retry only
 		// the transaction; invoking Stream again could duplicate billing.
@@ -1002,6 +1247,7 @@ func (a *App) executeRun(id string) {
 			return
 		}
 		a.mu.Lock()
+		a.waitRunStreamIdleLocked(r)
 	}
 }
 
@@ -1014,10 +1260,14 @@ func (a *App) finishRunLocked(r *runRecord, status string, events ...AuditEvent)
 		}
 		quarantineInterruptedRun(&next, reason)
 	}
-	return a.finishRunCandidateLocked(r, next, status, events...)
+	return a.saveFinishedRunLocked(r, next, status, true, events...)
 }
 
 func (a *App) finishRunCandidateLocked(r *runRecord, next Run, status string, events ...AuditEvent) error {
+	return a.saveFinishedRunLocked(r, next, status, false, events...)
+}
+
+func (a *App) saveFinishedRunLocked(r *runRecord, next Run, status string, control bool, events ...AuditEvent) error {
 	if terminal(r.Run.Status) {
 		return nil
 	}
@@ -1025,20 +1275,35 @@ func (a *App) finishRunCandidateLocked(r *runRecord, next Run, status string, ev
 	next.UpdatedAt = time.Now().UTC()
 	next.Seq = r.Run.Seq + 1
 	if a.store != nil {
-		if err := a.store.saveRunCandidate(&next, events...); err != nil {
+		var err error
+		switch {
+		case control:
+			err = a.store.saveControlRun(&next, events...)
+		case r.leaseWatch != nil:
+			err = a.store.saveLeasedRun(&next, r.leaseWatch.lease, r.Run.Seq, events...)
+			r.leaseWatch.reject(err)
+		default:
+			err = a.store.saveRunCandidate(&next, events...)
+		}
+		if err != nil {
 			return err
 		}
 	}
 	r.Run = next
 	a.appendMemoryAuditLocked(events...)
 	r.CheckpointSeq = next.Seq
-	if next.Moderation != nil {
-		a.publishRunLocked(r, "run.snapshot", copyRun(next))
-		return nil
-	}
-	name := map[string]string{"COMPLETED": "run.completed", "CANCELLED": "run.cancelled", "FAILED": "run.failed", "INTERRUPTED": "run.interrupted"}[status]
-	a.publishRunLocked(r, name, map[string]any{"run_id": r.Run.ID, "seq": r.Run.Seq, "status": status})
+	a.publishFinishedRunLocked(r)
 	return nil
+}
+
+// Match the persisted terminal event. Moderated runs expose only snapshots.
+func (a *App) publishFinishedRunLocked(r *runRecord) {
+	if r.Run.Moderation != nil {
+		a.publishRunLocked(r, "run.snapshot", copyRun(r.Run))
+		return
+	}
+	name := map[string]string{"COMPLETED": "run.completed", "CANCELLED": "run.cancelled", "FAILED": "run.failed", "INTERRUPTED": "run.interrupted"}[r.Run.Status]
+	a.publishRunLocked(r, name, map[string]any{"run_id": r.Run.ID, "seq": r.Run.Seq, "status": r.Run.Status})
 }
 
 func (a *App) publishRunLocked(r *runRecord, name string, data any) {
@@ -1079,6 +1344,24 @@ func (a *App) publishTaskLocked(task Task) {
 	}
 }
 
+// App.mu protects the record; neither a database write nor a waiting cancel
+// needs that lock to remain held while this caller waits.
+func (a *App) waitRunWriteLocked(done <-chan struct{}) {
+	a.mu.Unlock()
+	<-done
+	a.mu.Lock()
+}
+
+func (a *App) waitRunStreamIdleLocked(r *runRecord) {
+	for r.streamWrite != nil || r.streamCancel != nil {
+		if r.streamCancel != nil {
+			a.waitRunWriteLocked(r.streamCancel)
+		} else {
+			a.waitRunWriteLocked(r.streamWrite)
+		}
+	}
+}
+
 func (a *App) cancelRun(id string, actorIDs ...string) (Run, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -1086,12 +1369,24 @@ func (a *App) cancelRun(id string, actorIDs ...string) (Run, error) {
 	if err != nil {
 		return Run{}, err
 	}
+	for r.streamCancel != nil {
+		a.waitRunWriteLocked(r.streamCancel)
+	}
+	if r.streamWrite != nil {
+		r.streamCancel = make(chan struct{})
+		defer func() {
+			close(r.streamCancel)
+			r.streamCancel = nil
+		}()
+		a.waitRunWriteLocked(r.streamWrite)
+	}
 	if !terminal(r.Run.Status) {
 		audit := newAuditEvent(r.Run.WorkspaceID, r.Run.ProjectID, firstActor(actorIDs), "run.cancelled", "run", r.Run.ID, AuditDetails{FromStatus: r.Run.Status, ToStatus: "CANCELLED"})
 		if err := a.finishRunLocked(r, "CANCELLED", audit); err != nil {
 			return Run{}, err
 		}
 		a.execution.cancelLocked(id)
+		a.releaseRunCacheLocked(r)
 		if r.Cancel != nil {
 			r.Cancel()
 		}
@@ -1330,18 +1625,52 @@ func (a *App) checkpointRuns() {
 				return
 			}
 			a.mu.Lock()
+			var changed []*runRecord
 			for _, r := range a.runs {
 				if !terminal(r.Run.Status) && r.Run.Seq > r.CheckpointSeq {
-					if err := a.store.saveRun(r.Run); err != nil {
-						break
-					}
-					r.CheckpointSeq = r.Run.Seq
-					r.LastCheckpoint = time.Now()
+					changed = append(changed, r)
 				}
 			}
 			a.mu.Unlock()
+			for _, r := range changed {
+				if err := a.checkpointRun(r); err != nil {
+					break
+				}
+			}
 		}
 	}
+}
+
+// Conversation history and project feeds consume the periodic business
+// checkpoint. The per-run write barrier serializes it with newer deltas and
+// cancellation, while unrelated work can still acquire App.mu.
+func (a *App) checkpointRun(r *runRecord) error {
+	a.mu.Lock()
+	if a.ctx.Err() != nil || a.runs[r.Run.ID] != r || terminal(r.Run.Status) ||
+		r.Run.Seq <= r.CheckpointSeq || r.streamWrite != nil || r.streamCancel != nil {
+		a.mu.Unlock()
+		return nil
+	}
+	next := copyRun(r.Run)
+	watch := r.leaseWatch
+	r.streamWrite = make(chan struct{})
+	a.mu.Unlock()
+	var err error
+	if watch != nil {
+		err = a.store.saveLeasedRun(&next, watch.lease, next.Seq)
+		watch.reject(err)
+	} else {
+		err = a.store.saveRun(next)
+	}
+	a.mu.Lock()
+	close(r.streamWrite)
+	r.streamWrite = nil
+	if err == nil {
+		r.CheckpointSeq = next.Seq
+		r.LastCheckpoint = time.Now()
+	}
+	a.mu.Unlock()
+	return err
 }
 
 type subscriptionScope struct{ WorkspaceID, ProjectID string }

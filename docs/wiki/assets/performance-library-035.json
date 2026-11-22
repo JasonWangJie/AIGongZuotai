@@ -1,0 +1,109 @@
+{
+  "chromium_product": "Chrome/157.0.8103.79",
+  "deep_pages": {
+    "highest_mounted_index": 459,
+    "loaded_records": 480,
+    "max_append_anchor_shift_css_px": 0,
+    "max_mounted_cards_after_page_four": 10,
+    "pages": 20
+  },
+  "first_screen": {
+    "cards": 4,
+    "decoded_images": 2,
+    "distinct_thumbnail_responses": 2,
+    "image_nodes": 2,
+    "page_items": 24,
+    "thumbnail_http_responses": 2
+  },
+  "historical_private_original_and_thumbnail_verified": true,
+  "indexed_assets": 10000,
+  "post_gc_change_from_deep_to_final": {
+    "dom_nodes": -187,
+    "js_heap_used_bytes": -161888
+  },
+  "private_scope_negative_checks": 6,
+  "project_switches": {
+    "distinct_projects": 30,
+    "max_active_subscriptions_at_settle": 1,
+    "max_previous_subscriptions_at_settle": 0,
+    "max_unreleased_old_players_at_settle": 0,
+    "project_subscriptions_closed_before_tab_exit": 30,
+    "project_subscriptions_opened": 31,
+    "verified_decoded_private_thumbnails": 30
+  },
+  "samples": {
+    "deep_gallery": {
+      "active_project_streams": 1,
+      "attached_videos": 0,
+      "documents_after_gc": 8,
+      "dom_nodes_after_gc": 1119,
+      "js_heap_used_bytes_after_gc": 4063832,
+      "mounted_cards": 10,
+      "mounted_images": 10
+    },
+    "first_screen": {
+      "active_project_streams": 1,
+      "attached_videos": 0,
+      "documents_after_gc": 1,
+      "dom_nodes_after_gc": 991,
+      "js_heap_used_bytes_after_gc": 3418896,
+      "mounted_cards": 4,
+      "mounted_images": 2
+    },
+    "switch_1": {
+      "active_project_streams": 1,
+      "attached_videos": 0,
+      "documents_after_gc": 8,
+      "dom_nodes_after_gc": 932,
+      "js_heap_used_bytes_after_gc": 3601484,
+      "mounted_cards": 1,
+      "mounted_images": 1
+    },
+    "switch_10": {
+      "active_project_streams": 1,
+      "attached_videos": 0,
+      "documents_after_gc": 8,
+      "dom_nodes_after_gc": 932,
+      "js_heap_used_bytes_after_gc": 3818912,
+      "mounted_cards": 1,
+      "mounted_images": 1
+    },
+    "switch_20": {
+      "active_project_streams": 1,
+      "attached_videos": 0,
+      "documents_after_gc": 8,
+      "dom_nodes_after_gc": 932,
+      "js_heap_used_bytes_after_gc": 3887516,
+      "mounted_cards": 1,
+      "mounted_images": 1
+    },
+    "switch_30": {
+      "active_project_streams": 1,
+      "attached_videos": 0,
+      "documents_after_gc": 8,
+      "dom_nodes_after_gc": 932,
+      "js_heap_used_bytes_after_gc": 3901944,
+      "mounted_cards": 1,
+      "mounted_images": 1
+    }
+  },
+  "schema_version": 1,
+  "server_project_sse": {
+    "active_after_browser_exit": 0,
+    "completed_handlers": 31,
+    "distinct_projects": 31,
+    "max_concurrent_including_transitions": 1
+  },
+  "verified_keyset_pages": 100,
+  "video": {
+    "after_final_switch": 0,
+    "decoded_distinct_video_sources": 2,
+    "max_observed_playing": 1,
+    "private_video_http_sources": 2,
+    "second_preview_closed_by_modal": true
+  },
+  "viewport_css_px": [
+    1280,
+    900
+  ]
+}

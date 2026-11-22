@@ -1,0 +1,328 @@
+{
+  "cohorts": {
+    "off": {
+      "batching_enabled": false,
+      "coordinator": {
+        "cancelled": 0,
+        "confirmed_events": 0,
+        "dispatch_wait_bucket_le_nsec": [
+          1000000,
+          2000000,
+          5000000,
+          10000000,
+          25000000,
+          100000000,
+          1000000000,
+          5000000000
+        ],
+        "dispatch_wait_cumulative_counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "duplicate_items": 0,
+        "group_commits": 0,
+        "group_delta_events": 0,
+        "pending_at_end": 0,
+        "pending_bytes_at_end": 0,
+        "pre_dispatch_wait_nsec_total": 0,
+        "queue_timeouts": 0,
+        "queue_wait_count": 0,
+        "single_attempts": 0,
+        "store_errors": 0
+      },
+      "measurement": {
+        "accepted_cancelled_while_queued": 1,
+        "active_wave_span_ms": 1237,
+        "arch": "amd64",
+        "completed_runs": 64,
+        "confirmed_concurrent_execution_slots": 64,
+        "confirmed_concurrent_sse": 65,
+        "delayed_reader_pause_ms": 1361,
+        "delayed_readers": 1,
+        "delta_measurement": "same-process monotonic clock immediately before model HTTP write until blank line of matching platform SSE was read on normal client",
+        "deltas_per_run": 12,
+        "elapsed_ms": 2017,
+        "extra_model_posts": 0,
+        "final_stream_slots": 0,
+        "finished_at": "2026-11-21T23:52:30.2088198Z",
+        "format": 1,
+        "global_execution_limit": 64,
+        "go": "go1.26.11",
+        "http_cross_scope_sse_rejected": 1,
+        "http_extra_live_sse": 1,
+        "http_normal_live_sse": 64,
+        "http_queued_run_cancels": 1,
+        "http_run_creates": 65,
+        "http_terminal_replay_sse": 64,
+        "later_wave_min_spacing_ms": 100,
+        "missing": 0,
+        "mode": "64",
+        "model_execution_limit": 32,
+        "model_posts": 64,
+        "models": 2,
+        "observed_normal_deltas": 768,
+        "observed_slow_consumer_evictions": 0,
+        "os": "windows",
+        "out_of_order": 0,
+        "peak_active_model_requests": 64,
+        "percentiles": {
+          "admission_http_roundtrip": {
+            "samples": 64,
+            "p50_ms": 4.1079,
+            "p95_ms": 6.1495,
+            "p99_ms": 15.3349,
+            "max_ms": 15.3349
+          },
+          "all_delta_release_to_sse_observed": {
+            "samples": 768,
+            "p50_ms": 26.4544,
+            "p95_ms": 52.2848,
+            "p99_ms": 73.4965,
+            "max_ms": 79.6353
+          },
+          "create_start_to_provider_request": {
+            "samples": 64,
+            "p50_ms": 6.9891,
+            "p95_ms": 9.7169,
+            "p99_ms": 27.061,
+            "max_ms": 27.061
+          },
+          "finish_barrier_to_terminal_sse_observed": {
+            "samples": 64,
+            "p50_ms": 69.1453,
+            "p95_ms": 123.2979,
+            "p99_ms": 129.6862,
+            "max_ms": 129.6862
+          },
+          "first_delta_release_to_sse_observed": {
+            "samples": 64,
+            "p50_ms": 55.5895,
+            "p95_ms": 76.1643,
+            "p99_ms": 79.6353,
+            "max_ms": 79.6353
+          },
+          "independent_pg_terminal_and_log_read": {
+            "samples": 64,
+            "p50_ms": 0,
+            "p95_ms": 0.566,
+            "p99_ms": 10.0448,
+            "max_ms": 10.0448
+          },
+          "later_delta_release_to_sse_observed": {
+            "samples": 704,
+            "p50_ms": 25.8871,
+            "p95_ms": 47.6282,
+            "p99_ms": 50.1913,
+            "max_ms": 52.5894
+          },
+          "live_sse_open": {
+            "samples": 64,
+            "p50_ms": 0.5248,
+            "p95_ms": 1.6118,
+            "p99_ms": 37.5457,
+            "max_ms": 37.5457
+          },
+          "terminal_sse_from_zero_full_response": {
+            "samples": 64,
+            "p50_ms": 0.5594,
+            "p95_ms": 1.1465,
+            "p99_ms": 1.5615,
+            "max_ms": 1.5615
+          }
+        },
+        "persisted_replayed_deltas": 768,
+        "platform": "one authenticated Go HTTP/1.1 process and one PostgreSQL database",
+        "started_at": "2026-11-21T23:52:28.1914694Z",
+        "upstream": "owned loopback streaming HTTP",
+        "workspace_execution_limit": 16,
+        "workspaces": 4
+      },
+      "postgres": {
+        "delta_rows": 768,
+        "distinct_runs": 64,
+        "distinct_delta_insert_xids": 768,
+        "transaction_shapes": [
+          {
+            "distinct_runs_per_transaction": 1,
+            "delta_events_per_transaction": 1,
+            "transactions": 768
+          }
+        ],
+        "ordered_fixture_sha256": "4191e4ba5489fbf66803602b2adaa5b1d1a518076d71cffdb12547c3c49d5331",
+        "observed_events_per_wave_second": 620.5323488846174
+      }
+    },
+    "on": {
+      "batching_enabled": true,
+      "coordinator": {
+        "cancelled": 0,
+        "confirmed_events": 768,
+        "dispatch_wait_bucket_le_nsec": [
+          1000000,
+          2000000,
+          5000000,
+          10000000,
+          25000000,
+          100000000,
+          1000000000,
+          5000000000
+        ],
+        "dispatch_wait_cumulative_counts": [
+          384,
+          513,
+          768,
+          768,
+          768,
+          768,
+          768,
+          768
+        ],
+        "duplicate_items": 0,
+        "group_commits": 24,
+        "group_delta_events": 768,
+        "pending_at_end": 0,
+        "pending_bytes_at_end": 0,
+        "pre_dispatch_wait_nsec_total": 938062300,
+        "queue_timeouts": 0,
+        "queue_wait_count": 768,
+        "single_attempts": 0,
+        "store_errors": 0
+      },
+      "measurement": {
+        "accepted_cancelled_while_queued": 1,
+        "active_wave_span_ms": 1127,
+        "arch": "amd64",
+        "completed_runs": 64,
+        "confirmed_concurrent_execution_slots": 64,
+        "confirmed_concurrent_sse": 65,
+        "delayed_reader_pause_ms": 1318,
+        "delayed_readers": 1,
+        "delta_measurement": "same-process monotonic clock immediately before model HTTP write until blank line of matching platform SSE was read on normal client",
+        "deltas_per_run": 12,
+        "elapsed_ms": 2098,
+        "extra_model_posts": 0,
+        "final_stream_slots": 0,
+        "finished_at": "2026-11-21T23:52:35.5351684Z",
+        "format": 1,
+        "global_execution_limit": 64,
+        "go": "go1.26.11",
+        "http_cross_scope_sse_rejected": 1,
+        "http_extra_live_sse": 1,
+        "http_normal_live_sse": 64,
+        "http_queued_run_cancels": 1,
+        "http_run_creates": 65,
+        "http_terminal_replay_sse": 64,
+        "later_wave_min_spacing_ms": 100,
+        "missing": 0,
+        "mode": "64",
+        "model_execution_limit": 32,
+        "model_posts": 64,
+        "models": 2,
+        "observed_normal_deltas": 768,
+        "observed_slow_consumer_evictions": 0,
+        "os": "windows",
+        "out_of_order": 0,
+        "peak_active_model_requests": 64,
+        "percentiles": {
+          "admission_http_roundtrip": {
+            "samples": 64,
+            "p50_ms": 3.6511,
+            "p95_ms": 5.4708,
+            "p99_ms": 15.0402,
+            "max_ms": 15.0402
+          },
+          "all_delta_release_to_sse_observed": {
+            "samples": 768,
+            "p50_ms": 3.67,
+            "p95_ms": 6.8327,
+            "p99_ms": 8.0951,
+            "max_ms": 8.0951
+          },
+          "create_start_to_provider_request": {
+            "samples": 64,
+            "p50_ms": 6.7849,
+            "p95_ms": 10.0128,
+            "p99_ms": 40.1057,
+            "max_ms": 40.1057
+          },
+          "finish_barrier_to_terminal_sse_observed": {
+            "samples": 64,
+            "p50_ms": 57.1977,
+            "p95_ms": 182.5841,
+            "p99_ms": 194.5144,
+            "max_ms": 194.5144
+          },
+          "first_delta_release_to_sse_observed": {
+            "samples": 64,
+            "p50_ms": 5.1841,
+            "p95_ms": 8.0951,
+            "p99_ms": 8.0951,
+            "max_ms": 8.0951
+          },
+          "independent_pg_terminal_and_log_read": {
+            "samples": 64,
+            "p50_ms": 0.518,
+            "p95_ms": 0.6823,
+            "p99_ms": 14.6465,
+            "max_ms": 14.6465
+          },
+          "later_delta_release_to_sse_observed": {
+            "samples": 704,
+            "p50_ms": 3.668,
+            "p95_ms": 6.2616,
+            "p99_ms": 6.8327,
+            "max_ms": 6.8327
+          },
+          "live_sse_open": {
+            "samples": 64,
+            "p50_ms": 0.5197,
+            "p95_ms": 1.3002,
+            "p99_ms": 39.5706,
+            "max_ms": 39.5706
+          },
+          "terminal_sse_from_zero_full_response": {
+            "samples": 64,
+            "p50_ms": 1.6703,
+            "p95_ms": 3.7558,
+            "p99_ms": 36.0433,
+            "max_ms": 36.0433
+          }
+        },
+        "persisted_replayed_deltas": 768,
+        "platform": "one authenticated Go HTTP/1.1 process and one PostgreSQL database",
+        "started_at": "2026-11-21T23:52:33.4367435Z",
+        "upstream": "owned loopback streaming HTTP",
+        "workspace_execution_limit": 16,
+        "workspaces": 4
+      },
+      "postgres": {
+        "delta_rows": 768,
+        "distinct_runs": 64,
+        "distinct_delta_insert_xids": 24,
+        "transaction_shapes": [
+          {
+            "distinct_runs_per_transaction": 32,
+            "delta_events_per_transaction": 32,
+            "transactions": 24
+          }
+        ],
+        "ordered_fixture_sha256": "4191e4ba5489fbf66803602b2adaa5b1d1a518076d71cffdb12547c3c49d5331",
+        "observed_events_per_wave_second": 680.9274267016647
+      }
+    }
+  },
+  "commit_scope": "committed message.delta insert xids for the measured runs only",
+  "delta_commit_reduction_percent": 96.875,
+  "delta_commits_saved": 744,
+  "event_fixture": "201 ordered HTTP gateway waves, fixed model and workspace assignment",
+  "format": "studio.delta-batch-comparison.v1",
+  "order": "off then on; separate freshly migrated schemas on the same database",
+  "runs_per_cohort": 64,
+  "throughput_window": "first forced wave release through last ordinary live reader observing the final nonempty delta, including 100 ms wave spacing"
+}

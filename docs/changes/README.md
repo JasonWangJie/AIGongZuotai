@@ -98,6 +98,148 @@
 | 086 | 2026-11-15 | [分页恢复与先行generation栅栏](2026-11-15-086-paged-recovery.md) | V16-A4.1实施及验证，未整体验收 |
 | 087 | 2026-11-15 | [完整启动分页恢复独立验收](2026-11-15-087-recovery-validation.md) | V16-A4.1实施及验证，未整体验收 |
 | 088 | 2026-11-15 | [完整启动恢复故障验收](2026-11-15-088-recovery-faults.md) | V16-A4.1实施及验证，未整体验收 |
+| 089 | 2026-11-21 | [A4.1 恢复故障与完整启动联合验证](2026-11-21-089-recovery-acceptance.md) | V16-A4.1 恢复事务、启动背压和完整 New 验收 |
+| 090 | 2026-11-21 | [PG 媒体受理与缓存容量分离](2026-11-21-090-pg-media-cache-admission.md) | V16-A4.2 媒体普通生成、编辑重入及冷读在其他工作区缓存已满时的行为 |
+| 091 | 2026-11-21 | [聊天执行与活动 SSE 的缓存占位](2026-11-21-091-run-cache-pins.md) | V16-A4.2 |
+| 092 | 2026-11-21 | [媒体领取与在途缓存占位](2026-11-21-092-media-cache-pins.md) | V16-A4.2 |
+| 093 | 2026-11-21 | [PG 工作区项目查询与创建上限](2026-11-21-093-workspace-project-queries.md) | V16-A4.2 |
+| 094 | 2026-11-21 | [有界缓存与完整启动联合验证](2026-11-21-094-bounded-startup.md) | V16-A4.2 |
+| 095 | 2026-11-21 | [聊天增量持久化与断线回放的实施契约](2026-11-21-095-durable-run-stream-plan.md) | V16-B，设计 |
+| 096 | 2026-11-21 | [021 聊天增量与快照事务](2026-11-21-096-run-stream-store.md) | V16-B1 |
+| 097 | 2026-11-21 | [聊天执行、取消与审核门禁](2026-11-21-097-run-stream-execution.md) | V16-B1 |
+| 098 | 2026-11-21 | [原游标回放与活动 SSE 交接](2026-11-21-098-run-stream-replay.md) | V16-B1 |
+| 099 | 2026-11-21 | [持久聊天流升级、故障与联备集成](2026-11-21-099-run-stream-integration.md) | V16-B1 |
+| 100 | 2026-11-21 | [执行租约与数据库条件写入](2026-11-21-100-run-lease-store.md) | V16-B2 |
+| 101 | 2026-11-21 | [执行续租、取消与真实退出](2026-11-21-101-run-lease-execution.md) | V16-B2 |
+| 102 | 2026-11-21 | [独立连接竞争与迟到审核](2026-11-21-102-run-lease-contention.md) | V16-B2 |
+| 103 | 2026-11-21 | [聊天执行失权、升级与联备集成](2026-11-21-103-run-lease-integration.md) | V16-B2 |
+| 104 | 2026-11-21 | [双工作区聊天与媒体混合负载](2026-11-21-104-mixed-workload.md) | V16-C |
+| 105 | 2026-11-21 | [可执行工作流与模板的分批验收](2026-11-21-105-workflow-execution-plan.md) | V19 |
+
+| 106 | 2026-11-21 | [项目内流程版本、原候选和人工选择](2026-11-21-106-workflow-store.md) | V19 |
+| 107 | 2026-11-21 | [步骤授权、模型快照和权益](2026-11-21-107-workflow-execution.md) | V19 |
+| 108 | 2026-11-21 | [工作流画布与跨会话操作](2026-11-21-108-workflow-workbench.md) | V19 |
+| 109 | 2026-11-21 | [工作流升级、故障与联备验收](2026-11-21-109-workflow-integration.md) | V19 |
+| 110 | 2026-11-21 | [图片编辑配置准备页](2026-11-21-110-image-edit-setup.md) | V07 |
+
+| 111 | 2026-11-21 | [私有视频首帧协议、实际文件与独立报价](2026-11-21-111-video-first-frame-provider.md) | V19 |
+| 112 | 2026-11-21 | [四步图、项目选图与视频交付](2026-11-21-112-workflow-video.md) | V19 |
+| 113 | 2026-11-21 | [四步模板、首帧核对及私有播放器](2026-11-21-113-workflow-video-workbench.md) | V19 |
+| 114 | 2026-11-21 | [双原件到私有视频的联合验收](2026-11-21-114-workflow-video-integration.md) | V19 |
+
+| 115 | 2026-11-21 | [局部派生、独立报价和原范围继承](2026-11-21-115-workflow-rerun.md) | V19 |
+| 116 | 2026-11-21 | [停止后续步骤与原子资源核对](2026-11-21-116-workflow-cancellation.md) | V19 |
+| 117 | 2026-11-21 | [重跑范围、原图与取消收据工作台](2026-11-21-117-workflow-attempt-workbench.md) | V19 |
+| 118 | 2026-11-21 | [进程强杀、项目补读及新尝试验收](2026-11-21-118-workflow-attempt-integration.md) | V19 |
+
+| 119 | 2026-11-21 | [已执行输出的原证据与独立审议](2026-11-21-119-content-appeal-store.md) | V14 |
+| 120 | 2026-11-21 | [申诉转交及原冻结的财务收据](2026-11-21-120-content-appeal-finance.md) | V14 |
+| 121 | 2026-11-21 | [申请人、审核员和财务工作台](2026-11-21-121-content-appeal-workbench.md) | V14 |
+| 122 | 2026-11-21 | [三账户申诉、备份及释放验收](2026-11-21-122-content-appeal-integration.md) | V14 |
+| 123 | 2026-11-22 | [指定账户授权、限制轮次与原申诉](2026-11-22-123-account-restriction-store.md) | V14 |
+| 124 | 2026-11-22 | [账户准入、事件流与离线授权](2026-11-22-124-account-governance-auth.md) | V14 |
+| 125 | 2026-11-22 | [受限身份与账户治理工作台](2026-11-22-125-account-governance-workbench.md) | V14 |
+| 126 | 2026-11-22 | [账户限制、本人复核与恢复的联合验证](2026-11-22-126-account-governance-integration.md) | V14 |
+| 127 | 2026-11-22 | [冻结上限、频率与单次许可](2026-11-22-127-credit-risk-store.md) | V14 |
+| 128 | 2026-11-22 | [原报价复核与独立运营审批](2026-11-22-128-credit-risk-review.md) | V14 |
+| 129 | 2026-11-22 | [额度风控与原报价复核工作台](2026-11-22-129-credit-risk-workbench.md) | V14 |
+| 130 | 2026-11-22 | [工作区风控配置与联合验收](2026-11-22-130-credit-risk-integration.md) | V14 |
+| 131 | 2026-11-22 | [PostgreSQL 命名恢复点与物理备份](2026-11-22-131-postgresql-pitr-drill.md) | V18 |
+| 132 | 2026-11-22 | [版本化对象存储冷备与独立还原](2026-11-22-132-object-store-cold-backup.md) | V18 |
+| 133 | 2026-11-22 | [工作台恢复点、私有资产与结算联合演练](2026-11-22-133-recovery-platform-integration.md) | V18 |
+| 134 | 2026-11-22 | [观察真实行锁后再中断恢复](2026-11-22-134-recovery-barrier-observation.md) | V16 |
+| 135 | 2026-11-22 | [文稿与不可变版本](2026-11-22-135-presentation-store.md) | V21 |
+| 136 | 2026-11-22 | [私图鉴权、导出清单和联备](2026-11-22-136-presentation-http-export.md) | V21 |
+| 137 | 2026-11-22 | [演示文稿编辑、放映与下载](2026-11-22-137-presentation-workbench.md) | V21 |
+| 138 | 2026-11-22 | [文稿导出与独立文件验收](2026-11-22-138-presentation-integration.md) | V21 |
+| 139 | 2026-11-22 | [本机入口排空与候选核验](2026-11-22-139-release-ingress.md) | V18 |
+| 140 | 2026-11-22 | [工作台进程退出与三锁归属](2026-11-22-140-release-process.md) | V18 |
+| 141 | 2026-11-22 | [分环境可重现制品与文件校验](2026-11-22-141-local-release-artifacts.md) | V18 |
+| 142 | 2026-11-22 | [单写者故障回退与联合验收](2026-11-22-142-release-handoff-integration.md) | V18 |
+| 143 | 2026-11-22 | [单写者值班与故障交接](2026-11-22-143-release-operations.md) | V18 |
+| 144 | 2026-11-22 | [有界真实视频裁切和拼接](2026-11-22-144-bounded-video-export.md) | V20 |
+| 145 | 2026-11-22 | [分镜剪辑工作台与真实下载](2026-11-22-145-video-edit-workbench.md) | V20 |
+| 146 | 2026-11-22 | [项目剪辑稿与不可变修订](2026-11-22-146-video-timeline-store.md) | V20 |
+| 147 | 2026-11-22 | [固定原片读取与有界成片交付](2026-11-22-147-timeline-private-export.md) | V20 |
+| 148 | 2026-11-22 | [双版本成片、私有下载与联备恢复](2026-11-22-148-video-edit-integration.md) | V20 |
+| 149 | 2026-11-22 | [项目角色、场景与不可变分镜本](2026-11-22-149-comic-store.md) | V21 |
+| 150 | 2026-11-22 | [固定稿与获批准的私图](2026-11-22-150-comic-private-export.md) | V21 |
+| 151 | 2026-11-22 | [漫剧分镜工作台和续页](2026-11-22-151-comic-workbench.md) | V21 |
+| 152 | 2026-11-22 | [分镜稿实际下载与联备](2026-11-22-152-comic-integration.md) | V21 |
+| 153 | 2026-11-22 | [定向站内邀请与成员角色](2026-11-22-153-project-collaboration-members.md) | V21 |
+| 154 | 2026-11-22 | [同稿协作与本人原键](2026-11-22-154-shared-project-draft.md) | V21 |
+| 155 | 2026-11-22 | [项目协作工作台](2026-11-22-155-project-collaboration-workbench.md) | V21 |
+| 156 | 2026-11-22 | [两账户协作与权限恢复](2026-11-22-156-project-collaboration-integration.md) | V21 |
+| 157 | 2026-11-22 | [本人订单意向持久化](2026-11-22-157-order-intent-store.md) | V13 |
+| 158 | 2026-11-22 | [受信目录和本人操作接口](2026-11-22-158-order-intent-catalog-http.md) | V13 |
+| 159 | 2026-11-22 | [本人订单与原键收据工作台](2026-11-22-159-order-intent-workbench.md) | V13 |
+| 160 | 2026-11-22 | [双账户订单与关闭目录后恢复](2026-11-22-160-order-intent-integration.md) | V13 |
+| 161 | 2026-11-22 | [同一进程的分段 CPU、内存与句柄采样](2026-11-22-161-owned-resource-sampling.md) | V17 |
+| 162 | 2026-11-22 | [本人账户数据分页导出](2026-11-22-162-account-data-export.md) | V22 |
+| 163 | 2026-11-22 | [账户安全页下载与字节核对](2026-11-22-163-account-data-export-workbench.md) | V22 |
+| 164 | 2026-11-22 | [普通及受限账户资料下载验收](2026-11-22-164-personal-data-export-integration.md) | V22 |
+| 165 | 2026-11-22 | [内容申诉夹具的已提交任务完成条件](2026-11-22-165-content-appeal-fixture-completion.md) | V14 |
+| 166 | 2026-11-22 | [下载处理退出后的临时目录核验](2026-11-22-166-video-export-cleanup-verification.md) | V20 |
+| 167 | 2026-11-22 | [站内工单、消息与原键收据](2026-11-22-167-support-ticket-store.md) | V22 |
+| 168 | 2026-11-22 | [本人和独立客服权限](2026-11-22-168-support-ticket-access-http.md) | V22 |
+| 169 | 2026-11-22 | [用户与客服工单工作台](2026-11-22-169-support-ticket-workbench.md) | V22 |
+| 170 | 2026-11-22 | [三账户工单与撤权后的恢复](2026-11-22-170-support-ticket-integration.md) | V22 |
+| 171 | 2026-11-22 | [桌面和窄屏工作台基准](2026-11-22-171-workbench-frontend-benchmark.md) | V17 |
+| 172 | 2026-11-22 | [混合负载的 GC、数据库等待和慢订阅者](2026-11-22-172-mixed-resource-observation.md) | V17 |
+| 173 | 2026-11-22 | [单工作区订单资料只读对账](2026-11-22-173-offline-order-reconciliation.md) | V13 |
+| 174 | 2026-11-22 | [资金事实与唯一购入分录](2026-11-22-174-order-payment-store.md) | V13 |
+| 175 | 2026-11-22 | [本人资金与权益状态接口](2026-11-22-175-order-payment-status-http.md) | V13 |
+| 176 | 2026-11-22 | [本人订单资金与权益工作台](2026-11-22-176-order-payment-workbench.md) | V13 |
+| 177 | 2026-11-22 | [资金事实、权益与新库恢复](2026-11-22-177-order-payment-integration.md) | V13 |
+| 178 | 2026-11-22 | [工作台制品 SBOM 与许可证证据](2026-11-22-178-release-sbom.md) | V22 |
+| 179 | 2026-11-22 | [发布前本地安全与升级证据](2026-11-22-179-local-release-security-evidence.md) | V22 |
+| 180 | 2026-11-22 | [万条作品索引及项目切换实测](2026-11-22-180-private-library-browser-resources.md) | V17 |
+| 181 | 2026-11-22 | [作品库可见卡片与退出清理](2026-11-22-181-library-virtual-grid.md) | V17 |
+| 182 | 2026-11-22 | [剪辑稿保存回执与选择框同步](2026-11-22-182-video-timeline-selection.md) | V20 |
+| 183 | 2026-11-22 | [持久会话 30 分钟回复验收](2026-11-22-183-durable-long-reply.md) | V17 |
+| 184 | 2026-11-22 | [标准服务聊天执行期限](2026-11-22-184-chat-run-timeout.md) | V17 |
+| 185 | 2026-11-22 | [可核对的本机长回复流](2026-11-22-185-long-reply-gateway-and-observation.md) | V17 |
+| 186 | 2026-11-22 | [活跃回复中的可信输入和滚动](2026-11-22-186-long-reply-browser.md) | V17 |
+| 187 | 2026-11-22 | [可变行高的消息列表](2026-11-22-187-variable-height-chat-timeline.md) | V17 |
+| 188 | 2026-11-22 | [按页读取持久会话正文](2026-11-22-188-conversation-message-pages.md) | V17 |
+| 189 | 2026-11-22 | [128条分支消息的浏览器验收](2026-11-22-189-persistent-conversation-history-browser.md) | V17 |
+| 190 | 2026-11-22 | [前端放行指标补全](2026-11-22-190-frontend-acceptance-coverage.md) | V17 |
+| 191 | 2026-11-22 | [可回读的消息正文缓存](2026-11-22-191-chat-message-body-cache.md) | V17 |
+| 192 | 2026-11-22 | [持久会话祖先与上下文](2026-11-22-192-durable-conversation-ancestry.md) | V17 |
+| 193 | 2026-11-22 | [长会话配置、格式与恢复](2026-11-22-193-long-history-format-and-restore.md) | V17 |
+| 194 | 2026-11-22 | [真实万条分支验收](2026-11-22-194-deep-conversation-acceptance.md) | V17 |
+| 195 | 2026-11-22 | [项目画布保存与私有来源](2026-11-22-195-project-canvas-versions.md) | V17 |
+| 196 | 2026-11-22 | [自由画布的编辑与无障碍操作](2026-11-22-196-free-canvas-workbench.md) | V17 |
+| 197 | 2026-11-22 | [两档真实图的平移测量](2026-11-22-197-canvas-pan-browser.md) | V17 |
+| 198 | 2026-11-22 | [画布集成、精确格式与恢复](2026-11-22-198-project-canvas-integration.md) | V17 |
+| 199 | 2026-11-22 | [启动 JavaScript 实际 gzip 传输](2026-11-22-199-startup-javascript-compression.md) | V17 |
+| 200 | 2026-11-22 | [受限网络下的冷暖工作台与深历史](2026-11-22-200-workbench-network-browser.md) | V17 |
+| 201 | 2026-11-22 | [64 个同时活跃的模型流和授权 SSE](2026-11-22-201-active-stream-capacity.md) | V17 |
+| 202 | 2026-11-22 | [分片批量持久日志与并发回放试验](2026-11-22-202-sharded-stream-journal-poc.md) | V17 |
+| 203 | 2026-11-22 | [PR 启动资源预算与制品差异](2026-11-22-203-pr-bundle-diff.md) | V17 |
+| 204 | 2026-11-22 | [运行 SSE 断线回放的只读连接隔离](2026-11-22-204-run-replay-read-pool.md) | V17 |
+| 205 | 2026-11-22 | [私管道的受管聊天执行进程](2026-11-22-205-chat-execution-child-transport.md) | V17 |
+| 206 | 2026-11-22 | [受管与本地执行共用调度预算](2026-11-22-206-managed-chat-scheduling.md) | V17 |
+| 207 | 2026-11-22 | [受管会话的授权 SSE 与真实进程归属验收](2026-11-22-207-managed-chat-acceptance.md) | V17 |
+| 208 | 2026-11-22 | [受管聊天执行的集成与故障验收](2026-11-22-208-managed-chat-integration.md) | V17 |
+| 209 | 2026-11-22 | [原增量表的跨运行 PostgreSQL 提交](2026-11-22-209-batched-run-delta-store.md) | V17 |
+| 210 | 2026-11-22 | [跨运行增量的有界协调与开关](2026-11-22-210-run-delta-coordinator.md) | V17 |
+| 211 | 2026-11-22 | [真实聊天流的批量提交前后对照](2026-11-22-211-batched-delta-acceptance.md) | V17 |
+| 212 | 2026-11-22 | [真实工作台增量批量提交集成](2026-11-22-212-business-delta-batch-integration.md) | V17 |
+| 213 | 2026-11-22 | [长回复虚拟行与原提示滚回核对](2026-11-22-213-virtualized-live-reply-observation.md) | V17 |
+| 214 | 2026-11-22 | [真实慢 TCP 读者与订阅上限](2026-11-22-214-sse-socket-acceptance.md) | V17 |
+| 215 | 2026-11-22 | [037 制品与 SPDX 复核](2026-11-22-215-release-evidence-037.md) | V22 |
+| 216 | 2026-11-22 | [036 到 037 的跨格式回退演练](2026-11-22-216-cross-format-recovery.md) | V18 |
+| 217 | 2026-11-22 | [同步备机切换与原业务收据](2026-11-22-217-postgresql-sync-standby.md) | V18 |
+| 218 | 2026-11-22 | [共享会话核验与全局订阅容量](2026-11-22-218-stream-session-batches.md) | V17 |
+| 219 | 2026-11-22 | [192 个授权订阅、撤销与重连](2026-11-22-219-authenticated-sse-sessions.md) | V17 |
+| 220 | 2026-11-22 | [80 个模型流、241 个订阅与批量持久化联合验收](2026-11-22-220-integrated-chat-sse-acceptance.md) | V17 |
+| 221 | 2026-11-22 | [账户切换后的首个草稿输入](2026-11-22-221-account-composer-scope.md) | V14 |
+| 222 | 2026-11-22 | [已确认分镜的视频报价与受理](2026-11-22-222-comic-panel-video.md) | V20 |
+| 223 | 2026-11-22 | [分镜产物替换指定剪辑镜头](2026-11-22-223-panel-video-timeline-replacement.md) | V20 |
+| 224 | 2026-11-22 | [工作台单镜生成与原键核对](2026-11-22-224-panel-video-workbench.md) | V20 |
+| 225 | 2026-11-22 | [固定分镜生成与局部重做集成](2026-11-22-225-panel-video-integration.md) | V20 |
+| 226 | 2026-11-22 | [工作台四语与 IP 地区识别](2026-11-22-226-workbench-languages.md) | V23 · H08/H09 |
 
 ## 编写规则
 

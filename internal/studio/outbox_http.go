@@ -100,6 +100,8 @@ func (a *App) durableWorkspaceEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer a.releaseObservedStream(p.Workspace.ID)
+	r, stopAccountStream := a.accountStreamContext(r)
+	defer stopAccountStream()
 	scope := subscriptionScope{WorkspaceID: p.Workspace.ID, ProjectID: p.Project.ID}
 	wake, unsubscribe := a.store.subscribeOutbox(scope)
 	defer unsubscribe()
@@ -140,8 +142,11 @@ func (a *App) durableWorkspaceEvents(w http.ResponseWriter, r *http.Request) {
 	defer heartbeat.Stop()
 	fallback := time.NewTicker(time.Second)
 	defer fallback.Stop()
-	nextSessionCheck := time.Now().Add(a.config.Heartbeat)
+
 	for {
+		if r.Context().Err() != nil {
+			return
+		}
 		if initial || cursor.Seq < page.Floor {
 			reason := "cursor_expired"
 			if initial {
@@ -160,11 +165,8 @@ func (a *App) durableWorkspaceEvents(w http.ResponseWriter, r *http.Request) {
 			page.Items = nil
 		}
 		for _, e := range page.Items {
-			if time.Now().After(nextSessionCheck) {
-				if !a.sessionStillValid(r) {
-					return
-				}
-				nextSessionCheck = time.Now().Add(a.config.Heartbeat)
+			if r.Context().Err() != nil {
+				return
 			}
 			cursor.Seq = e.Seq
 			token := encodeDurableCursor(cursor)
@@ -183,7 +185,7 @@ func (a *App) durableWorkspaceEvents(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				payload, _ := json.Marshal(map[string]any{"task": record.Task})
-				if !writeSSE(w, event{Cursor: token, Name: "task.updated", Data: payload}) {
+				if r.Context().Err() != nil || !writeSSE(w, event{Cursor: token, Name: "task.updated", Data: payload}) {
 					return
 				}
 			}
@@ -203,7 +205,7 @@ func (a *App) durableWorkspaceEvents(w http.ResponseWriter, r *http.Request) {
 		case <-wake:
 		case <-fallback.C:
 		case <-heartbeat.C:
-			if !a.sessionStillValid(r) {
+			if r.Context().Err() != nil {
 				return
 			}
 			controller := http.NewResponseController(w)

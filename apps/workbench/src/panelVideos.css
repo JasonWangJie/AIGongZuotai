@@ -1,0 +1,33 @@
+.pv-work {
+  display: grid;
+  gap: .85rem;
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 1.7rem);
+  margin-block: 1.2rem;
+  border: 1px solid #c9c5ba;
+  border-inline-start: 4px solid #556f63;
+  border-radius: .65rem;
+  background: #f6f6ef;
+  color: #282e2a;
+}
+.pv-work header, .pv-history, .pv-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: .75rem 1rem;
+}
+.pv-work header { align-items: baseline; justify-content: space-between; }
+.pv-work h2, .pv-work h3, .pv-work p { margin: 0; }
+.pv-work header span { font-size: .85rem; color: #4c5e52; }
+.pv-work label { display: grid; min-width: 0; gap: .3rem; font-weight: 600; }
+.pv-work input, .pv-work select { max-width: 100%; width: 100%; min-width: 0; }
+.pv-work > button, .pv-work .cb-primary, .pv-replace > button { justify-self: start; }
+.pv-work button:focus-visible, .pv-work select:focus-visible, .pv-work input:focus-visible { outline: 2px solid #2c6854; outline-offset: 2px; }
+.pv-pending, .pv-preview, .pv-replace { display: grid; min-width: 0; gap: .7rem; padding: 1rem; border: 1px solid #ceccc0; border-radius: .45rem; background: #fffefa; }
+.pv-preview pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.55; margin: 0; max-height: 18rem; overflow: auto; }
+.pv-replace video { width: min(100%, 32rem); max-height: 17rem; background: #18211e; }
+.pv-work [role=alert] { color: #8b302d; }
+@media (max-width: 600px) {
+  .pv-controls, .pv-history { display: grid; grid-template-columns: minmax(0,1fr); }
+  .pv-work header span { overflow-wrap: anywhere; }
+}

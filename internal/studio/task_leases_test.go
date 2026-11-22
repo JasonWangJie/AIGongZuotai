@@ -523,6 +523,8 @@ func TestPostgresTaskLeaseRunBackpressureDoesNotRestartStream(t *testing.T) {
 		return err
 	})
 	run := outboxFixtureRun(newID("run"))
+	// A new accepted run has no public output before its first increment.
+	run.Output = ""
 	if err := app.store.createRun(run, newID("run_key"), payloadHash(run)); err != nil {
 		t.Fatal(err)
 	}
@@ -565,6 +567,10 @@ func TestPostgresTaskLeaseRunBackpressureDoesNotRestartStream(t *testing.T) {
 	app.mu.Unlock()
 	if got.Status != "COMPLETED" || got.Output != "retained result" || calls.Load() != 1 {
 		t.Fatalf("result lost/restarted: %s calls=%d", got.Status, calls.Load())
+	}
+	if outboxCount(t, admin, "SELECT count(*) FROM studio_run_stream_events WHERE run_id=$1 AND name='message.delta' AND delta='retained result'", run.ID) != 1 ||
+		outboxCount(t, admin, "SELECT count(*) FROM studio_run_stream_events WHERE run_id=$1 AND name='run.completed'", run.ID) != 1 {
+		t.Fatal("terminal save retry duplicated or lost durable stream events")
 	}
 }
 

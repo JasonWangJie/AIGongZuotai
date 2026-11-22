@@ -1,0 +1,20 @@
+{
+  "server_sha256": "6fb7b00b8899f84e9acca769bc9201a250c47c308de1524e714a0378ecb20caf",
+  "dist_sha256": "9d500caf860d05137c200bd695f80d1266c5c3a3e5e4864fc67d22f85a98c63c",
+  "dist_files": 55,
+  "verified_gzip_pairs": 20,
+  "go_version": "go1.26.11",
+  "go_modules": 20,
+  "go_sum_sha256": "d3666bc3eb8e391dea26625ac09cedb5591b7bcd5b5ef279bcc00ac7063d95fe",
+  "go_module_input_files": 217,
+  "go_module_inputs_sha256": "dceb5df205ded170e03336337260142ba00864eb604702b80d9ae33c86165d21",
+  "workbench_source_files": 191,
+  "workbench_sources_sha256": "830819636f10360a3c39f5d472633ebcd0219f7bd9ac98544d9607cd7109a2ee",
+  "npm_lock_sha256": "a6233581226ce88a161a53fb9ef05cf01c317c830a867babf457837a07b698ad",
+  "npm_archives": 22,
+  "npm_installed_files": 434,
+  "packages": 45,
+  "relationships": 47,
+  "schema_sha256": "239208b7ac287b3cf5d9a9af23f9d69863971102a5e1587a27a398b43490b89b",
+  "spdx_sha256": "36ff3bce95892d7d6dc1a403a2e5dc127b70c61d28702f3b9b0edcb48840e5aa"
+}

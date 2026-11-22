@@ -1,0 +1,45 @@
+.appeal-page{color:var(--text,#e8e7ee);max-width:1180px;margin:auto;padding:16px 0 48px;overflow-wrap:anywhere}
+.appeal-page h1,.appeal-page h2,.appeal-page h3,.appeal-page p{margin:0}
+.appeal-page p,.appeal-page dd{line-height:1.65}
+.appeal-hero{display:flex;align-items:flex-start;gap:16px;padding:20px 0 24px;border-bottom:1px solid #484151;margin-bottom:22px}
+.appeal-hero>svg{color:var(--accent,#b6a3eb);margin-top:7px}
+.appeal-hero h1{font-size:clamp(27px,4vw,44px);line-height:1.13;letter-spacing:-.04em}
+.appeal-hero h2{font-size:25px}
+.appeal-hero p,.appeal-columns>aside>p,.appeal-empty p,.appeal-page small{color:#aba6b6}
+.appeal-hero p{margin-top:8px;font-size:14px}
+.appeal-columns{display:grid;grid-template-columns:minmax(185px,.74fr) minmax(0,1.55fr);gap:24px}
+.appeal-columns>aside{min-width:0}
+.appeal-heading,.appeal-actions,.appeal-rows>button,.appeal-rows>article{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.appeal-heading{margin-bottom:12px}
+.appeal-heading h2,.appeal-compose h2{font-size:20px}
+.appeal-rows{display:grid;gap:6px;margin:12px 0}
+.appeal-rows>button,.appeal-rows>article{padding:12px;width:100%;text-align:left;border:1px solid #393440;background:#1b1921;color:inherit;border-radius:5px}
+.appeal-rows>button[aria-pressed=true]{border-color:#79628f;background:#2d2536}
+.appeal-rows>button>span:last-child,.appeal-heading>span{font-size:12px;white-space:nowrap;color:#cfbadf}
+.appeal-rows small{display:block;margin-top:5px;word-break:break-word}
+.appeal-detail,.appeal-compose,.appeal-preview,.appeal-empty{padding:clamp(14px,2vw,24px);background:#1b1921;border:1px solid #393440;border-radius:6px;min-width:0}
+.appeal-compose,.appeal-preview,.appeal-notice{margin:12px 0 18px}
+.appeal-detail h3{font-size:15px;border-top:1px solid #393440;padding-top:16px;margin:14px 0 7px}
+.appeal-page dl{display:grid;grid-template-columns:max-content minmax(0,1fr);margin:0;gap:5px 14px}
+.appeal-page dt,.appeal-page dd,.appeal-page p{font-size:14px}
+.appeal-page dt{color:#aba6b6}.appeal-page dd{margin:0}.appeal-page code{font-size:.86em;overflow-wrap:anywhere}
+.appeal-compose fieldset,.appeal-compose label,.appeal-preview label{display:grid;gap:7px}
+.appeal-compose fieldset{border:0;padding:0;margin:14px 0 0;min-width:0;gap:13px}
+.appeal-compose label,.appeal-preview label{font-size:13px;font-weight:600}
+.appeal-page input:not([type=checkbox]),.appeal-page select,.appeal-page textarea{width:100%;min-width:0;border:1px solid #514958;border-radius:4px;padding:8px 10px;background:#141319;color:inherit;font:inherit}
+.appeal-page textarea{resize:vertical}
+.appeal-actions{justify-content:flex-start;flex-wrap:wrap}
+.appeal-preview{display:grid;gap:11px;border-left:3px solid #b89bce}
+.appeal-page .appeal-check{display:flex;align-items:center;gap:8px}
+.appeal-prose{white-space:pre-wrap}
+.appeal-empty{align-self:start;display:grid;gap:10px;justify-items:center;text-align:center;padding-block:42px;background:transparent}
+.appeal-notice{padding:12px 16px;border-left:3px solid #d0af73;background:#2a251e}
+.appeal-notice .button{margin-top:7px}
+@media(max-width:800px){.appeal-columns{grid-template-columns:1fr;gap:15px}.appeal-page{padding-top:4px}.appeal-hero{padding-top:12px}.generation-panel-tabs{flex-wrap:wrap}}
+@media(max-width:480px){.appeal-heading{align-items:flex-start}.appeal-rows>article{align-items:flex-start;flex-direction:column}.appeal-page dl{grid-template-columns:minmax(0,1fr);gap:2px}.appeal-page dd{margin-bottom:6px}}
+
+
+.operations-page .appeal-hero{border-bottom-color:#584a37}.operations-page .appeal-preview{border-left-color:var(--ops-amber)}
+.appeal-page .appeal-compose>.button,.appeal-page .appeal-compose fieldset>.button{justify-self:start}
+.appeal-page.risk-page{width:100%;max-width:1060px;box-sizing:border-box}
+.risk-page .appeal-rows>button>span{min-width:0;white-space:normal}

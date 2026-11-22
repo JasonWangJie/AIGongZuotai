@@ -144,8 +144,10 @@ func (a *App) persistTaskClaim(record *taskRecord, complete bool) error {
 		cached.LeaseComplete = false
 		cached.InFlight = false
 	}
-	a.evictTerminalsLocked()
-	a.tasks[record.Task.ID] = cached
+	if a.tasks[record.Task.ID] == nil {
+		a.evictTerminalsLocked()
+	}
+	a.cacheIdleTaskLocked(cached)
 	a.publishTaskLocked(record.Task)
 	return nil
 }
@@ -204,18 +206,41 @@ func (a *App) executeTaskClaim(conn *pgx.Conn, record *taskRecord) {
 	a.executeReservedTaskClaim(conn, record, permit)
 }
 
-// Only callers holding the selected lane budget may enter this function.
-func (a *App) executeReservedTaskClaim(conn *pgx.Conn, record *taskRecord, permits ...*mediaModerationPermit) {
-	defer func() {
+// A revoked durable lease and a finished HTTP/checker call are independent.
+// Count each executing attempt, including a superseded one still returning
+// from I/O. A fresh claim snapshot is never installed here: cancellation may
+// already have committed between the independent claim transaction and this lock.
+func (a *App) pinTaskClaim(lease TaskLease) func() {
+	a.mu.Lock()
+	if a.activeTaskClaims == nil {
+		a.activeTaskClaims = make(map[string]int)
+	}
+	a.activeTaskClaims[lease.TaskID]++
+	a.mu.Unlock()
+	return func() {
 		a.mu.Lock()
 		defer a.mu.Unlock()
-		if cached := a.tasks[record.Task.ID]; cached != nil && cached.Lease != nil && cached.Lease.Owner == record.Lease.Owner && cached.Lease.Epoch == record.Lease.Epoch {
+		id := lease.TaskID
+		if cached := a.tasks[id]; cached != nil && cached.Lease != nil && cached.Lease.Generation == lease.Generation && cached.Lease.Epoch == lease.Epoch && cached.Lease.Owner == lease.Owner {
 			cached.InFlight = false
 			cached.Lease = nil
 			cached.LeaseComplete = false
 			cached.LeaseStatus = ""
 		}
-	}()
+		a.activeTaskClaims[id]--
+		if a.activeTaskClaims[id] == 0 {
+			delete(a.activeTaskClaims, id)
+			if len(a.tasks) > a.config.MaxRecords {
+				delete(a.tasks, id)
+			}
+		}
+	}
+}
+
+// Only callers holding the selected lane budget may enter this function.
+func (a *App) executeReservedTaskClaim(conn *pgx.Conn, record *taskRecord, permits ...*mediaModerationPermit) {
+	release := a.pinTaskClaim(*record.Lease)
+	defer release()
 	if record.ReviewDispatch != nil {
 		var permit *mediaModerationPermit
 		if len(permits) > 0 {

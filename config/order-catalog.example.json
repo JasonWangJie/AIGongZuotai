@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "catalog_version": "example-v1",
+  "products": [
+    {
+      "id": "credit-basic",
+      "name": "创作权益基础包",
+      "currency": "CNY",
+      "currency_exponent": 2,
+      "amount_minor": "1200",
+      "credit_micros": "10000000"
+    }
+  ]
+}

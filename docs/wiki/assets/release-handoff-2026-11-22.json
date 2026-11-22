@@ -1,0 +1,32 @@
+{
+  "scope": "isolated loopback TLS, one PostgreSQL writer",
+  "transitions": [
+    {
+      "release": "candidate",
+      "admitted": false,
+      "handoff_ms": 2061,
+      "database_lock_released": true,
+      "private_locks_released": 2,
+      "verified_private_reads": 2
+    },
+    {
+      "release": "previous",
+      "admitted": true,
+      "handoff_ms": 3478,
+      "database_lock_released": true,
+      "private_locks_released": 2,
+      "verified_private_reads": 2
+    },
+    {
+      "release": "candidate",
+      "admitted": true,
+      "handoff_ms": 3949,
+      "database_lock_released": true,
+      "private_locks_released": 2,
+      "verified_private_reads": 2
+    }
+  ],
+  "baseline": "19bfa3e7537cfc35d55974b148a33361bb5220aa7aacd458b7d471954117581e",
+  "candidate": "cfe28c8fc0ef122e302f016fc3903001d3eedc9def5b480bdc88ffcfbe918936",
+  "original_private_asset_and_receipt": true
+}

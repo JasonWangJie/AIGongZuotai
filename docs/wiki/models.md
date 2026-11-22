@@ -86,3 +86,7 @@ V06之前的task幂等记录采用固定count=1、aspect_ratio=16:9的旧归一�
 chat新增公开`context_window_tokens`/`max_output_tokens`，默认32768/4096，范围2048—1048576和128—32768；输出预算加272最低封装余量必须小于窗口。max_prompt_bytes仍是单条输入上限，不保证任意允许长度都能放入该模型窗口。非chat字段为0，拒绝错误媒体配置。
 
 私有`chat_output_limit_field`明确选择max_tokens或max_completion_tokens，默认前者兼容New API，参与当前模型版本但不暴露给客户端。不能按模型名推断、不能同时发送或失败后换字段重新生成。每次受理以服务端保守估算验证完整上下文；这不是供应商实际token/计费。详见[多消息Provider](chat-provider.md)与[V10契约](../planning/v10-contract.md)，真实供应商支持仍由V15确认。
+
+## 024 视频首帧
+
+在支持该协议的 video 模型 capabilities 中声明 video_first_frame_supported 为 true，并配置完整规格/时长。权益开启时为该模型及规格设置独立 first_frame 费率，服务端安全应用并重启后由公开目录核对。[能力与实际协议](decisions/0024-video-first-frame.md)

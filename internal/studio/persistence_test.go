@@ -361,11 +361,24 @@ func TestPostgresPersistenceAuthIsolationAndRecovery(t *testing.T) {
 	if provider.submits.Load() != 1 {
 		t.Fatal("media not submitted")
 	}
-	// Seed durable crash points without placing them in process memory, exactly
-	// as a previous process could have left them before abrupt termination.
+	// Seed a pre-021 crash checkpoint without a stream identity. Its browser
+	// may have observed volatile events beyond the stored sequence.
 	now := time.Now().UTC()
 	interrupted := Run{ID: newID("run"), ProviderMode: "demo", WorkspaceID: a.Workspace.ID, ProjectID: a.Project.ID, ModelID: "studio-chat", Prompt: "crash fixture", Status: "RUNNING", Output: "saved checkpoint", Seq: 7, CreatedAt: now, UpdatedAt: now}
-	if err = app.store.createRun(interrupted, a.Workspace.ID+":runs:crash-run-key", payloadHash(input)); err != nil {
+	if err = ledgerTx(app.store, func(ctx context.Context, tx pgx.Tx) error {
+		doc, err := json.Marshal(interrupted)
+		if err != nil {
+			return err
+		}
+		if _, err = tx.Exec(ctx, "INSERT INTO studio_runs(id,workspace_id,project_id,document,updated_at) VALUES($1,$2,$3,$4,$5)", interrupted.ID, interrupted.WorkspaceID, interrupted.ProjectID, doc, now); err != nil {
+			return err
+		}
+		hash := payloadHash(input)
+		if _, err = tx.Exec(ctx, "INSERT INTO studio_idempotency(scope_key,payload_hash,resource_id,resource_type) VALUES($1,$2,$3,'run')", a.Workspace.ID+":runs:crash-run-key", hash[:], interrupted.ID); err != nil {
+			return err
+		}
+		return appendRunOutboxSQL(ctx, tx, interrupted)
+	}); err != nil {
 		t.Fatal(err)
 	}
 	unknown := &taskRecord{Task: Task{ID: newID("task"), ProviderMode: "demo", WorkspaceID: a.Workspace.ID, ProjectID: a.Project.ID, Kind: "image", ModelID: "studio-image", Prompt: "ambiguous", Status: "SUBMITTING", Version: 2, CreatedAt: now, UpdatedAt: now, Artifacts: []Artifact{}}, Input: mediaInput, NextPoll: now, Submission: &MediaSubmission{Body: []byte(`{"model":"fixture","prompt":"ambiguous"}`), IdempotencyKey: "frozen-provider-key", CredentialID: "fixture-credential"}}

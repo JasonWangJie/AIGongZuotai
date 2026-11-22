@@ -26,6 +26,7 @@ type LedgerPriceSnapshot struct {
 	RequestedUnits         int    `json:"requested_units"`
 }
 type ledgerQuoteRow struct {
+	OwnerUserID                                                                                   string
 	ID, WorkspaceID, ProjectID, ResourceType, ConversationID, ModelID, ModelVersion, PriceVersion string
 	RequestHash                                                                                   [32]byte
 	Price                                                                                         LedgerPriceSnapshot
@@ -93,6 +94,7 @@ type ledgerReservationRow struct {
 	ChargeJournalID string
 }
 type LedgerReservationRequest struct {
+	ActorUserID                                                                                      string
 	QuoteID, WorkspaceID, ProjectID, ResourceType, ResourceID, ConversationID, ModelID, ModelVersion string
 	ProviderMode                                                                                     string
 	RequestHash                                                                                      [32]byte
@@ -159,14 +161,20 @@ func copyBilling(v *BillingSummary) *BillingSummary {
 	return &next
 }
 
+const ledgerQuoteByID = `SELECT id,workspace_id,project_id,resource_type,conversation_id,model_id,model_version,price_version,request_hash,price,reserve_micros,expires_at,created_at,COALESCE(reservation_id,''),COALESCE(owner_user_id,'') FROM studio_ledger_quotes WHERE id=$1`
+
 func readLedgerQuoteSQL(ctx context.Context, q ledgerQuerier, id string, lock bool) (ledgerQuoteRow, error) {
-	var v ledgerQuoteRow
-	var hash, price []byte
-	sql := `SELECT id,workspace_id,project_id,resource_type,conversation_id,model_id,model_version,price_version,request_hash,price,reserve_micros,expires_at,created_at,COALESCE(reservation_id,'') FROM studio_ledger_quotes WHERE id=$1`
+	sql := ledgerQuoteByID
 	if lock {
 		sql += " FOR UPDATE"
 	}
-	err := q.QueryRow(ctx, sql, id).Scan(&v.ID, &v.WorkspaceID, &v.ProjectID, &v.ResourceType, &v.ConversationID, &v.ModelID, &v.ModelVersion, &v.PriceVersion, &hash, &price, &v.ReserveMicros, &v.ExpiresAt, &v.CreatedAt, &v.ReservationID)
+	return scanLedgerQuote(q.QueryRow(ctx, sql, id))
+}
+
+func scanLedgerQuote(row pgx.Row) (ledgerQuoteRow, error) {
+	var v ledgerQuoteRow
+	var hash, price []byte
+	err := row.Scan(&v.ID, &v.WorkspaceID, &v.ProjectID, &v.ResourceType, &v.ConversationID, &v.ModelID, &v.ModelVersion, &v.PriceVersion, &hash, &price, &v.ReserveMicros, &v.ExpiresAt, &v.CreatedAt, &v.ReservationID, &v.OwnerUserID)
 	if err != nil {
 		return v, err
 	}

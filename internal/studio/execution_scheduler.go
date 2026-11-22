@@ -40,6 +40,8 @@ func (c *ChatSchedulingConfig) normalize(workers, queue int) error {
 type executionJob struct {
 	ID, WorkspaceID, ModelKey string
 	EnqueuedAt                time.Time
+	childEligible             bool
+	dispatchedToChild         bool
 }
 type ExecutionSchedulerSnapshot struct {
 	Queued           int                  `json:"queued"`
@@ -62,6 +64,8 @@ type executionScheduler struct {
 	running                          map[string]executionJob
 	workspaceRunning                 map[string]int
 	modelRunning                     map[string]int
+	localRunning                     int
+	childDispatches, localFallbacks  uint64
 	wake                             chan struct{}
 	dispatched                       uint64
 	waitSecondsTotal, waitSecondsMax float64
@@ -114,9 +118,23 @@ func (s *executionScheduler) removeWorkspaceLocked(index int) {
 // within one workspace/model. A saturated model cannot block a different model
 // behind it, but no running request is preempted or transparently retried.
 func (s *executionScheduler) pickLocked(now time.Time) (executionJob, bool) {
-	if len(s.running) >= s.limits.Workers || len(s.order) == 0 {
+	if s.localRunning >= s.limits.Workers {
 		return executionJob{}, false
 	}
+	return s.pickRunnableLocked(now, func(executionJob) chatDispatchRoute { return chatLocal })
+}
+
+type chatDispatchRoute uint8
+
+const (
+	chatUnavailable chatDispatchRoute = iota
+	chatLocal
+	chatChild
+)
+
+// reserve examines only work that already fits both shared scope limits. It
+// must return immediately and may reserve one actual child slot on success.
+func (s *executionScheduler) pickRunnableLocked(now time.Time, reserve func(executionJob) chatDispatchRoute) (executionJob, bool) {
 	for offset := 0; offset < len(s.order); offset++ {
 		index := (s.next + offset) % len(s.order)
 		workspace := s.order[index]
@@ -128,6 +146,19 @@ func (s *executionScheduler) pickLocked(now time.Time) (executionJob, bool) {
 			job := s.queued[id]
 			if s.modelRunning[job.ModelKey] >= s.limits.ModelConcurrency {
 				continue
+			}
+			route := reserve(job)
+			if route == chatUnavailable {
+				continue
+			}
+			job.dispatchedToChild = route == chatChild
+			if job.dispatchedToChild {
+				s.childDispatches++
+			} else {
+				s.localRunning++
+				if job.childEligible {
+					s.localFallbacks++
+				}
 			}
 			delete(s.queued, id)
 			ids = append(ids[:pos], ids[pos+1:]...)
@@ -186,6 +217,9 @@ func (s *executionScheduler) releaseLocked(id string) {
 		return
 	}
 	delete(s.running, id)
+	if !job.dispatchedToChild {
+		s.localRunning--
+	}
 	s.workspaceRunning[job.WorkspaceID]--
 	s.modelRunning[job.ModelKey]--
 	if s.workspaceRunning[job.WorkspaceID] == 0 {

@@ -1,3 +1,8 @@
+import { serverErrorText } from './serverDisplay';
+import { uiText } from './locale';
+import { readMessagePageText } from './readMessagePageText';
+import { maxMessagePageBytes } from './messageBodyCache';
+import { captureRiskInput, rememberRisk, riskChangedInput, riskCodes } from './riskOriginal';
 import type { BillingQuote, QuoteRequest, LedgerWallet, LedgerEntry, LedgerReservation, LedgerPage } from './billing';
 import type { AuditPage, AuthSession, Bootstrap, CloudDraft, DraftRevisionPage, DraftWriteInput, HistoryPage, Project, Run, Task, TaskInput, WorkspaceRuntime, ModelCatalog, ReferenceAsset } from './types';
 import type { CatalogEntry } from './modelCatalog';
@@ -12,16 +17,41 @@ import { definiteModerationUnavailable, mediaModerationErrorMessage } from './me
 import { generationErrorMessage } from './generationControls';
 import type { GenerationAccess, GenerationAppeal, GenerationPage, AppealInput, GenerationPlanInput, GenerationPlan, GenerationExecuteInput, GenerationReceipt } from './generationControls';
 
+type ErrorDetail = string | { ui: string } | { server?: string };
+
+function errorCodeText(code?: string) {
+  return executionErrorMessage(code) || generationErrorMessage(code) || mediaModerationErrorMessage(code) || moderationErrorMessage(code);
+}
+
+function formatErrorDetail(detail: ErrorDetail, status: number, code?: string) {
+  if (typeof detail === 'string') return detail;
+  if ('ui' in detail) return uiText(detail.ui);
+  return errorCodeText(code) || serverErrorText(code, detail.server) || uiText('请求失败（{0}）', status);
+}
+
 export class ApiError extends Error {
+  readonly #detail: ErrorDetail;
+  get displayMessage() { return formatErrorDetail(this.#detail, this.status, this.code); }
   status: number;
   uncertain: boolean;
   code?: string;
   requestId?: string;
   retryAt: number;
-  constructor(message: string, status = 0, uncertain = false, code?: string, requestId?: string, retryAt = 0) { super(message); this.status = status; this.uncertain = uncertain; this.code = code; this.requestId = safeRequestId(requestId); this.retryAt = retryAt; }
+  constructor(message: ErrorDetail, status = 0, uncertain = false, code?: string, requestId?: string, retryAt = 0) {
+    super(formatErrorDetail(message, status, code));
+    // A closed error code is sufficient to translate its message on later renders.
+    this.#detail = typeof message !== 'string' && 'server' in message && errorCodeText(code) ? {} : message;
+    this.status = status;
+    this.uncertain = uncertain;
+    this.code = code;
+    this.requestId = safeRequestId(requestId);
+    this.retryAt = retryAt;
+  }
 }
 
-async function request<T>(path: string, init?: RequestInit, cache?: { value?: T; response?: (response: Response) => void }): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit, cache?: { value?: T; response?: (response: Response) => void; maxBytes?: number }): Promise<T> {
+  const riskInput=captureRiskInput(path,init);
+  if(riskChangedInput(riskInput))throw new ApiError({ ui: '该报价已有受限的原请求，请到额度风控复核查看原记录。' },409,false,'CREDIT_RISK_ORIGINAL_REQUIRED');
   const mutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(init?.method || 'GET');
   const controller = new AbortController();
   const abort = () => controller.abort();
@@ -30,25 +60,29 @@ async function request<T>(path: string, init?: RequestInit, cache?: { value?: T;
   const timer = window.setTimeout(() => controller.abort(), 15_000);
   try {
     const response = await fetch('/api/v1' + path, { ...init, credentials: 'same-origin', signal: controller.signal, headers: { 'Content-Type': 'application/json', ...init?.headers } });
-    if (response.status === 304) { if (cache?.value !== undefined) { cache.response?.(response); return cache.value; } throw new ApiError('模型缓存不可用，请重新刷新目录。', 304); }
-    const raw = await response.text();
+    if (response.status === 304) { if (cache?.value !== undefined) { cache.response?.(response); return cache.value; } throw new ApiError({ ui: '模型缓存不可用，请重新刷新目录。' }, 304); }
+    const raw = cache?.maxBytes ? await readMessagePageText(response, cache.maxBytes).catch(error => {
+      throw new ApiError(error instanceof Error ? error.message : uiText('无法读取消息页。'), response.status);
+    }) : await response.text();
     const requestId = safeRequestId(response.headers.get('X-Request-ID'));
     const retryAt = retryDeadline(response.headers.get('Retry-After'), response.status, Date.now(), path.startsWith('/auth/') ? ACCOUNT_RETRY_SECONDS : MAX_RETRY_SECONDS);
     let data: unknown;
-    try { data = raw ? JSON.parse(raw) : {}; } catch { throw new ApiError('服务返回了无法识别的响应，请检查 Go API 是否运行。', response.status, mutation, undefined, requestId, retryAt); }
+    try { data = raw ? JSON.parse(raw) : {}; } catch { throw new ApiError({ ui: '服务返回了无法识别的响应，请检查 Go API 是否运行。' }, response.status, mutation, undefined, requestId, retryAt); }
     if (!response.ok) {
       const body = data as { error?: { message?: string; code?: string; request_id?: string } | string; message?: string };
       const code = typeof body.error === 'object' && typeof body.error?.code === 'string' ? body.error.code : undefined;
-      const message = executionErrorMessage(code) || generationErrorMessage(code) || mediaModerationErrorMessage(code) || moderationErrorMessage(code) || (typeof body.error === 'string' ? body.error : body.error?.message || body.message);
+      if (response.status === 403 && code === 'ACCOUNT_RESTRICTED') window.dispatchEvent(new Event('studio-account-restricted'));
+      if(response.status===429 && riskCodes.includes(code||''))rememberRisk(riskInput);
+      const serverMessage = typeof body.error === 'string' ? body.error : body.error?.message || body.message;
       // This closed code is exclusively a confirmed pre-admission rejection. Existing unknown requests still retain their original key in the recovery stores.
       const chatCreation = init?.method === 'POST' && (path === '/runs' || /^\/conversations\/[^/?]+\/runs$/.test(path));
       const preAdmissionRejection = definiteModerationUnavailable(response.status, code) || (chatCreation && definiteExecutionRejection(response.status, code));
-      throw new ApiError(message || `请求失败（${response.status}）`, response.status, response.status >= 500 && mutation && !preAdmissionRejection, code, requestId || (typeof body.error === 'object' ? body.error?.request_id : undefined), retryAt);
+      throw new ApiError({ server: typeof serverMessage === 'string' ? serverMessage : undefined }, response.status, response.status >= 500 && mutation && !preAdmissionRejection, code, requestId || (typeof body.error === 'object' ? body.error?.request_id : undefined), retryAt);
     }
     cache?.response?.(response); return data as T;
   } catch (error) {
     if (error instanceof ApiError) throw error;
-    throw new ApiError(error instanceof DOMException && error.name === 'AbortError' ? '连接超时，请检查本地服务后重试。' : '无法连接 Go API，请确认服务已在 127.0.0.1:8080 启动。', 0, mutation);
+    throw new ApiError({ ui: error instanceof DOMException && error.name === 'AbortError' ? '连接超时，请检查本地服务后重试。' : '无法连接 Go API，请确认服务已在 127.0.0.1:8080 启动。' }, 0, mutation);
   } finally { window.clearTimeout(timer); init?.signal?.removeEventListener('abort', abort); }
 }
 
@@ -86,7 +120,7 @@ export const api = {
   securityEvents: (cursor?: string, signal?: AbortSignal) => request<SecurityEventPage>('/auth/security/events?limit=20' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''), { signal }),
   conversations: (project: string, cursor?: string, signal?: AbortSignal) => request<ConversationPage>('/conversations?limit=20' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''), { headers: projectHeaders(project), signal }),
   conversation: (project: string, id: string, signal?: AbortSignal) => request<Conversation>('/conversations/' + encodeURIComponent(id), { headers: projectHeaders(project), signal }),
-  conversationMessages: (project: string, id: string, leaf?: string, before?: string, signal?: AbortSignal) => request<MessagePage>('/conversations/' + encodeURIComponent(id) + '/messages?limit=20' + (leaf ? '&leaf_id=' + encodeURIComponent(leaf) : '') + (before ? '&before=' + encodeURIComponent(before) : ''), { headers: projectHeaders(project), signal }),
+  conversationMessages: (project: string, id: string, leaf?: string, before?: string, signal?: AbortSignal) => request<MessagePage>('/conversations/' + encodeURIComponent(id) + '/messages?limit=20' + (leaf ? '&leaf_id=' + encodeURIComponent(leaf) : '') + (before ? '&before=' + encodeURIComponent(before) : ''), { headers: projectHeaders(project), signal }, { maxBytes:maxMessagePageBytes }),
   conversationBranches: (project: string, id: string, cursor?: string, signal?: AbortSignal) => request<BranchPage>('/conversations/' + encodeURIComponent(id) + '/branches?limit=20' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''), { headers: projectHeaders(project), signal }),
   createConversation: (body: { project_id: string; title?: string }, key: string) => request<Conversation>('/conversations', { method: 'POST', body: JSON.stringify(body), headers: { 'Idempotency-Key': key, ...projectHeaders(body.project_id) } }),
   createConversationRun: (project: string, id: string, body: TurnInput, key: string) => request<Run>('/conversations/' + encodeURIComponent(id) + '/runs', { method: 'POST', body: JSON.stringify(body), headers: { 'Idempotency-Key': key, ...projectHeaders(project) } }),
@@ -97,9 +131,9 @@ export const api = {
   projects: () => request<{ items: Project[] }>('/projects'),
   references: (projectId: string, offset = 0) => request<HistoryPage<ReferenceAsset>>(`/references?limit=100&offset=${offset}`, { headers: projectHeaders(projectId) }),
   library: (projectId: string, filters: LibraryFilters, cursor?: string, signal?: AbortSignal) => request<LibraryPageData>('/library?' + libraryQuery(filters, cursor), { headers: projectHeaders(projectId), signal }),
-  libraryAsset: (projectId: string, id: string) => request<AssetEntry>('/library/' + encodeURIComponent(id), { headers: projectHeaders(projectId) }),
+  libraryAsset: (projectId: string, id: string, signal?: AbortSignal) => request<AssetEntry>('/library/' + encodeURIComponent(id), { headers: projectHeaders(projectId), signal }),
   libraryWrite: (projectId: string, id: string, operation: AssetOperation) => request<AssetEntry>('/library/' + encodeURIComponent(id) + (operation.kind === 'metadata' ? '' : '/' + operation.kind), { method: operation.kind === 'metadata' ? 'PATCH' : 'POST', body: JSON.stringify(operation.body), headers: { ...projectHeaders(projectId), 'Idempotency-Key': operation.key } }),
-  libraryRevisions: (projectId: string, id: string, before?: number) => request<AssetRevisionPage>('/library/' + encodeURIComponent(id) + '/revisions?limit=20' + (before ? '&before_revision=' + before : ''), { headers: projectHeaders(projectId) }),
+  libraryRevisions: (projectId: string, id: string, before?: number, signal?: AbortSignal) => request<AssetRevisionPage>('/library/' + encodeURIComponent(id) + '/revisions?limit=20' + (before ? '&before_revision=' + before : ''), { headers: projectHeaders(projectId), signal }),
   createProject: (name: string) => request<Project>('/projects', { method: 'POST', body: JSON.stringify({ name }) }),
   draft: (projectId: string) => request<CloudDraft>(`/projects/${encodeURIComponent(projectId)}/draft`, { headers: projectHeaders(projectId) }),
   saveDraft: (projectId: string, body: DraftWriteInput, key: string) => request<CloudDraft>(`/projects/${encodeURIComponent(projectId)}/draft`, { method: 'PUT', body: JSON.stringify(body), headers: { ...projectHeaders(projectId), 'Idempotency-Key': key } }),

@@ -92,7 +92,13 @@ func recoveryAssertRows(t *testing.T, conn *pgx.Conn, runs, tasks int) {
 	if got := outboxCount(t, conn, `SELECT count(*) FROM studio_runs WHERE id LIKE 'run_recovery_%' AND document->>'status'='INTERRUPTED' AND (document->>'seq')::bigint=$1 AND document->>'output'='durable checkpoint'`, uint64(41)+recoverySequenceGap); got != runs {
 		t.Fatalf("run recovery count=%d want=%d; recovery must preserve checkpoint and advance once", got, runs)
 	}
-	if got := outboxCount(t, conn, `SELECT count(*) FROM studio_tasks WHERE id LIKE 'task_recovery_%' AND document->>'status'='SUBMIT_UNKNOWN' AND (document->>'version')::bigint=8 AND handle='{}'::jsonb AND lease_owner='' AND lease_until IS NULL AND lease_epoch>9`); got != tasks {
+	// Historical fixtures use {}, while a saved zero-value MediaHandle encodes
+	// all its fields. Both representations must describe a completely empty handle.
+	emptyHandle, err := json.Marshal(MediaHandle{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := outboxCount(t, conn, `SELECT count(*) FROM studio_tasks WHERE id LIKE 'task_recovery_%' AND document->>'status'='SUBMIT_UNKNOWN' AND (document->>'version')::bigint=8 AND handle IN ('{}'::jsonb,$1::jsonb) AND lease_owner='' AND lease_until IS NULL AND lease_epoch>9`, emptyHandle); got != tasks {
 		t.Fatalf("unknown submission recovery count=%d want=%d", got, tasks)
 	}
 	if outboxCount(t, conn, `SELECT pending FROM studio_outbox_limits WHERE singleton`) != 0 || outboxCount(t, conn, `SELECT count(*) FROM studio_outbox_events WHERE projected_at IS NULL`) != 0 {
@@ -117,11 +123,7 @@ func TestPostgresRecoveryNewAcrossPagesPreservesBillingAndUnknown(t *testing.T) 
 	}
 	ledgerGrant(t, seed.store, 10000)
 	run := ledgerRun(t, seed.store, "live")
-	run.Status = "RUNNING"
-	if err = seed.store.saveRunCandidate(&run); err != nil {
-		seed.Close()
-		t.Fatal(err)
-	}
+	claimFixtureRun(t, seed.store, &run)
 	in := taskInput("image")
 	price := LedgerPriceSnapshot{ProviderMode: "live", Basis: "delivered_artifact", ArtifactMicros: 500, RequestedUnits: 1}
 	quote := ledgerQuote(t, seed.store, "task", "studio-image", ledgerTaskRequestHash(in), 500, price)
@@ -151,7 +153,7 @@ func TestPostgresRecoveryNewAcrossPagesPreservesBillingAndUnknown(t *testing.T) 
 		t.Fatal("recovery changed unknown media hold", err)
 	}
 	storedRun, err := reopened.store.loadRun(run.ID)
-	if err != nil || storedRun.Status != "INTERRUPTED" || storedRun.Seq != run.Seq+recoverySequenceGap || storedRun.Billing == nil || storedRun.Billing.State != "REVIEW" {
+	if err != nil || storedRun.Status != "INTERRUPTED" || storedRun.Seq != run.Seq+1 || storedRun.Billing == nil || storedRun.Billing.State != "REVIEW" {
 		t.Fatal("recovery changed interrupted run or hold", err)
 	}
 	if !reflect.DeepEqual(beforeJournal, schedulerOriginalSnapshot(t, admin, []string{"studio_ledger_journals", "studio_ledger_postings"})) {
@@ -187,7 +189,7 @@ func TestPostgresRecoveryNewAcrossPagesPreservesBillingAndUnknown(t *testing.T) 
 	if err != nil || !reflect.DeepEqual(loaded.Task, secondTask.Task) {
 		t.Fatal("second New repeated unknown media mutation", err)
 	}
-	t.Logf("complete New: runs=%d tasks=%d project_pages=%d run_pages=%d task_pages=%d max_page_records=%d max_encoded_bytes=%d leases_cleared=%d; second New changed no business evidence", 258, 258, stats.ProjectPages, stats.RunPages, stats.TaskPages, stats.MaxPageRecords, stats.MaxPageEncodedBytes, stats.LeasesCleared)
+	t.Logf("complete New: runs=%d tasks=%d run_pages=%d task_pages=%d max_page_records=%d max_encoded_bytes=%d leases_cleared=%d; second New changed no business evidence", 258, 258, stats.RunPages, stats.TaskPages, stats.MaxPageRecords, stats.MaxPageEncodedBytes, stats.LeasesCleared)
 }
 
 // Keep test measurement JSON limited to aggregate counts and timing. This

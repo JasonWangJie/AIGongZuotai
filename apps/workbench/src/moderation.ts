@@ -1,3 +1,4 @@
+import { uiText } from './locale';
 export type ModerationSummary = { policy_id: string; policy_version: string; phase: 'input' | 'output'; state: 'PENDING' | 'ALLOWED' | 'BLOCKED' | 'REVIEW'; version: number; reason_code?: string };
 export type ModerationCapability = { enabled: boolean; mode: 'disabled' | 'rules' | 'http'; policy_id?: string; policy_version?: string; text_delivery: 'stream' | 'after_review'; media_supported: boolean; media_mode?: 'disabled' | 'fixtures' | 'http'; media_policy_id?: string; media_policy_version?: string };
 type TextSnapshot = { moderation?: ModerationSummary | null; status: string; text: string };
@@ -10,7 +11,7 @@ export function moderationState(value?: ModerationSummary | null): ModerationSum
 export function moderationAllowsText(value?: ModerationSummary | null, status?: string): boolean { return value == null || validModeration(value) && value.phase === 'output' && value.state === 'ALLOWED' && status === 'COMPLETED'; }
 export function visibleModeratedText(value: TextSnapshot): string { return moderationAllowsText(value.moderation, value.status) ? value.text : ''; }
 export function moderationMediaBlocked(value?: ModerationCapability): boolean { return value?.enabled === true && value.media_supported !== true; }
-export const moderationNames = { PENDING: '生成与检查中', ALLOWED: '文本检查已通过', BLOCKED: '回复已限制', REVIEW: '文本检查待核实' };
+export const moderationNames = { get PENDING() { return uiText('生成与检查中'); }, get ALLOWED() { return uiText('文本检查已通过'); }, get BLOCKED() { return uiText('回复已限制'); }, get REVIEW() { return uiText('文本检查待核实'); } };
 export function moderationDisplayState(value?: ModerationSummary | null, status?: string): ModerationSummary['state'] | undefined {
   const state = value != null && value.phase !== 'output' ? 'REVIEW' : moderationState(value);
   if (state !== 'ALLOWED' || status === undefined || status === 'COMPLETED') return state;
@@ -42,5 +43,5 @@ export function mergeModeratedText(previous: TextSnapshot | undefined, incoming:
 
 export function moderationErrorMessage(code?: string): string | undefined {
   if (!code?.startsWith('MODERATION_')) return undefined;
-  return ({ MODERATION_INPUT_REVIEW: '这次输入需要进一步核实，新生成未受理。请调整输入或联系维护者。', MODERATION_INPUT_INVALID: '输入不符合当前文本检查限制，新生成未受理。请缩短或调整输入。', MODERATION_BUSY: '文本检查繁忙，新生成未受理。请等待冷却后再手动操作。', MODERATION_CONTEXT_CHANGED: '对话上下文已变化，新生成未受理。请刷新会话并核对当前分支，输入仍保留。', MODERATION_INPUT_BLOCKED: '这次输入未通过文本检查，新生成未受理。请调整输入后再手动提交。', MODERATION_UNAVAILABLE: '文本检查暂不可用，请稍后核对请求状态。输入已保留，不会自动重新提交。', MODERATION_MEDIA_UNSUPPORTED: '当前文本审核模式尚未支持图片与视频的新生成。已有任务仍可查看或核对。', MODERATION_OUTPUT_BLOCKED: '此回复未通过文本检查，内容未开放。', MODERATION_REVIEW_REQUIRED: '此回复的文本检查尚未完成，内容暂不开放。' } as Record<string, string>)[code] || '文本检查需要处理。请刷新状态或联系维护者，并提供请求编号；不会自动重新生成。';
+  return ({ MODERATION_INPUT_REVIEW: uiText('这次输入需要进一步核实，新生成未受理。请调整输入或联系维护者。'), MODERATION_INPUT_INVALID: uiText('输入不符合当前文本检查限制，新生成未受理。请缩短或调整输入。'), MODERATION_BUSY: uiText('文本检查繁忙，新生成未受理。请等待冷却后再手动操作。'), MODERATION_CONTEXT_CHANGED: uiText('对话上下文已变化，新生成未受理。请刷新会话并核对当前分支，输入仍保留。'), MODERATION_INPUT_BLOCKED: uiText('这次输入未通过文本检查，新生成未受理。请调整输入后再手动提交。'), MODERATION_UNAVAILABLE: uiText('文本检查暂不可用，请稍后核对请求状态。输入已保留，不会自动重新提交。'), MODERATION_MEDIA_UNSUPPORTED: uiText('当前文本审核模式尚未支持图片与视频的新生成。已有任务仍可查看或核对。'), MODERATION_OUTPUT_BLOCKED: uiText('此回复未通过文本检查，内容未开放。'), MODERATION_REVIEW_REQUIRED: uiText('此回复的文本检查尚未完成，内容暂不开放。') } as Record<string, string>)[code] || uiText('文本检查需要处理。请刷新状态或联系维护者，并提供请求编号；不会自动重新生成。');
 }

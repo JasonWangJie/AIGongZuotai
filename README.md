@@ -2,7 +2,31 @@
 
 面向个人创作者的 AI 工作台。React + TypeScript 前端，Go 核心后端，按实时 LLM 与异步媒体任务分别组织执行链路。总体设计见 [落地开发方案](docs/deliverables/Go与NewAPI高性能AI工作台开发方案.html)。
 
-**当前版本：v0.20.0，V16-A3.3媒体公平与持久退避本地已验收，保留A3.2/A3.1/A1/A2能力。** V14-C1工作区新生成限制与复核本地闭环保留。 图片/视频产物先保存为私有候选，整组通过且事务提交成功才开放预览、下载和结算；新参考图先检查原件再登记。V14-B1文本审核与V14-A运营核实继续保留。真实审核商按用户安排后续选型，C1提供工作区新生成限制、复核申请和答复，C2账户/内容申诉及C3自动额度风控另行推进，完整V14仍进行中。V00—V06、V08—V10和V12共11/23整批已验收，见[TODO](TODO.md)。V11真实邮件与V07真实供应商另验。当前仍是单控制写者、本地开发版本，尚不能作为公众收费站点上线；demo与fixture不代表真实模型或审核能力。
+工作台支持简体中文、繁體中文、English 和日本語。首次打开时按访问 IP 选择语言：中国大陆使用简体，香港、澳门和台湾使用繁体，日本使用日语，其他地区使用英语。登录页和工作台顶栏均可手动切换，选择会保存在当前浏览器；选择「自动」可恢复按 IP 判断。[地区识别与代理配置](docs/wiki/frontend.md#工作台语言与地区识别)
+
+「本人订单」的详情分别展示收款、退款和 CREDIT 状态。原意向没有绑定商户时显示未核实，测试记录标明测试环境。正式商户仍待选定、接入和受控验收。[035 状态与范围](docs/wiki/decisions/0035-order-payments.md)
+
+登录账户可提交站内客服工单，追问、查看答复并关闭工单。客服须具备该工作区单独授予的客服角色，回复时核验当前密码。[工单范围与配置](docs/wiki/decisions/0034-support-tickets.md)
+
+在「账户安全 → 本人资料下载」选择账户资料、安全事件或本人账户申诉。每页用当前密码确认，下载文件含本页读取时间和创建截止时间。受限账户也可使用此入口。[导出范围与分页](docs/wiki/account-data-export.md)
+
+**「本人订单」可以核对目录条款、登记和取消购买意向。** 当前支付渠道尚未接入，意向不会扣款或发放权益。目录改变或关闭后可核对当时价格、币种、拟购 CREDIT 和原收据。[配置和状态](docs/wiki/decisions/0033-order-intents.md) · [验收记录](docs/changes/2026-11-22-160-order-intent-integration.md)
+
+**侧栏「项目协作」支持定向邀请已有账户。** 对方接受后，可按只读或编辑角色访问当前共享项目的节点草稿。两人编辑相同修订时保留冲突输入，权限变化在下次操作时重新核对。[邀请与协作](docs/wiki/decisions/0032-project-collaboration.md) · [验收记录](docs/changes/2026-11-22-156-project-collaboration-integration.md)
+
+**侧栏「漫剧分镜」支持把故事、角色、场景和项目私图编成分镜本。** 保存后由该版作者确认，可下载可编辑的图文 PPTX。改名后的角色随新稿保存，旧版保留原设定。[操作与限制](docs/wiki/decisions/0031-project-comics.md) · [验收记录](docs/changes/2026-11-22-152-comic-integration.md)
+
+**侧栏「视频剪辑」可以用项目已有视频裁切、重排并导出 MP4。** 登录 PostgreSQL 项目后可保存固定版本并回读历史。Windows 服务器启用受信的 FFmpeg、FFprobe 与独立私有临时目录后开放成片下载。浏览器实测下载了两版，对 125 帧和两个原声音调完成独立核对。030 累计 PostgreSQL 回归 1461.356 秒通过。[配置与剪辑限制](docs/wiki/decisions/0030-video-timelines.md) · [030 验收](docs/changes/2026-11-22-148-video-edit-integration.md)
+
+**本机双制品切换已验证故障回退。** 候选检查失败时继续封流，旧制品重新取得数据库和两个目录的写锁，读回原私图和原键收据后开放。三次交接检查分别用时 2.061、3.478 和 3.949 秒。[脱敏实测](docs/wiki/assets/release-handoff-2026-11-22.json)
+
+**项目演示文稿可从侧栏「演示文稿」进入。** 支持逐页编辑、固定版本、项目私图、放映、离线 HTML、PDF 打印与可编辑 PPTX。实际下载的文件已经在独立软件中改写标题、重新打开并逐页核对。[文稿与导出](docs/wiki/decisions/0029-project-presentations.md) · [下载验收](docs/changes/2026-11-22-138-presentation-integration.md)
+
+**V18-A 已两次从本机独立备份恢复工作台。** 移离原数据库及原文件目录后，原用户在 23.910 秒内重新登录并读回指定草稿、私图和结算记录。多可用区切换仍需在指定环境验收。[恢复报告](docs/wiki/assets/recovery-drill-2026-11-22.json) · [演练命令](docs/wiki/recovery-drill.md)
+
+**V19 工作流已完成本地验收。** 在“创作草稿 → 工作流画布”可从模板生成文字、图片和视频，跨登录选图，预览局部重跑范围或停止后续步骤。最终 025 全量 PostgreSQL 959.929 秒，含三套实际工作流浏览器。[验收台账](docs/changes/2026-11-21-118-workflow-attempt-integration.md)
+
+**当前版本：v0.20.0，V16 已完成本地验收，包括持久聊天回放、执行租约与两个工作区的混合负载测试。V16-A4 分页恢复、有界缓存与 20 万条记录完整启动已本地验收，V16-A3.3媒体公平与持久退避本地已验收，保留A3.2/A3.1/A1/A2能力。** V14-C1工作区新生成限制与复核本地闭环保留。 图片/视频产物先保存为私有候选，整组通过且事务提交成功才开放预览、下载和结算；新参考图先检查原件再登记。V14-B1文本审核与V14-A运营核实继续保留。真实审核商按用户安排后续选型，C1提供工作区新生成限制、复核申请和答复，C2a 内容申诉和原冻结核实已本地验收，C2b 账户限制与 C3 自动额度风控均已本地验收，029 全量 PostgreSQL 1326.832 秒通过，完整V14仍进行中。V00—V06、V08—V10、V12、V16 和 V19 共 13/23 整批已验收，见[TODO](TODO.md)。V11真实邮件与V07真实供应商另验。当前仍是单控制写者、本地开发版本，尚不能作为公众收费站点上线；demo与fixture不代表真实模型或审核能力。
 
 ![生成权限与复核答复](docs/wiki/assets/generation-reply-phase15.jpg)
 
@@ -17,13 +41,19 @@
 | 文本审核 | 默认关闭；实际输入锁外审核、冻结策略、全文通过且事务成功才展示；隔离正文不进历史/上下文，正常新提问略过受限整轮；本地规则与HTTP模拟器已验，真实渠道待选 |
 | 媒体审核 | 独立策略、真实原件字节、私有候选与整组交付；租约/取消/恢复隔离、访问门禁和已执行额度待核实，默认关闭，真实渠道待选 |
 | 运营核实 | 独立工作区observer/operator/finance角色、异常工单、安全元信息、真实预演与密码确认、原handle核对/REVIEW结算释放、收据和审计；默认关闭，角色仅停机CLI管理 |
+| 本机恢复演练 | 独立 PostgreSQL 基础备份与 WAL、版本化对象服务冷备、私有目录和工作台联合复验。[运行方法](docs/wiki/recovery-drill.md) |
+| 工作区额度风控 | 默认关闭，可按未结冻结额和每分钟有价受理数设置阈值，误伤复核须绑定原报价。028 联合验证进行中。[配置与范围](docs/wiki/decisions/0028-credit-risk.md) |
+| 账户限制与申诉 | 独立授权到目标账户。受限用户重新登录后可查看限制原因、申请复核与读取答复。027 联合验证进行中。[账户治理](docs/wiki/decisions/0027-account-governance.md) |
+| 内容申诉 | 已执行的受限文本或媒体可由本人申诉；授权审核员独立审议，有原冻结时由财务另行核实。本人可查原决定及实际释放的内部额度。[内容申诉](docs/wiki/decisions/0026-content-appeal.md) |
 | 生成权限与复核 | 显式moderator、限制未来生成、原幂等优先、用户复核、真实预演及当前密码确认、公开答复和已提交回执；解除不放行隔离内容 |
 | 创作权益 | 六位整数精度、生成前报价与确认、工作区钱包/流水、原子冻结/结算/释放；未知待核实、停机预演及追加冲正，默认关闭，无真实支付 |
 | 聊天 | 持久多会话、不可变分支、真正的多条messages、上下文预算/整轮裁剪、SSE/停止/显式继续；未启用审核时崩溃保留检查点，开启时未审候选仅内存且恢复保持隔离；旧单轮历史保留 |
 | 媒体任务 | 集中查询、版本与恢复；普通demo为SVG/视频海报；开启媒体fixture后为固定PNG/一秒MP4，明确非AI生成；live 文生图、图片编辑与文生视频通过服务端适配器接入 |
 | 参考素材 | PNG/JPEG/WebP真实校验、私有原件与512px缩略图、项目内复用、有序1—4张引用、上传幂等与原文件重试 |
 | 提交正确性 | 创建运行/任务使用幂等键；同键异参 409；网络受理不明时保留原键显式重试 |
-| 创作草稿 | PG项目私有云端草稿、不可变版本、并发冲突、原键重试、恢复旧稿为新版；memory保留本地草稿；尚不是可执行画布 |
+| 工作流 | 在画布的工作流入口保存不可变版本，逐步授权文本和图片生成，重新登录可从原项目候选中选图。四步模板可用已批准原件生成视频，支持预览局部重跑范围、独立报价、取消及原键核对。[工作流说明](docs/wiki/decisions/0023-project-workflows.md) |
+| 图片编辑配置 | 从侧栏“图片编辑配置”或图像工作室“配置编辑模型”下载非密钥配置，在服务器合并后可刷新并核对实际公开能力。[配置步骤](docs/wiki/references.md#图片编辑配置页) |
+| 创作草稿 | PG项目私有云端草稿、不可变版本、并发冲突、原键重试、恢复旧稿为新版；memory保留本地草稿；原文字草稿保留独立版本 |
 | 编辑保护 | 未保存切项目/退出提示，同账号同项目重登录恢复本页内存编辑；刷新/关闭前仍须保存或导出 |
 | 活动记录 | 项目/工作区范围、游标分页、业务变更与审计同事务、幂等不重复；不含提示词/正文/凭据，非账单 |
 | 网关边界 | LLM 实时流、图片/视频异步协议、精确请求体幂等、未知受理状态；密钥仅在服务端 |
@@ -33,7 +63,7 @@
 | 任务租约 | PG到期领取、周期续约、owner/epoch/generation/业务版本隔离；无handle的未知提交不自动重发 |
 | 媒体执行隔离 | submit/query/delivery/review四通道固定预算及独立PG连接；019首次审核证据、共享审核许可；取消实际退出才释放预算 |
 | 恢复 | 无交付清单的已知任务只查询原handle；有清单只补原集合，有完整收据不重下；已完成资产可独立于供应商启用状态下载，编辑保持原引用及正文 |
-| 聊天执行调度 | 单写者workspace轮转；全局/工作区/冻结上游模型执行预算、等待队列容量、取消释放和固定指标；媒体独立首次审核已在A3.2验收，持久token日志仍待办 |
+| 聊天执行调度 | 单写者workspace轮转；全局/工作区/冻结上游模型执行预算、等待队列容量、取消释放和固定指标；媒体独立首次审核已在A3.2验收，持久 token 日志与执行租约已在 V16-B 验收 |
 | 资源准入 | 工作区/模型未终态任务与SSE上限；未知任务继续占用，已有幂等重放优先 |
 | 运行可观测 | 存活/就绪探针、独立运维令牌指标、请求编号；用户工作区容量与限流冷却反馈 |
 | 工程治理 | Wiki、逐次变更台账、README/TODO同步检查、10模块/23批次验收、PR检查及OpenAPI |
@@ -149,7 +179,173 @@ docs/testing/           测试样本来源和用途说明
 db/migrations/         内嵌数据库SQL脚本
 ```
 
+本机 035 已完成收退款权益、作品库万条索引与剪辑回执的累计验证。工作台 553 项测试和六套冒烟通过。[验收记录](docs/planning/progress.md) · [作品库数据](docs/wiki/assets/performance-library-035.json) · [当前制品依赖](docs/wiki/assets/workbench-035.spdx.json)。
+
 ## 最近变更
+
+- [222 · 已确认分镜的视频报价与受理](docs/changes/2026-11-22-222-comic-panel-video.md) · [223 · 分镜产物替换指定剪辑镜头](docs/changes/2026-11-22-223-panel-video-timeline-replacement.md) · [224 · 工作台单镜生成与原键核对](docs/changes/2026-11-22-224-panel-video-workbench.md)
+
+- [226 · 四语界面与首次访问 IP 地区识别](docs/changes/2026-11-22-226-workbench-languages.md)
+
+- [221 · 账户切换后的首个草稿输入](docs/changes/2026-11-22-221-account-composer-scope.md)
+
+- [225 · 固定分镜生成与局部重做集成](docs/changes/2026-11-22-225-panel-video-integration.md)
+
+- [220 · 80 个模型流、241 个订阅与批量持久化联合验收](docs/changes/2026-11-22-220-integrated-chat-sse-acceptance.md)
+
+- [219 · 192 个授权订阅、撤销与重连](docs/changes/2026-11-22-219-authenticated-sse-sessions.md)
+
+- [216 · 036 到 037 的跨格式回退演练](docs/changes/2026-11-22-216-cross-format-recovery.md) · [217 · 同步备机切换与原业务收据](docs/changes/2026-11-22-217-postgresql-sync-standby.md)
+
+- [218 · 共享会话核验与全局订阅容量](docs/changes/2026-11-22-218-stream-session-batches.md)
+
+- [215 · 037 制品与 SPDX 复核](docs/changes/2026-11-22-215-release-evidence-037.md)
+
+- [214 · 真实慢 TCP 读者与订阅上限](docs/changes/2026-11-22-214-sse-socket-acceptance.md)
+
+**托管聊天已完成 80 路本机验收。** 两个子进程各持有 40 条模型连接，80 份结算与 960 条授权增量核对通过。[正式报告](docs/wiki/assets/performance-managed-chat-037.json) · [208 验收](docs/changes/2026-11-22-208-managed-chat-integration.md)。
+
+**64 路会话增量的批写已在本机验证。** 默认关闭。两组各 768 条增量逐条可回放；启用后写入这些增量使用 24 次物理提交。[性能报告](docs/wiki/assets/performance-batched-deltas-037.json) · [212 验收](docs/changes/2026-11-22-212-business-delta-batch-integration.md)。
+
+- [213 · 长回复虚拟行与原提示滚回核对](docs/changes/2026-11-22-213-virtualized-live-reply-observation.md)
+
+- [212 · 真实工作台增量批量提交集成](docs/changes/2026-11-22-212-business-delta-batch-integration.md)
+
+- [209 · 原增量表的跨运行 PostgreSQL 提交](docs/changes/2026-11-22-209-batched-run-delta-store.md) · [210 · 跨运行增量的有界协调与开关](docs/changes/2026-11-22-210-run-delta-coordinator.md) · [211 · 真实聊天流的批量提交前后对照](docs/changes/2026-11-22-211-batched-delta-acceptance.md)
+
+- [208 · 受管聊天执行的集成与故障验收](docs/changes/2026-11-22-208-managed-chat-integration.md)
+
+- [207 · 受管会话的授权 SSE 与真实进程归属验收](docs/changes/2026-11-22-207-managed-chat-acceptance.md)
+
+- [205 · 私管道的受管聊天执行进程](docs/changes/2026-11-22-205-chat-execution-child-transport.md) · [206 · 受管与本地执行共用调度预算](docs/changes/2026-11-22-206-managed-chat-scheduling.md)
+
+- [204 · 运行 SSE 断线回放的只读连接隔离](docs/changes/2026-11-22-204-run-replay-read-pool.md)
+
+- [203 · PR 启动资源预算与制品差异](docs/changes/2026-11-22-203-pr-bundle-diff.md)
+
+- [202 · 分片批量持久日志与并发回放试验](docs/changes/2026-11-22-202-sharded-stream-journal-poc.md)
+
+- [201 · 64 个同时活跃的模型流和授权 SSE](docs/changes/2026-11-22-201-active-stream-capacity.md)
+
+- [199 · 启动 JavaScript 实际 gzip 传输](docs/changes/2026-11-22-199-startup-javascript-compression.md)
+
+- [200 · 受限网络下的冷暖工作台与深历史](docs/changes/2026-11-22-200-workbench-network-browser.md)
+
+登录 PostgreSQL 工作台，在「创作草稿 → 自由画布」可编辑节点、连接和分组，保存修订，并查看本项目的私有图片和运行状态。[数据与使用范围](docs/wiki/decisions/0037-project-canvas.md)。
+
+- [195 · 项目画布保存与私有来源](docs/changes/2026-11-22-195-project-canvas-versions.md) · [196 · 自由画布的编辑与无障碍操作](docs/changes/2026-11-22-196-free-canvas-workbench.md) · [197 · 两档真实图的平移测量](docs/changes/2026-11-22-197-canvas-pan-browser.md) · [198 · 画布集成、精确格式与恢复](docs/changes/2026-11-22-198-project-canvas-integration.md)
+
+使用 PostgreSQL 时可显式开启长会话。本机已验证一条分支 5,000 轮、500 页及淘汰后的原文重读。默认配置仍按 128 个分支节点受理新写入。[配置与恢复](docs/wiki/decisions/0036-long-conversations.md)。
+
+- [191 · 可回读的消息正文缓存](docs/changes/2026-11-22-191-chat-message-body-cache.md) · [192 · 持久会话祖先与上下文](docs/changes/2026-11-22-192-durable-conversation-ancestry.md) · [193 · 长会话配置、格式与恢复](docs/changes/2026-11-22-193-long-history-format-and-restore.md) · [194 · 真实万条分支验收](docs/changes/2026-11-22-194-deep-conversation-acceptance.md)
+
+本机已验收单分支 128 条消息的连续翻页、键盘导航和窄屏阅读；前插或改变宽度时，原消息锚点最大偏移约 0.14 CSS 像素。[浏览器与数据库实测](docs/wiki/assets/performance-conversation-history-035.json)。
+
+本机 PostgreSQL 和 Chromium 已完成一次连续 30 分钟的聊天。30 次检查点均见正文增长，重开原库能读回全部 25,214 字节。[实际样本](docs/wiki/assets/performance-long-reply-035.json)。
+
+- [187 · 可变行高的消息列表](docs/changes/2026-11-22-187-variable-height-chat-timeline.md) · [188 · 按页读取持久会话正文](docs/changes/2026-11-22-188-conversation-message-pages.md) · [189 · 128条分支消息的浏览器验收](docs/changes/2026-11-22-189-persistent-conversation-history-browser.md)
+
+- [190 · 前端放行指标与待验范围](docs/changes/2026-11-22-190-frontend-acceptance-coverage.md)
+
+- [183 · 持久会话 30 分钟回复验收](docs/changes/2026-11-22-183-durable-long-reply.md) · [184 · 标准服务聊天执行期限](docs/changes/2026-11-22-184-chat-run-timeout.md) · [185 · 可核对的本机长回复流](docs/changes/2026-11-22-185-long-reply-gateway-and-observation.md) · [186 · 活跃回复中的可信输入和滚动](docs/changes/2026-11-22-186-long-reply-browser.md)
+
+- [180 · 万条作品索引及项目切换实测](docs/changes/2026-11-22-180-private-library-browser-resources.md)
+
+- [182 · 剪辑稿保存回执与选择框同步](docs/changes/2026-11-22-182-video-timeline-selection.md)
+
+- [181 · 作品库可见卡片与退出清理](docs/changes/2026-11-22-181-library-virtual-grid.md)
+
+- [179 · 发布前本地安全证据](docs/changes/2026-11-22-179-local-release-security-evidence.md) · [核对用例和渠道条件](docs/wiki/release-security-evidence.md)
+
+- [177 · 订单资金与权益集成](docs/changes/2026-11-22-177-order-payment-integration.md) · [176 · 详情状态](docs/changes/2026-11-22-176-order-payment-workbench.md) · [175 · 本人只读接口](docs/changes/2026-11-22-175-order-payment-status-http.md) · [174 · 资金事务核心](docs/changes/2026-11-22-174-order-payment-store.md)
+
+- [178 · 制品依赖与许可核对](docs/changes/2026-11-22-178-release-sbom.md) · [固定 034 清单](docs/wiki/assets/workbench-034.spdx.json)
+
+- [173 · 订单资料只读对账](docs/changes/2026-11-22-173-offline-order-reconciliation.md)。可在工作台运行时用只读数据库账号，将归一的商户资料与指定工作区的原订单条款作比对。[用法与报告范围](docs/wiki/decisions/0033-order-intents.md#商户资料只读比对)
+
+- [172 · GC、数据库等待及慢订阅者](docs/changes/2026-11-22-172-mixed-resource-observation.md) · [171 · 工作台浏览器基准](docs/changes/2026-11-22-171-workbench-frontend-benchmark.md)。测量配置及报告见[性能 Wiki](docs/wiki/performance.md)。
+
+项目协作与漫剧分镜均已完成本机累计验收。032 全量 PostgreSQL 1639.820 秒通过，覆盖已修正的内容申诉准备和 MP4 下载清理两项。[032 验收](docs/changes/2026-11-22-156-project-collaboration-integration.md)
+
+- [170 · 客服工单联验](docs/changes/2026-11-22-170-support-ticket-integration.md) · [169 · 工单工作台](docs/changes/2026-11-22-169-support-ticket-workbench.md) · [168 · 权限与接口](docs/changes/2026-11-22-168-support-ticket-access-http.md) · [167 · 工单与收据](docs/changes/2026-11-22-167-support-ticket-store.md)
+
+- [164 · 本人资料下载联验](docs/changes/2026-11-22-164-personal-data-export-integration.md) · [163 · 下载工作台](docs/changes/2026-11-22-163-account-data-export-workbench.md) · [162 · 后端导出](docs/changes/2026-11-22-162-account-data-export.md)
+
+- [160 · 本人订单与联备](docs/changes/2026-11-22-160-order-intent-integration.md) · [159 · 订单工作台](docs/changes/2026-11-22-159-order-intent-workbench.md) · [158 · 受信目录](docs/changes/2026-11-22-158-order-intent-catalog-http.md) · [157 · 意向存储](docs/changes/2026-11-22-157-order-intent-store.md)
+
+- [156 · 站内协作与恢复](docs/changes/2026-11-22-156-project-collaboration-integration.md) · [155 · 协作工作台](docs/changes/2026-11-22-155-project-collaboration-workbench.md) · [154 · 同稿编辑](docs/changes/2026-11-22-154-shared-project-draft.md) · [153 · 邀请与角色](docs/changes/2026-11-22-153-project-collaboration-members.md)
+
+- [166 · 下载清理完成边界](docs/changes/2026-11-22-166-video-export-cleanup-verification.md) · [165 · 原审核任务的已提交终态](docs/changes/2026-11-22-165-content-appeal-fixture-completion.md) · [031 本机资源采样](docs/wiki/assets/performance-owned-031-2026-11-22.json)
+
+- [161 · 负载阶段的实际 CPU、驻留内存与句柄取样](docs/changes/2026-11-22-161-owned-resource-sampling.md)
+
+- [152 · 漫剧分镜实测](docs/changes/2026-11-22-152-comic-integration.md) · [151 · 工作台](docs/changes/2026-11-22-151-comic-workbench.md) · [150 · 确认与私图](docs/changes/2026-11-22-150-comic-private-export.md) · [149 · 角色、场景与分镜修订](docs/changes/2026-11-22-149-comic-store.md)
+
+- [148 · 双版本成片与恢复验收](docs/changes/2026-11-22-148-video-edit-integration.md) · [147 · 私有导出](docs/changes/2026-11-22-147-timeline-private-export.md) · [146 · 不可变剪辑版本](docs/changes/2026-11-22-146-video-timeline-store.md) · [145 · 剪辑工作台](docs/changes/2026-11-22-145-video-edit-workbench.md)
+- [144 · 有界真实视频裁切和拼接](docs/changes/2026-11-22-144-bounded-video-export.md)
+- [143 · 单写者值班与故障交接](docs/changes/2026-11-22-143-release-operations.md)
+- [141 · 分环境可重现制品与文件校验](docs/changes/2026-11-22-141-local-release-artifacts.md)
+- [140 · 工作台进程退出与三锁归属](docs/changes/2026-11-22-140-release-process.md)
+- [142 · 单写者故障回退与联合验收](docs/changes/2026-11-22-142-release-handoff-integration.md)
+- [139 · 本机入口排空与候选核验](docs/changes/2026-11-22-139-release-ingress.md)
+- [138 · 项目文稿版本与独立导出验收](docs/changes/2026-11-22-138-presentation-integration.md)
+- [137 · 演示文稿编辑、放映与下载](docs/changes/2026-11-22-137-presentation-workbench.md)
+- [136 · 私图鉴权、导出清单和联备](docs/changes/2026-11-22-136-presentation-http-export.md)
+- [135 · 文稿与不可变版本](docs/changes/2026-11-22-135-presentation-store.md)
+
+- [134 · 观察真实行锁后再中断恢复](docs/changes/2026-11-22-134-recovery-barrier-observation.md)
+- [133 · 工作台恢复点、私有资产与结算联合演练](docs/changes/2026-11-22-133-recovery-platform-integration.md)
+- [132 · 版本化对象存储冷备与独立还原](docs/changes/2026-11-22-132-object-store-cold-backup.md)
+- [131 · PostgreSQL 命名恢复点与物理备份](docs/changes/2026-11-22-131-postgresql-pitr-drill.md)
+- [130 · 工作区风控配置与联合验收](docs/changes/2026-11-22-130-credit-risk-integration.md)
+- [129 · 额度风控与原报价复核工作台](docs/changes/2026-11-22-129-credit-risk-workbench.md)
+- [128 · 原报价复核与独立运营审批](docs/changes/2026-11-22-128-credit-risk-review.md)
+- [127 · 冻结上限、频率与单次许可](docs/changes/2026-11-22-127-credit-risk-store.md)
+- [126 · 账户限制、本人复核与恢复的联合验证](docs/changes/2026-11-22-126-account-governance-integration.md)
+- [125 · 受限身份与账户治理工作台](docs/changes/2026-11-22-125-account-governance-workbench.md)
+- [124 · 账户准入、事件流与离线授权](docs/changes/2026-11-22-124-account-governance-auth.md)
+- [123 · 指定账户授权、限制轮次与原申诉](docs/changes/2026-11-22-123-account-restriction-store.md)
+- [122 · 三账户申诉、备份及释放验收](docs/changes/2026-11-21-122-content-appeal-integration.md)
+- [121 · 申请人、审核员和财务工作台](docs/changes/2026-11-21-121-content-appeal-workbench.md)
+- [120 · 申诉转交及原冻结的财务收据](docs/changes/2026-11-21-120-content-appeal-finance.md)
+- [119 · 已执行输出的原证据与独立审议](docs/changes/2026-11-21-119-content-appeal-store.md)
+
+- [118 · 进程强杀、项目补读及新尝试验收](docs/changes/2026-11-21-118-workflow-attempt-integration.md)
+- [117 · 重跑范围、原图与取消收据工作台](docs/changes/2026-11-21-117-workflow-attempt-workbench.md)
+- [116 · 停止后续步骤与原子资源核对](docs/changes/2026-11-21-116-workflow-cancellation.md)
+- [115 · 局部派生、独立报价和原范围继承](docs/changes/2026-11-21-115-workflow-rerun.md)
+
+- [114 · 双原件到私有视频的联合验收](docs/changes/2026-11-21-114-workflow-video-integration.md)
+- [113 · 四步模板、首帧核对及私有播放器](docs/changes/2026-11-21-113-workflow-video-workbench.md)
+- [112 · 四步图、项目选图与视频交付](docs/changes/2026-11-21-112-workflow-video.md)
+- [111 · 私有视频首帧协议、实际文件与独立报价](docs/changes/2026-11-21-111-video-first-frame-provider.md)
+
+- [110 · 图片编辑配置准备页](docs/changes/2026-11-21-110-image-edit-setup.md)
+- [109 · 工作流升级、故障与联备验收](docs/changes/2026-11-21-109-workflow-integration.md)
+- [108 · 工作流画布与跨会话操作](docs/changes/2026-11-21-108-workflow-workbench.md)
+- [107 · 步骤授权、模型快照和权益](docs/changes/2026-11-21-107-workflow-execution.md)
+- [106 · 项目内流程版本、原候选和人工选择](docs/changes/2026-11-21-106-workflow-store.md)
+
+- [105 · 工作流模板、选图和视频输入的分批验收](docs/changes/2026-11-21-105-workflow-execution-plan.md)
+- [104 · 双工作区聊天与媒体混合负载](docs/changes/2026-11-21-104-mixed-workload.md)
+- [103 · 聊天执行失权、升级与联备集成](docs/changes/2026-11-21-103-run-lease-integration.md)
+- [102 · 独立连接竞争与迟到审核](docs/changes/2026-11-21-102-run-lease-contention.md)
+- [101 · 执行续租、取消与真实退出](docs/changes/2026-11-21-101-run-lease-execution.md)
+- [100 · 执行租约与数据库条件写入](docs/changes/2026-11-21-100-run-lease-store.md)
+
+- [099 · 持久聊天流升级、故障与联备集成](docs/changes/2026-11-21-099-run-stream-integration.md)
+- [098 · 原游标回放与活动 SSE 交接](docs/changes/2026-11-21-098-run-stream-replay.md)
+- [097 · 聊天执行、取消与审核门禁](docs/changes/2026-11-21-097-run-stream-execution.md)
+- [096 · 021 聊天增量与快照事务](docs/changes/2026-11-21-096-run-stream-store.md)
+- [095 · 聊天增量持久化与断线回放的实施契约](docs/changes/2026-11-21-095-durable-run-stream-plan.md)
+- [094 · 有界缓存与完整启动联合验证](docs/changes/2026-11-21-094-bounded-startup.md)
+- [093 · PG 工作区项目查询与创建上限](docs/changes/2026-11-21-093-workspace-project-queries.md)
+- [092 · 媒体领取与在途缓存占位](docs/changes/2026-11-21-092-media-cache-pins.md)
+- [091 · 聊天执行与活动 SSE 的缓存占位](docs/changes/2026-11-21-091-run-cache-pins.md)
+
+- [090 · PG 媒体受理与缓存容量分离](docs/changes/2026-11-21-090-pg-media-cache-admission.md)
+
+- [089 · A4.1 恢复故障与完整启动联合验证](docs/changes/2026-11-21-089-recovery-acceptance.md)
 
 - [086 · 分页恢复与先行generation栅栏（实施/待验）](docs/changes/2026-11-15-086-paged-recovery.md)
 - [087 · 完整启动分页恢复独立验收（实施/待验）](docs/changes/2026-11-15-087-recovery-validation.md)
@@ -274,7 +470,7 @@ db/migrations/         内嵌数据库SQL脚本
 
 当前仍是单控制写者；逐token持久日志、跨实例运行和公开收费闸门尚未完成。本机Go race所需CGO/C编译器不可用，Linux CI已配置但未远程执行。S3真实兼容服务验收保留V08证据，本轮未重复未改变的专项。
 
-当前自动推进**V16-A4分页恢复与有界缓存，随后实现B持久流与隔离**（已满足V05/V09依赖）；V14-C2账户及内容申诉证据与处置、C3额度与自动风控继续保留完整范围；真实文本与多模态审核渠道继续单列待验，依赖的V11真实邮件尚未放行，V14不能提前标整批完成。V13可先准备订单/支付适配与回调fixture，真实验收需V11及商户配置。V07/V15保留真实模型联调条件；V16的已验收依赖已齐备，可独立推进分布式流与公平调度，V17另做生产容量验收。见[TODO](TODO.md)与[路线](docs/wiki/roadmap.md)，批次数量不代表整体工期百分比。
+**V19-A 模板运行与人工选图已在本地验收**。023 全量 PG 881.522 秒通过，V19-B 已将选定原件送入实际视频 HTTP 请求并在本地验收，V19-C 完成 025 全量回归，整批通过本地验收，见[工作流契约](docs/planning/v19-contract.md)。V14-C2账户及内容申诉证据与处置、C3额度与自动风控继续保留完整范围；真实文本与多模态审核渠道继续单列待验，依赖的V11真实邮件尚未放行，V14不能提前标整批完成。V13可先准备订单/支付适配与回调fixture，真实验收需V11及商户配置。V07/V15保留真实模型联调条件；V16的已验收依赖已齐备，可独立推进分布式流与公平调度，V17另做生产容量验收。见[TODO](TODO.md)与[路线](docs/wiki/roadmap.md)，批次数量不代表整体工期百分比。
 
 ## v0.15 / V14-C1 本地验收
 
@@ -322,6 +518,42 @@ S3远端服务仍是保留原对象，没有灾备恢复；全站多实例和生
 
 完整check、301前端/29文件、10治理、最终全PG 443.228s、六smoke、实际版本化S3及冷却/候选联备恢复通过。180条真实SQL计划与48次完整预选独立留存；10万活跃+10万历史下完整预选24样本P95 16.302ms（不含claim/HTTP）。20万旧任务迁移11.229秒、59原表保持，但未证明完整App启动容量。证据见[083](docs/changes/2026-11-15-083-media-scheduler-integration.md)、[联合JSON](docs/wiki/assets/media-scheduler-validation-v0.20-2026-11-15.json)及[调度Wiki](docs/wiki/media-scheduler.md)。
 
-仍是单控制写者与单个已配置Async网关。完整活跃任务恢复N+1、持久token日志、跨实例隔离和综合测量继续推进；真实服务及公开收费上线未完成。
+A3.3 验收采用单控制写者与单个已配置的异步网关，测量范围为迁移与任务预选。
 
-[084 · 分页恢复与有界缓存设计启动](docs/changes/2026-11-15-084-recovery-plan.md)：下一阶段按[A4契约](docs/planning/v16a4-contract.md)先解决单次启动分页/Outbox背压，再验PG缓存与完整New容量。085已接入每页128项/16 MiB私有阶段批读，并验证固定5次SELECT与快照/ACK边界；整体恢复协调器和有界缓存仍未完成，A4.1保持待验。
+## V16-A4 本地验收
+
+A4.1 覆盖分页恢复、启动背压和提交回执丢失后的重启。A4.2 解除了其他工作区填满缓存对新请求的影响，并保留排队、执行和活动订阅所需的记录。PG 项目按工作区查询，第 100 个创建名额在事务内核验。[A4.1 验收](docs/changes/2026-11-21-089-recovery-acceptance.md) · [缓存决策](docs/wiki/decisions/0020-bounded-pg-caches.md)
+
+本地 PostgreSQL 中 10 万活跃加 10 万终态记录的完整应用启动用时 7.913 秒，Run 与媒体任务的启动缓存峰值各 512 条，项目预载为 0。另一次启动处理 12,002 个中断资源与 9,999 条原有事件，22,001 条通知全部可补读。[A4.2 验收](docs/changes/2026-11-21-094-bounded-startup.md)
+
+## V16-B1 本地验收
+
+在 PostgreSQL 模式下，普通聊天和多轮会话现在先提交可公开的文字增量，再通过 SSE 发送。浏览器断线后按原游标补读，窗口过期时用当前快照恢复。进程中断后保留已提交的回答，原模型请求只执行一次。开启输出审核时，待审正文继续保存在私有内存，整段通过并完成提交后才可读。[099 验收](docs/changes/2026-11-21-099-run-stream-integration.md)
+
+升级前需联备数据库、私有目录、已启用的独立密钥及相关对象版本。B1 交付时的格式为 021。当前维护工具要求完整 001—029；旧 020 的 Run 保留原快照与游标规则。单控制写者及目录锁继续生效。[数据库迁移](docs/wiki/database-migrations.md) · [B1/B2 契约](docs/planning/v16b-contract.md)
+
+## 聊天租约与混合负载
+
+022 为新聊天登记执行租约。取消、到期或服务重启后，浏览器可继续读取原请求已提交的回答。旧模型或审核返回不能追加内容、结算或触发第二次生成。升级前联备数据库、私有目录、目录归属及已启用密钥和相应对象版本。[升级与故障记录](docs/changes/2026-11-21-103-run-lease-integration.md)
+
+在单控制写者的双工作区环回测量中，A 积压期间 B 的聊天能独立执行。三轮均保留原 handle，限流只延后媒体 GET；每轮 6 个媒体任务只发出 6 次生成 POST。本机运行条件、样本和命令见[混合负载台账](docs/changes/2026-11-21-104-mixed-workload.md)。
+
+## 037 已登录工作台的实际启动传输
+
+单分支 10,000 条消息、20 次冷启动和 20 次暖启动已在本机实测。冷启动 JS 每次实际传输 166,103 字节，暖缓存命中后新增 JS 传输为零；首个可交互点 P95 分别为 880 和 566 毫秒。网络配置双向 20 Mbps / 80 毫秒；校准实测中位 RTT 105–108 毫秒。[逐样本报告](docs/wiki/assets/performance-network-037.json) · [验证台账](docs/changes/2026-11-22-200-workbench-network-browser.md)。
+
+## 运行增量回放的连接数
+
+为同一主库的运行 SSE 回放设置 RUN_REPLAY_READ_CONNECTIONS=1 到 4，可隔离事件回放与控制写连接。默认 0 沿用原行为。开启后按数量预留额外 PG 连接，应用启动即核对库与写者身份。[配置与恢复语义](docs/wiki/decisions/0021-durable-run-stream.md) · [204 验收](docs/changes/2026-11-22-204-run-replay-read-pool.md)。
+
+## 可选的本机聊天执行子进程
+
+在已启用鉴权、PostgreSQL 和 live 聊天网关的服务端，可以成对设置 CHAT_CHILD_PROCESSES 与 CHAT_CHILD_SLOTS，使新会话的模型 HTTP 请求分到受管子进程。控制服务继续决定接纳、审核、权益和 SSE 交付。默认省略这两项；配置例见 .env.example。[设计、边界及回退](docs/wiki/decisions/v17j1-managed-chat-execution.md) · [验收记录](docs/changes/2026-11-22-208-managed-chat-integration.md)。
+
+## 可选的聊天增量批量提交
+
+配置 PostgreSQL 时可显式开启 RUN_DELTA_BATCHING_ENABLED，使不同运行的公开增量共享短事务。默认关闭。原序号、租约和提交后的 SSE 发布语义保持一致；比较依据包括原事件表的物理提交及真实授权回放。[增量日志决策](docs/wiki/decisions/0021-durable-run-stream.md) · [验收台账](docs/changes/2026-11-22-212-business-delta-batch-integration.md)。
+
+## 持久订阅的容量配置
+
+全局订阅默认 128 个，单工作区默认 32 个。用 ADMISSION_GLOBAL_STREAMS 和 ADMISSION_WORKSPACE_STREAMS 配置两级上限。全局取值 129–256 时，需要 PostgreSQL、AUTH_MODE=required 和至少一个 RUN_REPLAY_READ_CONNECTIONS；服务另外使用一个专用只读连接，按会话成组核验仍在线的读者。原会话失效后关闭对应订阅，可按当前账户和已有游标重新连接。[218 配置与指标](docs/changes/2026-11-22-218-stream-session-batches.md) · [219 授权读者验收](docs/changes/2026-11-22-219-authenticated-sse-sessions.md)。

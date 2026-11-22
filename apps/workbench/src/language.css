@@ -1,0 +1,14 @@
+.language-picker { display: inline-flex; position: relative; align-items: center; gap: .35rem; color: var(--text); }
+.language-picker > svg { color: var(--accent); pointer-events: none; }
+.language-picker select { min-width: 0; max-width: 11rem; height: 36px; padding: 0 .3rem; color-scheme: dark; cursor: pointer; border: 0; border-radius: 5px; color: inherit; background: var(--panel); font: inherit; font-size: 12px; }
+.language-picker > [role="alert"] { position: absolute; top: 100%; right: 0; width: 14rem; z-index: 5; background: var(--panel); padding: .6rem; }
+.restricted-language { display: flex; justify-content: flex-end; padding: .5rem 1rem; }
+@media (max-width: 600px) {
+  .topbar-right { gap: .35rem; }
+  .topbar-right .language-picker select { max-width: 6rem; }
+  .language-picker > svg { display: none; }
+  .topbar-right .provider-badge { display: none; }
+}
+:lang(en) .button { white-space: normal; }
+:lang(ja) body { font-family: "Yu Gothic UI", "Hiragino Sans", sans-serif; }
+:lang(zh-TW) body { font-family: "Microsoft JhengHei UI", "PingFang TC", sans-serif; }

@@ -1,6 +1,6 @@
 # 分页恢复的进程与提交故障验证
 
-V16-A4.1 的独立故障测试位于 `internal/studio/recovery_process_test.go`，记录见 [088](../changes/2026-11-15-088-recovery-faults.md)。当前测试已实现并通过编译，真实 PG 专项由集成人串行运行后登记；不能据此宣称 A4.1 已验收。设计边界见 [A4 契约](../planning/v16a4-contract.md)、[分页恢复](paged-recovery.md)、[私有阶段批读](recovery-private-phases.md)与[完整启动矩阵](recovery-validation.md)。
+V16-A4.1 的独立故障测试位于 `internal/studio/recovery_process_test.go`，记录见 [088](../changes/2026-11-15-088-recovery-faults.md)。2026-11-21 已在独立 PostgreSQL 16.14 验证目标回执丢失、页边界进程终止与 generation 栅栏，见[089 联合记录](../changes/2026-11-21-089-recovery-acceptance.md)。设计边界见 [A4 契约](../planning/v16a4-contract.md)、[分页恢复](paged-recovery.md)、[私有阶段批读](recovery-private-phases.md)与[完整启动矩阵](recovery-validation.md)。
 
 ## 故障如何落在真实恢复路径
 
@@ -8,7 +8,7 @@ V16-A4.1 的独立故障测试位于 `internal/studio/recovery_process_test.go`�
 
 Run 检查点按稳定 ID 排序，父进程持有第 129 条的数据库行锁，并通过 `pg_blocking_pids` 确认恢复写者正在等待。此时前 128 条恢复和对应 Outbox 已提交，HTTP 尚未开放；测试在这个边界实际 Kill，重启后检查余下记录恢复、原序号与事件不重复、部分正文保持。
 
-第二个场景仍使用同一个锁边界，但释放锁之前才启用协议代理。代理在真实数据库已返回目标 COMMIT 完成之后、将确认交给客户端之前切断控制连接；辅助租约连接不经过这个一次性故障点。启动必须拒绝且没有 readiness，下一次完整 `New` 读取真正已提交结果，不重复恢复序号或发送供应商 POST。
+第二个场景仍使用同一个锁边界，但释放锁之前才启用协议代理。代理在真实数据库已返回目标 COMMIT 完成之后、将确认交给客户端之前切断控制连接；同一测试代理转发所有启动连接，只有与第 129 条记录实际行锁等待者 PID 相同的 COMMIT 才丢弃回执，其他连接照常转发。启动必须拒绝且没有 readiness，下一次完整 `New` 读取真正已提交结果，不重复恢复序号或发送供应商 POST。
 
 第三个场景把旧 lease 清理阻塞在第一条任务行。独立连接确认 executor generation 已经变化，而另一未到期的旧 lease owner/epoch 仍存在，再调用原 fenced write。预期拒绝来自 generation 校验，不依赖先清空 owner 或 lease 过期；随后释放锁，完整启动继续。
 

@@ -204,6 +204,7 @@ func TestPostgresModerationFrozenPolicyAndDecisionTransaction(t *testing.T) {
 	if json.Unmarshal(raw, &frozen) != nil || !validModerationPolicy(&frozen) || frozen.Digest != run.ModerationPolicy.Digest {
 		t.Fatal("policy was not frozen")
 	}
+	l := claimFixtureRun(t, a.store, &run)
 	decision := run
 	decision.Moderation = copyRunModeration(run.Moderation)
 	decision.Moderation.State, decision.Moderation.ReasonCode, decision.Moderation.Version = "BLOCKED", "policy_block", 2
@@ -225,7 +226,7 @@ func TestPostgresModerationFrozenPolicyAndDecisionTransaction(t *testing.T) {
 	}
 	decision.Status = "FAILED"
 	decision.Seq++
-	err = a.store.saveRunCandidate(&decision)
+	err = a.store.saveLeasedRun(&decision, l, run.Seq)
 	if err != nil {
 		t.Fatal(err)
 	}

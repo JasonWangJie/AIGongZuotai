@@ -1,0 +1,261 @@
+.co-work {
+  --co-rule: #37484d;
+  --co-panel: #1a2228;
+  --co-mint: #9bd8c4;
+  --co-soft: #acbdbd;
+  display: grid;
+  gap: 1rem;
+  padding: clamp(14px, 3vw, 40px);
+  max-width: 1120px;
+  margin: auto;
+  min-width: 0;
+  color: #eaf0eb;
+  font-size: 14px;
+}
+.co-work * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+.co-work h1,
+.co-work h2,
+.co-work p,
+.co-work h3,
+.co-work ol {
+  margin: 0;
+}
+.co-work h1 {
+  font-size: clamp(28px, 3vw, 43px);
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+.co-work h2 {
+  font-size: 17px;
+}
+.co-work p,
+.co-work small,
+.co-work code {
+  overflow-wrap: anywhere;
+}
+.co-work p {
+  white-space: pre-wrap;
+}
+.co-work small,
+.co-line > span,
+.co-work label,
+.co-identity span {
+  color: var(--co-soft);
+}
+.co-work code {
+  font:
+    12px ui-monospace,
+    monospace;
+  user-select: all;
+}
+.co-work button,
+.co-work input,
+.co-work select,
+.co-work textarea {
+  font: inherit;
+}
+.co-work button {
+  min-height: 35px;
+  border: 1px solid #4a5a60;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  background: #253038;
+  color: #e3eeeb;
+  cursor: pointer;
+}
+.co-work button:hover:not(:disabled) {
+  border-color: var(--co-mint);
+}
+.co-work button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.co-work .co-primary {
+  color: #18302b;
+  border-color: var(--co-mint);
+  background: var(--co-mint);
+  font-weight: 650;
+}
+.co-work :focus-visible {
+  outline: 2px solid var(--co-mint);
+  outline-offset: 2px;
+}
+.co-work label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 13px;
+}
+.co-work :is(input, textarea, select) {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--co-rule);
+  border-radius: 5px;
+  background: #12191f;
+  color: #f3f8f4;
+  width: 100%;
+}
+.co-work textarea {
+  resize: vertical;
+}
+.co-line,
+.co-buttons,
+.co-identity,
+.co-member,
+.co-member > div:last-child,
+.co-invite {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+.co-line,
+.co-member {
+  justify-content: space-between;
+}
+.co-line p,
+.co-panel > p,
+.co-owner > p {
+  color: var(--co-soft);
+  margin-top: 0.4rem;
+}
+.co-identity {
+  padding: 0.7rem 0;
+  border-block: 1px solid var(--co-rule);
+}
+.co-identity code {
+  color: var(--co-mint);
+}
+.co-identity small {
+  margin-left: auto;
+}
+.co-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.co-panel,
+.co-owner,
+.co-editor,
+.co-confirm,
+.co-receipt {
+  border: 1px solid var(--co-rule);
+  border-radius: 9px;
+  background: var(--co-panel);
+  padding: 1rem;
+}
+.co-owner > summary,
+.co-receipt > summary,
+.co-history > summary,
+.co-warn summary {
+  cursor: pointer;
+}
+.co-owner[open] > summary,
+.co-history[open] > summary {
+  margin-bottom: 0.8rem;
+}
+.co-owner > summary {
+  font-size: 16px;
+  font-weight: 650;
+}
+.co-invite {
+  align-items: end;
+  border-block: 1px solid var(--co-rule);
+  padding: 0.8rem 0;
+  margin: 0.6rem 0;
+}
+.co-invite label:first-child {
+  flex: 1;
+}
+.co-member {
+  border-top: 1px solid var(--co-rule);
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+}
+.co-member small {
+  display: block;
+  font-size: 12px;
+  margin-top: 0.2rem;
+}
+.co-member div:first-child {
+  max-width: 100%;
+}
+.co-confirm > button,
+.co-warn button,
+.co-history button {
+  margin: 0.35rem 0.35rem 0 0;
+}
+.co-warn,
+.co-status {
+  padding: 0.65rem 0.8rem;
+  border-left: 3px solid #d6a675;
+  background: #332d28;
+}
+.co-status {
+  border-color: var(--co-mint);
+  background: #20342d;
+}
+.co-editor {
+  display: grid;
+  gap: 0.8rem;
+}
+.co-nodes {
+  list-style: none;
+  display: grid;
+  gap: 0.8rem;
+  padding: 0;
+}
+.co-nodes li {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.65rem;
+  border-top: 1px solid var(--co-rule);
+  padding-top: 0.7rem;
+}
+.co-nodes b {
+  font:
+    600 15px ui-monospace,
+    monospace;
+  color: var(--co-mint);
+}
+.co-nodes li > div {
+  display: grid;
+  gap: 0.5rem;
+  overflow-wrap: anywhere;
+}
+.co-nodes button {
+  justify-self: start;
+}
+.co-history,
+.co-history-view {
+  border-top: 1px solid var(--co-rule);
+  padding-top: 0.65rem;
+}
+@media (max-width: 720px) {
+  .co-work {
+    padding: 12px;
+    gap: 0.75rem;
+  }
+  .co-grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+  .co-work button {
+    font-size: 13px;
+  }
+  .co-identity small {
+    width: 100%;
+  }
+  .co-invite label:first-child {
+    flex-basis: 100%;
+  }
+  .co-panel,
+  .co-owner,
+  .co-editor {
+    padding: 0.75rem;
+  }
+  .co-nodes li {
+    grid-template-columns: 1.45rem minmax(0, 1fr);
+  }
+}

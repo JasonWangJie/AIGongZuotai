@@ -1,0 +1,81 @@
+{
+  "033": {
+    "members": [
+      {
+        "path": "/assets/index-C75ivR11.js",
+        "raw": 498657,
+        "gzip6": 158410,
+        "statics": 0,
+        "dynamic": 15,
+        "sha256": "8266503196e6f45fa9a551e5e6d0b3a3806eb7973cae239bab2a186e1f232d04"
+      }
+    ],
+    "preload": 0,
+    "raw": 498657,
+    "gzip6": 158410
+  },
+  "034": {
+    "members": [
+      {
+        "path": "/assets/index-DJZKPQUr.js",
+        "raw": 499696,
+        "gzip6": 158635,
+        "statics": 0,
+        "dynamic": 16,
+        "sha256": "1699a17bafa7daf3dd49c2cd4102710daadc7d7361516d5b894bca78ab36a31e"
+      }
+    ],
+    "preload": 0,
+    "raw": 499696,
+    "gzip6": 158635
+  },
+  "035": {
+    "members": [
+      {
+        "path": "/assets/index-hixE0hdo.js",
+        "raw": 502972,
+        "gzip6": 160040,
+        "statics": 0,
+        "dynamic": 16,
+        "sha256": "b09cf8590a8a8a7fd46e84f050b17a3fd7631e4b3e0a3962923721b6cfed02ac"
+      }
+    ],
+    "preload": 0,
+    "raw": 502972,
+    "gzip6": 160040,
+    "http": [
+      {
+        "accepted": "gzip",
+        "status": 200,
+        "contentEncoding": null,
+        "contentLength": "502972",
+        "entityBytes": 502972
+      },
+      {
+        "accepted": "identity",
+        "status": 200,
+        "contentEncoding": null,
+        "contentLength": "502972",
+        "entityBytes": 502972
+      }
+    ]
+  },
+  "delta034to035": {
+    "raw": 3276,
+    "gzip6": 1405
+  },
+  "method": {
+    "roots": [
+      "script[type=module][src]",
+      "link[rel~=modulepreload]"
+    ],
+    "parser": "es-module-lexer static records d=-1 recursive unique files",
+    "gzip": "per-file node:zlib gzipSync level 6 mtime 0",
+    "http": "035 Go memory/demo loopback, direct Node HTTP entity bytes before content decoding; asserted SHA-256 against original for gzip and identity.",
+    "builds": {
+      "033": ".runtime/v13a-v22a-033-source",
+      "034": ".runtime/v22-034-final-verified-source",
+      "035": ".runtime/v17d-035-library-source"
+    }
+  }
+}

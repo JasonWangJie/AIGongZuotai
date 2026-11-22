@@ -1,3 +1,4 @@
+import { uiText } from './locale';
 import { ApiError } from './api';
 
 export type AccountSecurity = { enabled: boolean; mail_configured: boolean; verification_enabled: boolean; password_reset_enabled: boolean; reason?: string };
@@ -28,9 +29,9 @@ export function newPasswordError(password: string, confirmation: string): string
 export function accountReadCurrent(alive: boolean, generation: number, ticket: number, owner: string, originalOwner: string): boolean { return alive && generation === ticket && owner === originalOwner; }
 export function account401Action(issue: { status: number; code?: string }): 'none' | 'inspect' | 'expire' { return issue.status !== 401 ? 'none' : issue.code === 'INVALID_CREDENTIALS' ? 'inspect' : 'expire'; }
 export function safeAccountError(cause: unknown): ApiError {
-  const issue = cause instanceof ApiError ? cause : new ApiError('账户请求未完成。', 0, true);
+  const issue = cause instanceof ApiError ? cause : new ApiError(uiText('账户请求未完成。'), 0, true);
   const message = issue.uncertain ? '提交结果尚未确认。敏感内容已清除，请先核对账户状态；不要自动重复提交。' : ({ ACCOUNT_TOKEN_INVALID: '此链接无效、已过期或已使用，请重新申请链接。', MAIL_UNAVAILABLE: '邮件服务尚未配置或暂时不可用，当前无法安排发送。', INVALID_CREDENTIALS: '当前密码不正确，请核对后重新输入。', INVALID_PASSWORD: '新密码不符合要求，请重新输入。', SESSION_NOT_FOUND: '该登录会话已不存在，请刷新列表。', ACCOUNT_SECURITY_UNAVAILABLE: '当前服务未启用账户安全功能。' }[issue.code || ''] || (issue.status === 401 ? '登录状态已失效，请重新登录。' : issue.status === 429 ? '操作过于频繁，请等待冷却结束后手动操作。' : issue.status === 404 ? '该登录会话已不存在，请刷新列表。' : '账户操作未完成。请核对输入或稍后手动操作。'));
   const knownCode = ['ACCOUNT_TOKEN_INVALID', 'MAIL_UNAVAILABLE', 'INVALID_CREDENTIALS', 'INVALID_PASSWORD', 'SESSION_NOT_FOUND', 'ACCOUNT_SECURITY_UNAVAILABLE'].includes(issue.code || '') ? issue.code : undefined;
-  return new ApiError(message, issue.status, issue.uncertain, knownCode, issue.requestId, issue.retryAt);
+  return new ApiError({ ui: message }, issue.status, issue.uncertain, knownCode, issue.requestId, issue.retryAt);
 }
-export function securityActionName(action: string): string { return ({ 'account.registered': '创建账户', 'account.login': '登录账户', 'account.logout': '退出登录', 'email.verification_requested': '申请验证邮件', 'email.verified': '完成邮箱验证', 'password.reset_requested': '申请密码重置', 'password.reset': '重置密码', 'password.changed': '修改密码', 'session.revoked': '撤销登录会话', 'sessions.revoked_all': '撤销全部登录会话' }[action] || '账户安全事件'); }
+export function securityActionName(action: string): string { return ({ 'account.registered': uiText('创建账户'), 'account.login': uiText('登录账户'), 'account.logout': uiText('退出登录'), 'email.verification_requested': uiText('申请验证邮件'), 'email.verified': uiText('完成邮箱验证'), 'password.reset_requested': uiText('申请密码重置'), 'password.reset': uiText('重置密码'), 'password.changed': uiText('修改密码'), 'session.revoked': uiText('撤销登录会话'), 'sessions.revoked_all': uiText('撤销全部登录会话') }[action] || uiText('账户安全事件')); }

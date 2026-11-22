@@ -1,3 +1,4 @@
+import { uiText } from './locale';
 import type { Bootstrap, RunInput, TaskInput } from './types';
 import type { TurnInput } from './conversationState';
 
@@ -12,8 +13,8 @@ export type LedgerPage<T> = { items: T[]; next_cursor: string | null };
 export type QuoteRequest = { resource_type: 'run'; run_input: RunInput } | { resource_type: 'task'; task_input: TaskInput } | { resource_type: 'conversation_run'; conversation_id: string; conversation_input: TurnInput };
 export type BillingQuote = { id: string; workspace_id: string; project_id: string; resource_type: 'run' | 'task'; conversation_id?: string; model_id: string; model_version: string; price_version: string; provider_mode: 'demo' | 'live'; unit: 'CREDIT'; scale: 6; reserve_micros: string; expires_at: string; created_at: string; basis: 'chat_tokens' | 'delivered_artifact'; policy_version: string; input_per_million_micros: string; output_per_million_micros: string; artifact_micros: string; max_input_tokens: number; max_output_tokens: number; requested_units: number };
 export type QuotedRequest = { scope: string; request: QuoteRequest; quote: BillingQuote };
-export const billingStateName: Record<BillingState, string> = { HELD: '已冻结', REVIEW: '待核实', SETTLED: '已结算', RELEASED: '已释放', REFUNDED: '已冲正' };
-export const entryKindName: Record<EntryKind, string> = { CREDIT: '额度入账', RESERVE: '请求冻结', CHARGE: '交付结算', RELEASE: '释放冻结', REFUND: '结算冲正', REFUND_RELEASE: '冲正并释放' };
+export const billingStateName: Record<BillingState, string> = { get HELD() { return uiText('已冻结'); }, get REVIEW() { return uiText('待核实'); }, get SETTLED() { return uiText('已结算'); }, get RELEASED() { return uiText('已释放'); }, get REFUNDED() { return uiText('已冲正'); } };
+export const entryKindName: Record<EntryKind, string> = { get CREDIT() { return uiText('额度入账'); }, get RESERVE() { return uiText('请求冻结'); }, get CHARGE() { return uiText('交付结算'); }, get RELEASE() { return uiText('释放冻结'); }, get REFUND() { return uiText('结算冲正'); }, get REFUND_RELEASE() { return uiText('冲正并释放'); } };
 export const billingEnabled = (bootstrap?: Bootstrap | null) => bootstrap?.billing?.enabled === true && bootstrap.billing.mode === 'credits';
 export const billingScope = (bootstrap?: Bootstrap | null) => bootstrap ? JSON.stringify([bootstrap.user?.id || 'demo', bootstrap.workspace.id, bootstrap.project.id]) : '';
 /** Never coerce ledger micros to Number: even valid int64 values exceed IEEE-754 precision. */

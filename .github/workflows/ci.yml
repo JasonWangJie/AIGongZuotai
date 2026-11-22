@@ -57,3 +57,74 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: node scripts/check-docs.mjs --base "$BASE_SHA"
+
+
+  pr-bundle-diff:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the tested PR merge
+        uses: actions/checkout@v4
+        with:
+          path: current
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install and build the candidate using its lock
+        id: candidate
+        working-directory: current/apps/workbench
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Check out the exact PR base
+        id: baseline_checkout
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          path: baseline
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - name: Install and build the baseline using its own lock
+        id: baseline_build
+        if: steps.baseline_checkout.outcome == 'success'
+        continue-on-error: true
+        working-directory: baseline/apps/workbench
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Write bundle differences and enforce the candidate startup budget
+        id: comparison
+        working-directory: current
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+          BASE_CHECKOUT: ${{ steps.baseline_checkout.outcome }}
+          BASE_BUILD: ${{ steps.baseline_build.outcome }}
+        run: |
+          status=ready
+          if [[ "$BASE_CHECKOUT" != success ]]; then
+            status=checkout-unavailable
+          elif [[ "$BASE_BUILD" != success ]]; then
+            status=build-unavailable
+          fi
+          if ! node apps/workbench/scripts/pr-bundle-diff.mjs \
+            --current apps/workbench/dist --base ../baseline/apps/workbench/dist \
+            --base-status "$status" --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA"; then
+            if [[ ! -s "$GITHUB_STEP_SUMMARY" ]]; then
+              printf '%s\n' '## 工作台 PR 制品差异' '' '制品比较未能完成，请查看本步骤日志。' >> "$GITHUB_STEP_SUMMARY"
+            fi
+            exit 1
+          fi
+      - name: Explain unavailable candidate
+        if: ${{ !cancelled() && steps.candidate.outcome != 'success' }}
+        run: |
+          printf '%s\n' '## 工作台 PR 制品差异' '' '候选未构建，启动预算未知，差值不可用。' >> "$GITHUB_STEP_SUMMARY"
+      - name: Test comparison and missing-baseline behavior
+        if: ${{ !cancelled() && steps.candidate.outcome == 'success' }}
+        working-directory: current
+        run: node --test scripts/perf/pr-bundle-diff.test.mjs

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_on": "2026-11-15",
+  "updated_on": "2026-11-22",
   "modules": [
     {
       "id": "H01",
@@ -524,6 +524,12 @@
           "note": "四套隔离冒烟、实际multipart HTTP fixture与PG重启通过；修复停机Query误写FAILED。桌面/390x844验证上传、排序编辑、复用、项目隔离和旧数据保留；demo不能替代真实效果。"
         },
         {
+          "label": "真实渠道配置准备页",
+          "status": "passed",
+          "command": "工作台图片编辑配置单测、浏览器下载与服务端目录加载",
+          "note": "17 项配置专测、三种 Chromium 下载及 390px 布局通过，集成人再次将实际下载的目录加载进独立 Go 服务，读取公开模型能力与 1024x1024 规格，未提交生成。"
+        },
+        {
           "label": "真实供应商端到端验收",
           "status": "blocked",
           "command": "配置服务端真实模型/凭据后执行受控上传→编辑→查询→导入→下载",
@@ -554,16 +560,21 @@
         {
           "path": "docs/changes/2026-11-13-025-reference-integration.md",
           "note": "联合验证与真实待条件"
+        },
+        {
+          "path": "docs/changes/2026-11-21-110-image-edit-setup.md",
+          "note": "配置页下载与实际目录加载"
         }
       ],
       "ledgers": [
         "docs/changes/2026-11-13-022-reference-assets.md",
         "docs/changes/2026-11-13-023-media-edit-provider.md",
         "docs/changes/2026-11-13-024-reference-workbench.md",
-        "docs/changes/2026-11-13-025-reference-integration.md"
+        "docs/changes/2026-11-13-025-reference-integration.md",
+        "docs/changes/2026-11-21-110-image-edit-setup.md"
       ],
       "completed_on": null,
-      "blocker": "V07本地实现、真实PG、协议fixture与浏览器已通过；尚缺服务端已开通的真实图片编辑模型/凭据及受控调用验收条件。按references与media-gateway Wiki配置私有环境及结果域名，确认实际模型支持参考图后执行受控上传→编辑→查询→导入→下载，记录证据后才能完成本批；密钥不需发送到对话或提交仓库。"
+      "blocker": "真实供应商验收按用户安排保留。打开“图片编辑配置”导出模型条目或独立目录示例，在服务器配置开通的编辑模型、密钥和结果域名，重启后刷新公开目录，再由用户受控上传、编辑并下载结果。"
     },
     {
       "id": "V08",
@@ -1106,7 +1117,7 @@
     {
       "id": "V13",
       "title": "订单、支付与退款",
-      "status": "todo",
+      "status": "in_progress",
       "modules": [
         "H01",
         "H05",
@@ -1123,9 +1134,71 @@
         "退款回调/超时核实、权益原子入账与审计",
         "商户沙箱及真实受控支付退款验收，用户可见订单记录"
       ],
-      "checks": [],
-      "evidence": [],
-      "ledgers": [],
+      "checks": [
+        {
+          "label": "V13-A 本人订单意向、冻结商品条款与原键恢复",
+          "status": "passed",
+          "command": "033 PostgreSQL、两账户 Chromium、关闭目录后联备恢复、零资金及权益写入",
+          "note": "集成人对冻结的 033 运行 15 项订单与个人资料专项，共 62.099 秒。两账户 Chromium 7.58 秒，关闭目录后的新库恢复 7.53 秒；真实数据库中未产生权益分录或媒体任务。 固定 035 完整 PG 通过，studio 1670.146s。"
+        },
+        {
+          "label": "V13-B1 单工作区订单与归一商户资料的离线只读比对",
+          "status": "passed",
+          "command": "Go 分类与 CLI、实际 PG 跨工作区与持锁期间两次比对、订单/原收据/钱包和分录保持原值",
+          "note": "034 实际 CLI 与只读数据库快照 3.15 秒，核对交易冲突、退款累计下界、纳秒精度与范围；订单、原收据及七张权益表摘要相同。 固定 035 完整 PG 通过，studio 1670.146s。 035 预先登记合成收退款，编译出的 CLI 在持锁期间核对后全部18表逐行摘要一致（3.12秒）。"
+        },
+        {
+          "label": "V13-B2 认证后事务、重复付款通知、退款事实与唯一权益分录",
+          "status": "passed",
+          "command": "035 PG 迁移与并发/确认丢失、两账户 Chromium、原回执及联备恢复",
+          "note": "真实本机 PG、Chromium 及恢复专项通过。20连接去重、退款乱序及已花/冻结保护、提交确认丢失、升级、两账户与新库恢复均已核验。含剪辑17项专项82.279秒；035累计 1670.146s。真实渠道输入待选定和验收。 035 新库重放原退款后18表及本人投影保持一致（12.91秒）。"
+        },
+        {
+          "label": "正式商户验签、防重放、权威查询与退款权益核对",
+          "status": "blocked",
+          "command": "选定渠道的正式签名协议、权威交易查询、退款与权益业务规则及受控集成",
+          "note": "035 已完成认证后事务与本机账务核对。正式商户及测试环境、履约和部分退款规则尚待确定，当前没有公开的写入通知入口。"
+        },
+        {
+          "label": "实际商户沙箱与受控支付退款验收",
+          "status": "blocked",
+          "command": "指定商户沙箱、真实授权回调、交易查询、账单和受控收退款",
+          "note": "需要用户指定商户渠道、受控测试商户及环境。真实资金操作需独立明确授权。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/wiki/decisions/0033-order-intents.md",
+          "note": "受信商品目录、货币与CREDIT单位及用户入口"
+        },
+        {
+          "path": "docs/changes/2026-11-22-160-order-intent-integration.md",
+          "note": "本人订单意向及当前渠道边界"
+        },
+        {
+          "path": "docs/changes/2026-11-22-173-offline-order-reconciliation.md",
+          "note": "受信订单快照与外部材料的本地只读对账边界"
+        },
+        {
+          "path": "docs/wiki/decisions/0035-order-payments.md",
+          "note": "资金事实、权益入账和正式渠道边界"
+        },
+        {
+          "path": "docs/changes/2026-11-22-177-order-payment-integration.md",
+          "note": "真实账户状态页及恢复证据"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-22-157-order-intent-store.md",
+        "docs/changes/2026-11-22-158-order-intent-catalog-http.md",
+        "docs/changes/2026-11-22-159-order-intent-workbench.md",
+        "docs/changes/2026-11-22-160-order-intent-integration.md",
+        "docs/changes/2026-11-22-173-offline-order-reconciliation.md",
+        "docs/changes/2026-11-22-174-order-payment-store.md",
+        "docs/changes/2026-11-22-175-order-payment-status-http.md",
+        "docs/changes/2026-11-22-176-order-payment-workbench.md",
+        "docs/changes/2026-11-22-177-order-payment-integration.md"
+      ],
       "completed_on": null,
       "blocker": null
     },
@@ -1148,7 +1221,7 @@
         "V11",
         "V12"
       ],
-      "scope": "运营角色与最小权限、生成审核和异常核实；V14-A运营闭环、V14-B1文本及V14-B2媒体本地闭环已验收。后续V14-C2/C3申诉/封禁/风控；真实审核渠道与V11真实邮件依赖未放行前不标整批完成。 V14-C1工作区生成限制与复核已按062本地验收；C2/C3继续推进。",
+      "scope": "V14-A 运营核实、B1/B2 文本与媒体审核、C1 工作区限制、C2 账户与内容申诉、C3 额度风控均已本地验收。真实审核渠道与 V11 真实邮件依赖继续待验。",
       "acceptance": [
         "管理员RBAC与关键操作审计/二次确认",
         "生成前/后审核、申诉、封禁与额度风控",
@@ -1205,21 +1278,33 @@
         },
         {
           "label": "V14-C2 账户及内容申诉证据与处置",
-          "status": "pending",
+          "status": "passed",
           "command": "独立证据、权限与可执行决议设计及端到端验收",
-          "note": "后续单独设计；当前文本无候选正文、媒体决定不可改，不能伪称支持重审放行。"
+          "note": "026 内容申诉及 027 账户复核分别实测，新旧申请和原决定均可审计。029 最终累计全量 PostgreSQL 1326.832 秒，无失败或跳过；真实账户限制、财务原冻结与审批权限均覆盖。"
         },
         {
           "label": "V14-C3 额度与自动风控策略",
-          "status": "pending",
+          "status": "passed",
           "command": "冻结额度/频率策略、原键与并发边界、误伤恢复及可观测验收",
-          "note": "后续推进，既有并发准入不冒充完整风控。"
+          "note": "028 专项 48.091 秒；原报价和单次核销的浏览器诊断连续三次 46.461 秒。029 全量累计 1326.832 秒无失败或跳过，其中同一已报价请求的复核、显式确认和唯一 0.2 CREDIT 结算用时 25.19 秒。"
         },
         {
           "label": "完整V14依赖放行",
           "status": "blocked",
           "command": "V11真实邮件渠道受控验收与完整V14复核",
           "note": "用户安排真实邮件后续配置；保留V11依赖，不能用本地fixture勾选整批。"
+        },
+        {
+          "label": "V14-C2a 已执行输出内容申诉、独立审议与财务工单",
+          "status": "passed",
+          "command": "真实 PG/三账户 Chromium/026 升级及联备、全量回归",
+          "note": "2026-11-22 本地通过。原冻结 200000 微 CREDIT 实际释放，原审核继续隔离；专项 46.659 秒，三账户 Chromium 和停写联备 29.11 秒。026 全量 PG 1110.149 秒通过，370 项前端、生产构建及六套冒烟通过。"
+        },
+        {
+          "label": "V14-C2b 账户限制、本人复核与独立目标授权",
+          "status": "passed",
+          "command": "027 PostgreSQL、真实浏览器、受理与会话边界、备份恢复、全量回归",
+          "note": "两次独立浏览器覆盖限制、撤销会话和原草稿恢复。029 全量中再次通过 20.29 秒，包含升级与私有联备。027 早期全量仅旧恢复探针超时，保留原失败记录。"
         }
       ],
       "evidence": [
@@ -1422,6 +1507,30 @@
         {
           "path": "docs/wiki/assets/performance-local-v0.15-2026-11-14.json",
           "note": "最终构建本地回归，非生产容量"
+        },
+        {
+          "path": "docs/planning/v14c2-contract.md",
+          "note": "内容申诉与账户限制的独立验收条件"
+        },
+        {
+          "path": "internal/studio/content_appeal_integration_test.go",
+          "note": "三账户真实浏览器、原决定、原冻结及联备"
+        },
+        {
+          "path": "docs/wiki/decisions/0026-content-appeal.md",
+          "note": "申诉与运营工单、真实分录的关系"
+        },
+        {
+          "path": "docs/wiki/decisions/0027-account-governance.md",
+          "note": "目标账户授权、原会话及限制轮次边界"
+        },
+        {
+          "path": "docs/planning/v14c3-contract.md",
+          "note": "额度风控与单次原报价复核的验收边界"
+        },
+        {
+          "path": "docs/changes/2026-11-22-221-account-composer-scope.md",
+          "note": "账户切换后的首个草稿输入"
         }
       ],
       "ledgers": [
@@ -1440,7 +1549,21 @@
         "docs/changes/2026-11-14-062-generation-controls-integration.md",
         "docs/changes/2026-11-14-059-generation-controls.md",
         "docs/changes/2026-11-14-060-generation-admission.md",
-        "docs/changes/2026-11-14-061-generation-controls-workbench.md"
+        "docs/changes/2026-11-14-061-generation-controls-workbench.md",
+        "docs/changes/2026-11-21-119-content-appeal-store.md",
+        "docs/changes/2026-11-21-120-content-appeal-finance.md",
+        "docs/changes/2026-11-21-121-content-appeal-workbench.md",
+        "docs/changes/2026-11-21-122-content-appeal-integration.md",
+        "docs/changes/2026-11-22-123-account-restriction-store.md",
+        "docs/changes/2026-11-22-124-account-governance-auth.md",
+        "docs/changes/2026-11-22-125-account-governance-workbench.md",
+        "docs/changes/2026-11-22-126-account-governance-integration.md",
+        "docs/changes/2026-11-22-127-credit-risk-store.md",
+        "docs/changes/2026-11-22-128-credit-risk-review.md",
+        "docs/changes/2026-11-22-129-credit-risk-workbench.md",
+        "docs/changes/2026-11-22-130-credit-risk-integration.md",
+        "docs/changes/2026-11-22-165-content-appeal-fixture-completion.md",
+        "docs/changes/2026-11-22-221-account-composer-scope.md"
       ],
       "completed_on": null,
       "blocker": null
@@ -1473,7 +1596,7 @@
     {
       "id": "V16",
       "title": "分布式流与配额公平调度",
-      "status": "in_progress",
+      "status": "done",
       "modules": [
         "H01",
         "H02",
@@ -1487,7 +1610,7 @@
         "V05",
         "V09"
       ],
-      "scope": "流、提交、轮询、导入按负载拆分，持久流日志与容量保护。A1/A2及A3.1/A3.2/A3.3已本地验收；B持久流/fencing、完整活跃恢复和C综合测量保留完整范围。",
+      "scope": "流、提交、轮询与私有导入按负载拆分，持久聊天日志、有效租约和有界容量保护。A1/A2、A3.1—A3.3、A4.1/A4.2、B1/B2 和 C 已按单控制写者契约本地验收。独立连接验收覆盖旧写者隔离；全站多实例、跨实例共享配额及生产容量另验。",
       "acceptance": [
         "连接池/worker和凭据/模型配额有界",
         "流日志、快照、回放与fencing在故障下正确",
@@ -1526,27 +1649,39 @@
         },
         {
           "label": "V16-A4.1分页恢复与启动背压",
-          "status": "pending",
+          "status": "passed",
           "command": "完整New分页/私有状态批量读取、超过10000恢复事件、页边界Kill/ACK、分批旧lease撤销验收",
-          "note": "2026-11-15用户暂停：085批读及086分页/Outbox/generation分批已编码；旧恢复13专项36.477s通过，Kill/generation/基础字节通过，ACK代理未触发失败（15.392s故障组退出1），087万条New未运行。状态保持pending，恢复后修复并完成联合验收。"
+          "note": "2026-11-21本地通过：12,002条恢复、9,999条预存事件一次完整New，合计22,001条投影，42.326s，二次启动0.688s；真实Kill/ACK/旧租约、回滚与队列无进展、密钥、冻结模式与跨页权益通过。全PG含本机版本化S3与联备 540.412s、普通check及六smoke通过。A4.2缓存另验。"
+        },
+        {
+          "label": "V16-A4.2媒体受理与冷读首项",
+          "status": "passed",
+          "command": "双工作区512条RUNNING原handle、生成/图片编辑、权限/额度/原键、PG冷读/取消/领取与内存上限",
+          "note": "2026-11-21本地通过090：基线503，修复后两种操作202，业务额度429、越权404，原键同ID与真实PG领取通过；普通check、全PG和六smoke通过。整体A4.2验收另见094。"
         },
         {
           "label": "V16-A4.2PG有界缓存与完整启动容量",
-          "status": "pending",
+          "status": "passed",
           "command": "100k活跃+100k历史完整New、峰值缓存/字节、跨512历史受理和pin/冷读/权限/取消/SSE验收",
-          "note": "依赖A4.1；消除PG全局缓存长度误拒新工作区，保留实际执行占位和数据库准入，项目权限按PG作用域；不以调度预选或迁移成绩代替完整App容量。"
+          "note": "2026-11-21 本地验收 091—094。10 万活跃加 10 万终态完整 New 专项 7.913s，全量复跑 5.758s，Run/Task 启动缓存各 512 条、项目 0、外发 0 次。专项覆盖取消后在途 I/O、活动 SSE、冷热运营补读、工作区项目名额与 22,001 条事件投影。全量 PG（含本机版本化 S3/联备）586.152s，通过普通 check 与六套 smoke。"
         },
         {
-          "label": "V16-B持久流日志与fencing",
-          "command": "逐token持久、快照、回放、窗口、租约与进程故障验收",
-          "status": "pending",
-          "note": "待实现，不绕控制写连接/目录锁，不把未审候选公开。"
+          "label": "V16-B1单控制写者聊天增量持久化与断线回放",
+          "command": "021升级与精确栅栏、受理/执行/增量/终态与审核、窗口和重连、真实Kill与提交回执丢失、联备、全PG与六套冒烟",
+          "status": "passed",
+          "note": "2026-11-21 本地验收，021 单控制写者、新 Run 逐增量先提交、256 条/1 MiB 窗口、每页32条与审核门禁。升级、旧写者拒绝、真实 Kill/提交回执丢失与备份恢复、原键零重发均通过。最终全 PG 571.526 秒，305 项前端测试、Go 检查与六套冒烟通过。见099。"
+        },
+        {
+          "label": "V16-B2执行者租约撤销与迟到写入隔离",
+          "command": "go test ./internal/studio -run 'TestPostgresRunLease|TestPostgresRunStreamBackupRestore|TestPostgresDeliveryOfflineToolsRequireExact022'；npm run test:db、check 及六套冒烟",
+          "status": "passed",
+          "note": "2026-11-21 本地验收。独立 PG 连接竞争、到期/撤销、强杀、首次领取提交回执丢失、晚到审核及终态锁等待等 22 项组合通过，62.704 秒。最终全量 studio 包 814.555 秒；305 项前端测试与六套冒烟通过。见 100—103。"
         },
         {
           "label": "V16-C综合测量",
-          "command": "固定环境公平性、背压、连接/worker/内存和恢复测量",
-          "status": "pending",
-          "note": "待实现，必须独立解决并验证全活跃任务恢复N+1、5秒预算和Outbox满队列启动；本批迁移/预选结果不代表App重启容量。V17生产容量与长稳态另外验收。"
+          "command": "pwsh -File scripts/measure-mixed-workload.ps1 -Runs 3；启用 MIXED_WORKLOAD_TEST 的全量 PG 回归",
+          "status": "passed",
+          "note": "2026-11-21 本机单控制写者三轮独立进程通过，每轮 6 次聊天、6 次媒体生成 POST、7 次查询 GET 和 6 个受管 PG 会话。A 积压时 B 聊天 9.5—10.8 ms 入执行，同 handle 在 429 后延迟 3.028—3.486 秒再查。原键无重复外发，全量 PG 另复跑混合试具。见 104。"
         }
       ],
       "evidence": [
@@ -1816,7 +1951,7 @@
         },
         {
           "path": "docs/planning/v16a4-contract.md",
-          "note": "A4契约及085批读进展，完整分页/背压与有界缓存仍待验收"
+          "note": "A4.1分页恢复验收及A4.2缓存范围"
         },
         {
           "path": "docs/wiki/recovery-private-phases.md",
@@ -1824,7 +1959,79 @@
         },
         {
           "path": "docs/wiki/paged-recovery.md",
-          "note": "086已编码，故障组存在未解决ACK验证失败；用户暂停，未标整批通过"
+          "note": "086分页恢复、满队列的回滚与验证，结果见089"
+        },
+        {
+          "path": "docs/wiki/assets/recovery-large-2026-11-21.json",
+          "note": "A4.1完整启动、二次启动、页边界、缓存峰值与事件数的实际测量"
+        },
+        {
+          "path": "internal/studio/media_admission_cache_test.go",
+          "note": "090双工作区512条积压、生成和编辑、原键、权限、真实领取及内存上限"
+        },
+        {
+          "path": "docs/wiki/decisions/0020-bounded-pg-caches.md",
+          "note": "PG记录与在途执行的保留、项目范围和启动实测口径"
+        },
+        {
+          "path": "internal/studio/run_cache_test.go",
+          "note": "排队、实际退出、活动读者与停机中断保存"
+        },
+        {
+          "path": "internal/studio/task_cache_test.go",
+          "note": "重叠租约、取消与实际IO退出"
+        },
+        {
+          "path": "internal/studio/operations_run_replay_test.go",
+          "note": "运营提交后冷热Run的同游标回放与审核边界"
+        },
+        {
+          "path": "internal/studio/project_scope_test.go",
+          "note": "冷项目权限、订阅、并发创建与第100项"
+        },
+        {
+          "path": "docs/wiki/assets/recovery-capacity-2026-11-21.json",
+          "note": "10万活跃与10万终态完整启动的页耗时、条数与编码大小"
+        },
+        {
+          "path": "docs/wiki/assets/recovery-backlog-bounded-2026-11-21.json",
+          "note": "有界缓存实现复跑A4.1的12002条中断与9999条积压"
+        },
+        {
+          "path": "docs/planning/v16b-contract.md",
+          "note": "B1/B2 的交付范围、升级与故障验收条件，设计证据"
+        },
+        {
+          "path": "docs/wiki/decisions/0021-durable-run-stream.md",
+          "note": "公开增量、持久水位、原游标、审核门禁及旧格式的实施决策"
+        },
+        {
+          "path": "internal/studio/run_stream_recovery_test.go",
+          "note": "020升级、库提交前强杀/提交回执丢失、原键与真实备份恢复"
+        },
+        {
+          "path": "internal/studio/run_stream_store_test.go",
+          "note": "同序号重入、篡改或过期写拒绝和按记录/字节裁剪"
+        },
+        {
+          "path": "internal/studio/run_stream_replay_test.go",
+          "note": "跨页与实时交接、旧格式/窗口过期、越权和越前游标"
+        },
+        {
+          "path": "internal/studio/run_stream_execution_test.go",
+          "note": "确认提交后广播、取消、背压及审核输出隔离"
+        },
+        {
+          "path": "docs/wiki/decisions/0022-run-execution-leases.md",
+          "note": "数据库时间、执行代次与老流升级规则"
+        },
+        {
+          "path": "docs/changes/2026-11-21-103-run-lease-integration.md",
+          "note": "B2 本机 PG 领取、换代强杀、原键与 022 备份恢复"
+        },
+        {
+          "path": "docs/wiki/assets/mixed-workload-2026-11-21.json",
+          "note": "V16-C 本机两个工作区混合运行的三轮量化样本与配置"
         }
       ],
       "ledgers": [
@@ -1851,15 +2058,32 @@
         "docs/changes/2026-11-15-085-recovery-private-phases.md",
         "docs/changes/2026-11-15-086-paged-recovery.md",
         "docs/changes/2026-11-15-087-recovery-validation.md",
-        "docs/changes/2026-11-15-088-recovery-faults.md"
+        "docs/changes/2026-11-15-088-recovery-faults.md",
+        "docs/changes/2026-11-21-089-recovery-acceptance.md",
+        "docs/changes/2026-11-21-090-pg-media-cache-admission.md",
+        "docs/changes/2026-11-21-091-run-cache-pins.md",
+        "docs/changes/2026-11-21-092-media-cache-pins.md",
+        "docs/changes/2026-11-21-093-workspace-project-queries.md",
+        "docs/changes/2026-11-21-094-bounded-startup.md",
+        "docs/changes/2026-11-21-095-durable-run-stream-plan.md",
+        "docs/changes/2026-11-21-096-run-stream-store.md",
+        "docs/changes/2026-11-21-097-run-stream-execution.md",
+        "docs/changes/2026-11-21-098-run-stream-replay.md",
+        "docs/changes/2026-11-21-099-run-stream-integration.md",
+        "docs/changes/2026-11-21-100-run-lease-store.md",
+        "docs/changes/2026-11-21-101-run-lease-execution.md",
+        "docs/changes/2026-11-21-102-run-lease-contention.md",
+        "docs/changes/2026-11-21-103-run-lease-integration.md",
+        "docs/changes/2026-11-21-104-mixed-workload.md",
+        "docs/changes/2026-11-22-134-recovery-barrier-observation.md"
       ],
-      "completed_on": null,
+      "completed_on": "2026-11-21",
       "blocker": null
     },
     {
       "id": "V17",
       "title": "性能与长稳态放行",
-      "status": "todo",
+      "status": "in_progress",
       "modules": [
         "H03",
         "H07",
@@ -1875,16 +2099,393 @@
         "CPU/RSS/FD/GC/数据库等待/慢订阅者与前端基准",
         "24小时稳态、突发/故障注入及瓶颈报告"
       ],
-      "checks": [],
-      "evidence": [],
-      "ledgers": [],
+      "checks": [
+        {
+          "label": "V17-A 本机分阶段延迟与同进程 CPU、驻留内存、句柄",
+          "status": "passed",
+          "command": "node --test scripts/perf/owned-resource-sampler.test.mjs；npm run perf:local",
+          "note": "本机 Windows 031 实际运行 1000 次 bootstrap、100 次建任务并取消、12 次完整 demo 聊天。三段 P95 分别 19.77、10.67、3412.07 毫秒。观测到的最大驻留工作集 23,560,192 字节、原生句柄峰值 287；各窗口有 6、3、97 个样本。仅回环 memory/demo，数据库等待与 24 小时容量环境另验。"
+        },
+        {
+          "label": "V17-B 桌面和窄屏工作台基准",
+          "status": "passed",
+          "command": "真实 Chromium 桌面/窄屏各分冷暖缓存，保留全部样本与制品摘要",
+          "note": "033 工作台在真实 Chromium 157 完成 80 次独立浏览器/服务启动，每组 20 次。首个可交互控件的 P95 在桌面冷启动/预热为 319.8/274.0 毫秒，在 390 像素窄屏为 291.0/232.7 毫秒。每次创建可见空会话并独立 GET 核对。冷组静态资源命中均为 0/2，预热均为 2/2。本机回环 memory/demo，窄屏使用桌面浏览器引擎。"
+        },
+        {
+          "label": "V17-C 混合负载的 GC、数据库等待和慢订阅者",
+          "status": "passed",
+          "command": "三轮本机 PostgreSQL 混合负载、GC 区间、受控锁和快慢订阅者",
+          "note": "三次独立真实 PostgreSQL 混合负载覆盖 18 个阶段快照，每个快照均核对 6 个进程所属数据库连接。三个受控锁等待均从 Lock 恢复 idle，等待语句耗时 11.09、11.05 和 12.26 毫秒。每轮持续读取者按序收到 66 条事件，停读者缓冲到 64 条后只移除一次。"
+        },
+        {
+          "label": "V17-D 万条作品索引、可见缩略图与项目切换资源",
+          "status": "passed",
+          "command": "真实 PG 一万条作品，真实 Chromium 首屏、深页、视频预览与 30 个项目切换",
+          "note": "035 在本机 PostgreSQL 与 Chromium 上验证 10,000 个独立索引，认证分页 100 次。浏览器实际加载 20 页共 480 条，首屏 24 条索引中挂载 4 张卡，发出 2 个缩略图请求；深翻时最多挂载 10 张卡，追加页后可见锚点偏移 0 CSS 像素。两个真实私有视频先后播放，同时播放峰值为 1。切换 30 个不同项目后，旧订阅、未释放旧播放器和关闭标签页后的服务端活动处理器均为 0。深页至末次切换，强制 GC 后 DOM 少 187 个、JS 堆少 161,888 字节。专项 30.391 秒。 还需固定容量环境进行万活跃流和24小时验收。"
+        },
+        {
+          "label": "V17-E 单个活跃回复持续30分钟、交互和原库重开",
+          "status": "passed",
+          "command": "标准服务2100秒，真实PG、Chromium、1801个定时增量、独立SSE与30次输入滚动、租约和重开",
+          "note": "035 正式服务对本机兼容端发出一次请求。1,801 个增量持续 1,800.26 秒，Chromium 独立接收序号 1 至 1,802。30 次逐分钟采样均显示新增正文，输入至两帧的 P95 为 30.2 毫秒，滚动至实际位移的 P95 为 31.2 毫秒。PostgreSQL 独立观察 120 次租约，确认终态后从原库、原私有目录重开，25,214 字节回复逐字相同。"
+        },
+        {
+          "label": "V17-F1 已支持分支的可变高消息列表与有界分页读取",
+          "status": "passed",
+          "command": "035真实PG及授权浏览器128节点，分页、边界字节、稳定锚点、键盘与分支/项目切换",
+          "note": "035 本机 PostgreSQL 经正常入口生成单分支 64 轮，Chromium 在 7 页中逐条核对 128 条消息。首屏 20 条仅挂载 4 条，采样峰值 8 条。6 次前插与缩窄至 390 像素时，锚点最大偏移分别为 0.140625 和 0.140625 CSS 像素。键盘跨窗口、项目切换、未发送草稿和迟到读取均通过，浏览器生成 POST 为零。"
+        },
+        {
+          "label": "V17-F2 同一条分支一万条历史消息及有界缓存",
+          "status": "passed",
+          "command": "正规受理、消息路径一万节点、逐页无重漏、同分支重读、受控缓存与原输入/上下文/权益核对",
+          "note": "本机 PostgreSQL 通过正常受理入口完成同一分支 5,000 轮，逐轮核对上游上下文。Chromium 读取 500 个授权页、索引 10,000 条消息，实测最多挂载 10 行、缓存 120 条正文；首、中、末三处淘汰内容均通过原页重读。显式继续后原库有 10,002 个节点与 5,001 份冻结上下文，原键重放未增加上游调用。专项 219.573 秒。"
+        },
+        {
+          "label": "V17-G 普通与压力画布的渲染及交互",
+          "status": "passed",
+          "command": "500节点/1000边、最多150可视节点，平移P95≤20毫秒；2000节点/4000边、最多100个详细可视节点，P95≤25毫秒",
+          "note": "在本机 Intel 集显、Chromium 157、1920×1080 下，两档各实际拖动平移 60 秒，期间私有缩略图已解码、已受理 Run 持续活动。500 节点/1,000 边的 3,599 个帧间隔 P95 为 16.8 毫秒，最多 25 个详细节点；2,000 节点/4,000 边的 3,601 个间隔 P95 为 16.8 毫秒，最多 100 个详细节点。两个项目实际保存并重开 4 个修订，编辑与平移新增生成 POST 为零。"
+        },
+        {
+          "label": "V17-H1 本机集显、校准网络、冷暖缓存与万条历史",
+          "status": "passed",
+          "command": "正常项目和同一万条分支；20 Mbps 双向、80 ms RTT 校准，20 对独立冷暖样本及 300 KiB 初始 JS 传输预算",
+          "note": "037 本机集显，Chromium 157；5,000 轮/10,000 条，冷暖各20个独立样本。冷 JS 166,103 B、暖0；首可交互 P95 冷880.0 / 暖565.8 ms。三次实测 RTT 104.9–107.8 ms、双向19.55–19.71 Mbps，零额外生成；323.944s。高配与真机等另验。"
+        },
+        {
+          "label": "V17-H2 指定参考环境、高配及真实移动设备",
+          "status": "blocked",
+          "command": "在方案参考设备和20Mbps/80ms RTT网络复跑，另验高配与移动真机，记录浏览器/制品/缓存与数据集",
+          "note": "本机已实测 Intel 集显、系统可见内存约 31.5 GiB。2026-11-22 本机设备清单中便携/Android USB 类为 0，无 adb 命令，显示设备为 Intel 集显及虚拟适配器。另需对指定参考设备、高配机及实际移动设备分别复跑；生产入口另行验收。"
+        },
+        {
+          "label": "V17-I1 单控制写者 64 个活跃模型流与授权 SSE",
+          "status": "passed",
+          "command": "在真实 PostgreSQL 与本机可控 HTTP 网关上执行 8 路短测、64 路完整测试及原库回放",
+          "note": "真实本机 PG + 授权 HTTP/SSE + 可控上游，8 路及 64 路通过。64 个活跃模型流、768 条持久增量，P95/P99 44.42/47.23ms、零遗漏和额外上游调用；波次 1.204s，5.116s 专项。"
+        },
+        {
+          "label": "V17-I2 万条逻辑流的批量持久日志和并发回放 PoC",
+          "status": "passed",
+          "command": "隔离 PostgreSQL，记录 WAL 持久设置，10000 条逻辑流按每秒 100000 增量投放至少 10 秒，实测提交、回放、延迟、背压及完整性",
+          "note": "PG 16.14，8 写/4 并行读，10,000 个非空逻辑流。12 秒每秒投放/受理 100,000，全部 140 万增量与 PG 头及回放匹配；投放到确认回放 P95/P99 上界 12.543/14.591ms。14.920s；真实业务工作台及长稳态独立验收。"
+        },
+        {
+          "label": "V17-I3 单写者运行回放的只读连接隔离",
+          "status": "passed",
+          "command": "go test -count=1 -p 1 -run '^TestPostgresRunReplayPool' -v ./internal/studio",
+          "note": "037 本机 PostgreSQL，7 个专项 29.837 秒；占满与请求取消、控制写入继续、读连接断开恢复、生命周期、审核快照、日志损坏、过期和旧游标、直播交接。服务端可选 1–4 个只读回放连接，默认 0。"
+        },
+        {
+          "label": "V17-J1 单控制写者托管子进程的正常会话执行",
+          "status": "passed",
+          "command": "执行跨进程模型 I/O 专项、故障与资源释放专项，再通过真实 PostgreSQL 和授权 SSE 核对 2×40 个活动会话",
+          "note": "标准服务在本机启动两个受管子进程，Windows TCP 归属与 PostgreSQL 租约分别核实每个子进程同时持有 40 条模型连接。5 个工作区各 16 条，4 个冻结模型各 20 条。80 个正常授权读者共读到 960 个原序增量，80 笔运行完成结算；模型写出到普通 SSE 读完的 P50/P95/P99 为 33.91/64.86/976.40 毫秒。另一个读者暂停约 2.07 秒。 排队取消未请求模型，已开始取消和单子进程或控制器故障的已执行运行进入 REVIEW。两个子进程全失时，只将两个尚未领取的排队请求交给控制器的一个执行位。含故障场景的标准制品共发出 87 次模型请求；隔离的审核测试宿主另发 1 次，屏蔽决定留下的候选公开增量为 0。两部分合计零额外或重复模型 POST。4 路试跑包 26.646 秒，正式档包 29.582 秒。"
+        },
+        {
+          "label": "V17-J2 真实运行增量的跨 Run 批量持久追加",
+          "status": "passed",
+          "command": "真实 PostgreSQL 事务、失期/撤销/ACK边界与原公开 SSE；同一并发负载分别开启/关闭，核验原事件 xmin 和全部原序回放",
+          "note": "本机 PostgreSQL 的两组独立新 schema 各运行 64 条正常模型流，每条 12 个增量。开关两侧各有 768 条增量按原序通过授权 SSE 和数据库回放，模型请求各 64 次。事件行的 xmin 显示，关闭时为 768 次写入事务，开启时为 24 次，每次包含 32 个不同 Run，少 744 次（96.875%）。从模型写出前到普通客户端读完相应 SSE 的 P95 分别为 52.28 和 6.83 毫秒，P99 为 73.50 和 8.10 毫秒。在本机控制的 12 个波次下测得，事务计数只覆盖增量插入。8 路试跑 26.606 秒，64 路含业务边界专项共 28.722 秒。 六项原库专项全部通过，共 13.794 秒，覆盖同事务分组与逐项授权、保留窗口与输出上限、并发取消、失期回滚、服务器明确回滚和提交应答丢失后的停写。"
+        },
+        {
+          "label": "V17-J3 慢 TCP 读者、原游标与默认共享订阅上限",
+          "status": "pending",
+          "command": "go test -p 1 -count=1 -timeout=120s -run '^TestPostgresSSESocket' -v ./internal/studio",
+          "note": "真实本机 TCP 停读、核验实际写截止和快端完整输出；同库授权恢复、五账户及全局/工作区订阅释放由集成人串行验证。"
+        },
+        {
+          "label": "V17-J4 共享会话复核与 192 个同时在线的授权订阅",
+          "status": "pending",
+          "command": "真实 PG；正常账户、独立回放和授权读连接、192 个真实订阅、撤销指定会话、复核失败关闭及原游标接续",
+          "note": "默认128，扩展档使用有界全局/工作区槽、按会话分组的授权复核和独立读连接。实际 192 客户端及原模型请求以验收数据为准。"
+        },
+        {
+          "label": "V17-J4 联合运行的模型、增量日志和订阅",
+          "status": "pending",
+          "command": "STUDIO_CHAT_CHILD_ACCEPTANCE=integrated-pilot / integrated；go test -p 1 -count=1 -run '^TestPostgresChatChildAcceptance$' -v ./internal/studio",
+          "note": "同一标准制品与数据库同时启用托管模型、批写与扩展订阅；实证模型连接、原库事件、物理提交、普通/迟读者交付与权益。"
+        },
+        {
+          "label": "固定容量环境的万活跃流、媒体在途与24小时稳态",
+          "status": "blocked",
+          "command": "分层 P95/P99、CPU/RSS/FD/GC、数据库等待、慢订阅者、24小时与突发故障",
+          "note": "本机标准服务现已实测两个托管子进程各 40 个同时活跃的会话与跨运行批写；全部 SSE 仍共用单控制器的 128 个连接槽。继续验证真实慢订阅与准入、扩展持久订阅和执行容量，再在专用环境核验业务万活跃流、目标媒体在途及 24 小时稳态。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/wiki/performance.md",
+          "note": "各阶段负载、采样口径与环境范围"
+        },
+        {
+          "path": "docs/wiki/assets/performance-owned-031-2026-11-22.json",
+          "note": "031 Windows 同一真实服务进程分段 P50/P95/P99、CPU、RSS、句柄及样本量"
+        },
+        {
+          "path": "docs/changes/2026-11-22-171-workbench-frontend-benchmark.md",
+          "note": "桌面和窄屏工作台基准"
+        },
+        {
+          "path": "docs/changes/2026-11-22-172-mixed-resource-observation.md",
+          "note": "混合负载的 GC、数据库等待和慢订阅者"
+        },
+        {
+          "path": "docs/wiki/assets/performance-frontend-033-2026-11-22.json",
+          "note": "四种窗口/缓存组合、80份原始毫秒样本和制品身份"
+        },
+        {
+          "path": "docs/wiki/assets/performance-mixed-resources-033-2026-11-22.json",
+          "note": "033 三轮实际 GC、数据库等待及持续/停读分发证据"
+        },
+        {
+          "path": "docs/changes/2026-11-22-181-library-virtual-grid.md",
+          "note": "作品库可见卡片与退出清理"
+        },
+        {
+          "path": "docs/changes/2026-11-22-180-private-library-browser-resources.md",
+          "note": "万条作品索引及项目切换实测"
+        },
+        {
+          "path": "docs/wiki/assets/performance-library-035.json",
+          "note": "本机万条索引、浏览器虚拟视口与30个项目资源实测"
+        },
+        {
+          "path": "docs/wiki/assets/performance-startup-js-035.json",
+          "note": "033 至 035 实际启动模块、同级 gzip 预算和 Go 直连响应字节"
+        },
+        {
+          "path": "docs/changes/2026-11-22-183-durable-long-reply.md",
+          "note": "持久会话 30 分钟回复验收"
+        },
+        {
+          "path": "docs/changes/2026-11-22-184-chat-run-timeout.md",
+          "note": "标准服务聊天执行期限"
+        },
+        {
+          "path": "docs/changes/2026-11-22-185-long-reply-gateway-and-observation.md",
+          "note": "可核对的本机长回复流"
+        },
+        {
+          "path": "docs/changes/2026-11-22-186-long-reply-browser.md",
+          "note": "活跃回复中的可信输入和滚动"
+        },
+        {
+          "path": "docs/changes/2026-11-22-190-frontend-acceptance-coverage.md",
+          "note": "原方案消息、画布、参考设备与现有验收差异"
+        },
+        {
+          "path": "docs/changes/2026-11-22-187-variable-height-chat-timeline.md",
+          "note": "可变行高的消息列表"
+        },
+        {
+          "path": "docs/changes/2026-11-22-188-conversation-message-pages.md",
+          "note": "按页读取持久会话正文"
+        },
+        {
+          "path": "docs/changes/2026-11-22-189-persistent-conversation-history-browser.md",
+          "note": "128条分支消息的浏览器验收"
+        },
+        {
+          "path": "docs/wiki/assets/performance-long-reply-035.json",
+          "note": "真实30分钟、30个浏览器检查点、1802个接收序号及原库重开"
+        },
+        {
+          "path": "docs/wiki/assets/performance-conversation-history-035.json",
+          "note": "真实PG与Chromium一百二十八条消息及可见锚点实测"
+        },
+        {
+          "path": "docs/changes/2026-11-22-191-chat-message-body-cache.md",
+          "note": "可回读的消息正文缓存"
+        },
+        {
+          "path": "docs/changes/2026-11-22-192-durable-conversation-ancestry.md",
+          "note": "持久会话祖先与上下文"
+        },
+        {
+          "path": "docs/changes/2026-11-22-193-long-history-format-and-restore.md",
+          "note": "长会话配置、格式与恢复"
+        },
+        {
+          "path": "docs/changes/2026-11-22-194-deep-conversation-acceptance.md",
+          "note": "真实万条分支验收"
+        },
+        {
+          "path": "docs/wiki/assets/performance-conversation-history-036.json",
+          "note": "单分支5000轮、受理上下文、500页及三次淘汰回读"
+        },
+        {
+          "path": "docs/changes/2026-11-22-195-project-canvas-versions.md",
+          "note": "项目画布保存与私有来源"
+        },
+        {
+          "path": "docs/changes/2026-11-22-196-free-canvas-workbench.md",
+          "note": "自由画布的编辑与无障碍操作"
+        },
+        {
+          "path": "docs/changes/2026-11-22-197-canvas-pan-browser.md",
+          "note": "两档真实图的平移测量"
+        },
+        {
+          "path": "docs/changes/2026-11-22-198-project-canvas-integration.md",
+          "note": "画布集成、精确格式与恢复"
+        },
+        {
+          "path": "docs/wiki/assets/performance-canvas-037.json",
+          "note": "两档各60秒的全部rAF间隔、逐秒真实来源及Intel硬件渲染"
+        },
+        {
+          "path": "docs/changes/2026-11-22-200-workbench-network-browser.md",
+          "note": "受限网络下的冷暖工作台与深历史"
+        },
+        {
+          "path": "docs/changes/2026-11-22-199-startup-javascript-compression.md",
+          "note": "启动 JavaScript 实际 gzip 传输"
+        },
+        {
+          "path": "docs/changes/2026-11-22-201-active-stream-capacity.md",
+          "note": "64 个同时活跃的模型流和授权 SSE"
+        },
+        {
+          "path": "docs/changes/2026-11-22-202-sharded-stream-journal-poc.md",
+          "note": "分片批量持久日志与并发回放试验"
+        },
+        {
+          "path": "docs/wiki/assets/performance-network-037.json",
+          "note": "H1 40 个冷暖样本、双向校准、实际 JS 传输与历史 P95"
+        },
+        {
+          "path": "docs/wiki/assets/performance-active-streams-037.json",
+          "note": "64 活跃 Run、768 个增量、逐阶段 HTTP/SSE 分位与完整 PG 回放"
+        },
+        {
+          "path": "docs/wiki/assets/performance-canvas-037-recheck.json",
+          "note": "画布稳定来源读取、保存回执修正后两档硬件加速正式复测"
+        },
+        {
+          "path": "docs/changes/2026-11-22-203-pr-bundle-diff.md",
+          "note": "PR 启动资源预算与制品差异"
+        },
+        {
+          "path": "docs/wiki/assets/performance-stream-journal-poc-037.json",
+          "note": "独立 PostgreSQL 持久日志的 12 秒逐秒窗口、四类延迟和完整性"
+        },
+        {
+          "path": "docs/changes/2026-11-22-204-run-replay-read-pool.md",
+          "note": "运行 SSE 断线回放的只读连接隔离"
+        },
+        {
+          "path": "docs/changes/2026-11-22-205-chat-execution-child-transport.md",
+          "note": "私管道的受管聊天执行进程"
+        },
+        {
+          "path": "docs/changes/2026-11-22-206-managed-chat-scheduling.md",
+          "note": "受管与本地执行共用调度预算"
+        },
+        {
+          "path": "docs/changes/2026-11-22-207-managed-chat-acceptance.md",
+          "note": "受管会话的授权 SSE 与真实进程归属验收"
+        },
+        {
+          "path": "docs/changes/2026-11-22-208-managed-chat-integration.md",
+          "note": "受管聊天执行的集成与故障验收"
+        },
+        {
+          "path": "docs/changes/2026-11-22-209-batched-run-delta-store.md",
+          "note": "原增量表的跨运行 PostgreSQL 提交"
+        },
+        {
+          "path": "docs/changes/2026-11-22-210-run-delta-coordinator.md",
+          "note": "跨运行增量的有界协调与开关"
+        },
+        {
+          "path": "docs/changes/2026-11-22-211-batched-delta-acceptance.md",
+          "note": "真实聊天流的批量提交前后对照"
+        },
+        {
+          "path": "docs/changes/2026-11-22-212-business-delta-batch-integration.md",
+          "note": "真实工作台增量批量提交集成"
+        },
+        {
+          "path": "docs/changes/2026-11-22-213-virtualized-live-reply-observation.md",
+          "note": "长回复虚拟行与原提示滚回核对"
+        },
+        {
+          "path": "docs/wiki/assets/performance-batched-deltas-037.json",
+          "note": "037 真实 64 路会话、授权回放和原库物理提交分布"
+        },
+        {
+          "path": "docs/wiki/assets/performance-managed-chat-037.json",
+          "note": "037 两个本机子进程各 40 路实际执行、原库结算与失败边界"
+        },
+        {
+          "path": "docs/changes/2026-11-22-214-sse-socket-acceptance.md",
+          "note": "真实慢 TCP 读者与订阅上限"
+        },
+        {
+          "path": "docs/changes/2026-11-22-218-stream-session-batches.md",
+          "note": "共享会话核验与全局订阅容量"
+        },
+        {
+          "path": "docs/changes/2026-11-22-219-authenticated-sse-sessions.md",
+          "note": "192 个授权订阅、撤销与重连"
+        },
+        {
+          "path": "docs/changes/2026-11-22-220-integrated-chat-sse-acceptance.md",
+          "note": "80 个模型流、241 个订阅与批量持久化联合验收"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-22-161-owned-resource-sampling.md",
+        "docs/changes/2026-11-22-171-workbench-frontend-benchmark.md",
+        "docs/changes/2026-11-22-172-mixed-resource-observation.md",
+        "docs/changes/2026-11-22-181-library-virtual-grid.md",
+        "docs/changes/2026-11-22-180-private-library-browser-resources.md",
+        "docs/changes/2026-11-22-183-durable-long-reply.md",
+        "docs/changes/2026-11-22-184-chat-run-timeout.md",
+        "docs/changes/2026-11-22-185-long-reply-gateway-and-observation.md",
+        "docs/changes/2026-11-22-186-long-reply-browser.md",
+        "docs/changes/2026-11-22-190-frontend-acceptance-coverage.md",
+        "docs/changes/2026-11-22-187-variable-height-chat-timeline.md",
+        "docs/changes/2026-11-22-188-conversation-message-pages.md",
+        "docs/changes/2026-11-22-189-persistent-conversation-history-browser.md",
+        "docs/changes/2026-11-22-191-chat-message-body-cache.md",
+        "docs/changes/2026-11-22-192-durable-conversation-ancestry.md",
+        "docs/changes/2026-11-22-193-long-history-format-and-restore.md",
+        "docs/changes/2026-11-22-194-deep-conversation-acceptance.md",
+        "docs/changes/2026-11-22-195-project-canvas-versions.md",
+        "docs/changes/2026-11-22-196-free-canvas-workbench.md",
+        "docs/changes/2026-11-22-197-canvas-pan-browser.md",
+        "docs/changes/2026-11-22-198-project-canvas-integration.md",
+        "docs/changes/2026-11-22-200-workbench-network-browser.md",
+        "docs/changes/2026-11-22-199-startup-javascript-compression.md",
+        "docs/changes/2026-11-22-201-active-stream-capacity.md",
+        "docs/changes/2026-11-22-202-sharded-stream-journal-poc.md",
+        "docs/changes/2026-11-22-203-pr-bundle-diff.md",
+        "docs/changes/2026-11-22-204-run-replay-read-pool.md",
+        "docs/changes/2026-11-22-205-chat-execution-child-transport.md",
+        "docs/changes/2026-11-22-206-managed-chat-scheduling.md",
+        "docs/changes/2026-11-22-207-managed-chat-acceptance.md",
+        "docs/changes/2026-11-22-208-managed-chat-integration.md",
+        "docs/changes/2026-11-22-209-batched-run-delta-store.md",
+        "docs/changes/2026-11-22-210-run-delta-coordinator.md",
+        "docs/changes/2026-11-22-211-batched-delta-acceptance.md",
+        "docs/changes/2026-11-22-212-business-delta-batch-integration.md",
+        "docs/changes/2026-11-22-213-virtualized-live-reply-observation.md",
+        "docs/changes/2026-11-22-214-sse-socket-acceptance.md",
+        "docs/changes/2026-11-22-218-stream-session-batches.md",
+        "docs/changes/2026-11-22-219-authenticated-sse-sessions.md",
+        "docs/changes/2026-11-22-220-integrated-chat-sse-acceptance.md"
+      ],
       "completed_on": null,
       "blocker": null
     },
     {
       "id": "V18",
       "title": "部署、备份与灾备演练",
-      "status": "todo",
+      "status": "in_progress",
       "modules": [
         "H01",
         "H04",
@@ -1901,16 +2502,89 @@
         "PG/PITR与对象存储备份实际恢复",
         "多可用区切换与RPO/RTO证据、监控值班手册"
       ],
-      "checks": [],
-      "evidence": [],
-      "ledgers": [],
+      "checks": [
+        {
+          "label": "V18-A 本机物理 PITR 与独立版本化对象备份联合恢复",
+          "status": "passed",
+          "command": "node scripts/recovery/workbench-drill.mjs --weed <本机固定版本>",
+          "note": "两次独立 PG16.14 命名点与对象冷备恢复。移离原目录后 23.910 秒读回原账户、草稿 v1、4 份原私有字节及唯一 0.2 CREDIT 结算，目标点后 v2 被排除。"
+        },
+        {
+          "label": "V18-B 本机单写者灰度、故障封流与回原制品",
+          "status": "passed",
+          "command": "node scripts/release/workbench-release-drill.mjs --previous <原制品> --candidate <候选>",
+          "note": "两个真实同格式制品经本机 TLS 和 PostgreSQL 验证。候选故障封流 2.061 秒，原制品重开 3.478 秒，候选再次开放 3.949 秒。每次均核验三个写锁及原私图、原键收据。"
+        },
+        {
+          "label": "V18-D 本机可操作的值班手册",
+          "status": "passed",
+          "command": "核对真实 /healthz、/readyz、/metrics 与恢复/故障命令",
+          "note": "集成人在独立本机进程直接执行值班手册 PowerShell，/healthz、/readyz、/metrics 均返回 200，采样 14 条固定指标，无凭据读指标 401，正常退出。两次作者复验亦记录真实 SSE 占用 0→1→0。"
+        },
+        {
+          "label": "V18-E 跨格式回退与升级窗口收据对账",
+          "status": "pending",
+          "command": "node scripts/release/cross-format-drill.mjs --run --previous-source <冻结036> --candidate-source <冻结037> --stage-parent <本机暂存路径> --bin-dir <PG16工具>",
+          "note": "复核两份真实制品、物理命名恢复点、私有文件与升级窗口两笔写入，维护入口保持封流；尚待集成人串行执行。"
+        },
+        {
+          "label": "V18-F 同步备机接管与工作台收据",
+          "status": "pending",
+          "command": "node scripts/recovery/workbench-sync-standby.mjs --artifact <已核对的本机037 baseline包>",
+          "note": "核实主备的同步落盘和回放、旧进程及写锁退出、独立端口提升、原账户与收据和本机恢复时间。独立可用区仍需另验。"
+        },
+        {
+          "label": "分环境部署、灰度/回滚、真实跨可用区放行",
+          "status": "blocked",
+          "command": "部署环境隔离、真实多区切换和各存储RPO/RTO测量",
+          "note": "需指定独立可用区、对象/WAL备份与恢复目标、业务切换窗口和明确环境授权。V11真实邮件联动另验。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/wiki/recovery-drill.md",
+          "note": "本机工作台完整恢复命令与证据边界"
+        },
+        {
+          "path": "docs/wiki/assets/recovery-drill-2026-11-22.json",
+          "note": "最终命名恢复点、WAL、私有树及认证读回的脱敏实测"
+        },
+        {
+          "path": "docs/wiki/release-operations.md",
+          "note": "本机实测采样、候选封流、原收据与恢复后写入核对"
+        },
+        {
+          "path": "docs/wiki/assets/release-handoff-2026-11-22.json",
+          "note": "三次真实切换结果、制品摘要、三锁及私有读回结果"
+        },
+        {
+          "path": "docs/changes/2026-11-22-216-cross-format-recovery.md",
+          "note": "036 到 037 的跨格式回退演练"
+        },
+        {
+          "path": "docs/changes/2026-11-22-217-postgresql-sync-standby.md",
+          "note": "同步备机切换与原业务收据"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-22-131-postgresql-pitr-drill.md",
+        "docs/changes/2026-11-22-132-object-store-cold-backup.md",
+        "docs/changes/2026-11-22-133-recovery-platform-integration.md",
+        "docs/changes/2026-11-22-139-release-ingress.md",
+        "docs/changes/2026-11-22-140-release-process.md",
+        "docs/changes/2026-11-22-141-local-release-artifacts.md",
+        "docs/changes/2026-11-22-142-release-handoff-integration.md",
+        "docs/changes/2026-11-22-143-release-operations.md",
+        "docs/changes/2026-11-22-216-cross-format-recovery.md",
+        "docs/changes/2026-11-22-217-postgresql-sync-standby.md"
+      ],
       "completed_on": null,
       "blocker": null
     },
     {
       "id": "V19",
       "title": "可执行工作流与模板",
-      "status": "todo",
+      "status": "done",
       "modules": [
         "H02",
         "H03",
@@ -1928,16 +2602,82 @@
         "人工确认、节点重跑、取消和恢复不重复执行收费步骤",
         "文本→图像→视频模板完整交付及资产归属"
       ],
-      "checks": [],
-      "evidence": [],
-      "ledgers": [],
-      "completed_on": null,
+      "checks": [
+        {
+          "label": "V19-A模板固定版本执行与人工选图",
+          "command": "npm run test:db（启用本机S3、大恢复、混合负载和WORKFLOW_BROWSER_TEST）；11项工作流/维护专项；npm run check 各项及六套smoke",
+          "status": "passed",
+          "note": "023 本地验收，真实PG全量 881.522 秒、专项 39.793 秒。重新登录选择、已选原件/元数据修订、旧草稿升级、受理 COMMIT 丢回执与私有联备均通过。329 项前端、10 项治理、Go vet/test/build、六套冒烟及文档治理通过。"
+        },
+        {
+          "label": "V19-B选中图片作为视频输入",
+          "command": "验证两张已批准图片对应实际视频请求字节或文件版本、私有视频资产和原 handle",
+          "status": "passed",
+          "note": "024 已在独立源码快照完成全量 PG 916.294 秒，含本机版本化 S3、大恢复、混合负载及三步/四步 Chromium。双原图 multipart 逐字节核对 21.42 秒，独立收费/回放 8.97 秒，浏览器实际解码私有 MP4 16.90 秒，前端 336 项通过。外部供应商未提交生成请求。"
+        },
+        {
+          "label": "V19-C显式重跑、撤销与恢复",
+          "command": "PG 025 专项及全量 test:db（含三个 Chromium 工作流、进程强杀、本机 S3、大恢复与混合负载）；npm run check 及六套 smoke",
+          "status": "passed",
+          "note": "最终 PG 专项 60.883 秒，含旧未用报价拒绝且仅新报价受理、并发/撤权/背压、真实 COMMIT 丢回执及受理后强杀。独立 025 最终全量 959.929 秒，356 项前端、10 项治理、编译与六套隔离冒烟通过，三步和四步模板、派生与取消均完成本地验收。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/planning/v19-contract.md",
+          "note": "已核对现有草稿、原方案与新流程的验收范围，仅设计证据"
+        },
+        {
+          "path": "internal/studio/workflow_integration_test.go",
+          "note": "真实升级、备份恢复、浏览器与子受理提交确认丢失"
+        },
+        {
+          "path": "docs/wiki/decisions/0023-project-workflows.md",
+          "note": "步骤授权、候选与编排提交边界"
+        },
+        {
+          "path": "internal/studio/workflow_video_integration_test.go",
+          "note": "实际 multipart 两张原图、跨重启和项目成品播放"
+        },
+        {
+          "path": "docs/wiki/decisions/0024-video-first-frame.md",
+          "note": "首帧协议、文件身份与独立视频能力"
+        },
+        {
+          "path": "internal/studio/workflow_attempt_integration_test.go",
+          "note": "供应端收件后的真实强杀、项目流恢复、操作丢回执与浏览器"
+        },
+        {
+          "path": "internal/studio/workflow_attempt_quote_test.go",
+          "note": "旧未用报价拒绝、派生尝试的独立冻结"
+        },
+        {
+          "path": "docs/wiki/decisions/0025-workflow-attempts.md",
+          "note": "继承、取消、费用与独立运行"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-21-105-workflow-execution-plan.md",
+        "docs/changes/2026-11-21-106-workflow-store.md",
+        "docs/changes/2026-11-21-107-workflow-execution.md",
+        "docs/changes/2026-11-21-108-workflow-workbench.md",
+        "docs/changes/2026-11-21-109-workflow-integration.md",
+        "docs/changes/2026-11-21-111-video-first-frame-provider.md",
+        "docs/changes/2026-11-21-112-workflow-video.md",
+        "docs/changes/2026-11-21-113-workflow-video-workbench.md",
+        "docs/changes/2026-11-21-114-workflow-video-integration.md",
+        "docs/changes/2026-11-21-115-workflow-rerun.md",
+        "docs/changes/2026-11-21-116-workflow-cancellation.md",
+        "docs/changes/2026-11-21-117-workflow-attempt-workbench.md",
+        "docs/changes/2026-11-21-118-workflow-attempt-integration.md"
+      ],
+      "completed_on": "2026-11-21",
       "blocker": null
     },
     {
       "id": "V20",
       "title": "视频编辑与分镜创作",
-      "status": "todo",
+      "status": "in_progress",
       "modules": [
         "H02",
         "H03",
@@ -1956,16 +2696,80 @@
         "视频编辑/延长API、版本比较与局部重做",
         "真实视频解码/播放/转码、导出成片验收"
       ],
-      "checks": [],
-      "evidence": [],
-      "ledgers": [],
+      "checks": [
+        {
+          "label": "V20-A 现有私有视频的不可变剪辑、原声裁切与实际成片",
+          "status": "passed",
+          "command": "Go 视频执行器真实解码与取消、030 存储/权限、Chromium 下载双版本 MP4、独立画面与音轨核对",
+          "note": "030 累计 PostgreSQL 1461.356 秒，无失败或跳过；独立编解码包 3.163 秒。441 项前端及六套冒烟通过。两次从真实 Chromium 下载的 v1/v2 逐字节相同，两段共 125 帧与原声均已核对；停写联备、新库重开、回收/授权另有专项。"
+        },
+        {
+          "label": "V20-B 固定分镜生成、原任务收据和单镜替换",
+          "status": "pending",
+          "command": "单镜受理与权益、审核资产与剪辑并发、原库升级/联备；真实 Chromium 取回两个 MP4 并独立解码画面和音轨",
+          "note": "使用正常文生视频通路推进受控网关验收。已确认版本、原键回读、单独报价与显式剪辑提交，真实供应商效果以及原视频编辑/延长另验。"
+        },
+        {
+          "label": "真实模型对原视频编辑、延长与逐镜生成",
+          "status": "blocked",
+          "command": "在用户配置且开通对应能力的真实供应端实测",
+          "note": "需要模型协议、授权测试素材和受控真实执行环境；已交付的 V19 首帧视频生成继续独立保留。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/wiki/decisions/0030-video-timelines.md",
+          "note": "剪辑入口、可配置项、格式、历史版本与私有下载"
+        },
+        {
+          "path": "docs/wiki/assets/video-edit-render-2026-11-22.json",
+          "note": "两个真实下载件 125 帧逐帧核验及音轨测量"
+        },
+        {
+          "path": "docs/changes/2026-11-22-148-video-edit-integration.md",
+          "note": "030 升级、存储和权限、浏览器、独立解码、恢复与累计回归"
+        },
+        {
+          "path": "docs/changes/2026-11-22-182-video-timeline-selection.md",
+          "note": "剪辑稿保存回执与选择框同步"
+        },
+        {
+          "path": "docs/changes/2026-11-22-225-panel-video-integration.md",
+          "note": "固定分镜生成与局部重做集成"
+        },
+        {
+          "path": "docs/changes/2026-11-22-222-comic-panel-video.md",
+          "note": "已确认分镜的视频报价与受理"
+        },
+        {
+          "path": "docs/changes/2026-11-22-223-panel-video-timeline-replacement.md",
+          "note": "分镜产物替换指定剪辑镜头"
+        },
+        {
+          "path": "docs/changes/2026-11-22-224-panel-video-workbench.md",
+          "note": "工作台单镜生成与原键核对"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-22-144-bounded-video-export.md",
+        "docs/changes/2026-11-22-145-video-edit-workbench.md",
+        "docs/changes/2026-11-22-146-video-timeline-store.md",
+        "docs/changes/2026-11-22-147-timeline-private-export.md",
+        "docs/changes/2026-11-22-148-video-edit-integration.md",
+        "docs/changes/2026-11-22-166-video-export-cleanup-verification.md",
+        "docs/changes/2026-11-22-182-video-timeline-selection.md",
+        "docs/changes/2026-11-22-225-panel-video-integration.md",
+        "docs/changes/2026-11-22-222-comic-panel-video.md",
+        "docs/changes/2026-11-22-223-panel-video-timeline-replacement.md",
+        "docs/changes/2026-11-22-224-panel-video-workbench.md"
+      ],
       "completed_on": null,
       "blocker": null
     },
     {
       "id": "V21",
       "title": "协作与专项创作扩展",
-      "status": "todo",
+      "status": "in_progress",
       "modules": [
         "H01",
         "H02",
@@ -1983,16 +2787,81 @@
         "漫剧角色/场景/分镜复用链路",
         "PPT导出实际可编辑文件与渲染验收；不以入口代替功能"
       ],
-      "checks": [],
-      "evidence": [],
-      "ledgers": [],
+      "checks": [
+        {
+          "label": "V21-C 可编辑文稿、私有图片与真实 PPTX 导出",
+          "status": "passed",
+          "command": "真实账号、版本回读与鉴权、Chromium 下载 PPTX、独立解析与渲染原下载文件",
+          "note": "029 全量 PostgreSQL 1326.832 秒，包括浏览器再次下载 10.49 秒。真实专项 46.647 秒，426 项前端、构建和六套冒烟通过。两个修订及首版重开、标题改写回存与 15 页独立打印均核验。"
+        },
+        {
+          "label": "V21-A1 站内团队邀请、共享项目角色与多人草稿冲突",
+          "status": "passed",
+          "command": "双账户真实 PG/Chromium、成员原键、撤权竞态、旧库升级和独立还原",
+          "note": "032 十四项专项 58.729 秒通过，双账户实际浏览器 14.95 秒、恢复 7.20 秒。471 项前端及六套冒烟通过。 032 全量 PostgreSQL 1639.820 秒通过，无失败或跳过。"
+        },
+        {
+          "label": "V21-B1 漫剧角色、场景与分镜复用及可编辑稿",
+          "status": "passed",
+          "command": "真实账户与 PG、保存/确认原操作键、旧版私图权限、Chromium 下载三份固定稿与长文续页、独立编辑和渲染",
+          "note": "031 专项 50.116 秒，双版本、作者确认、保存竞争、生成与回收门禁和联备恢复通过。真实下载件在独立编辑器重新打开，5 份 PDF、14 页核对通过。458 项前端和六套冒烟通过， 032 全量 PostgreSQL 1639.820 秒通过，无失败或跳过。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/wiki/decisions/0029-project-presentations.md",
+          "note": "项目内不可变页数据与导出权限"
+        },
+        {
+          "path": "scripts/verify-presentation.py",
+          "note": "用另一套 PPTX 库重开浏览器下载、编辑后核对原件字节"
+        },
+        {
+          "path": "docs/wiki/assets/presentation-export-2026-11-22.json",
+          "note": "双版本 PPTX 独立编辑、嵌图哈希及 15 页可读 PDF"
+        },
+        {
+          "path": "docs/wiki/decisions/0031-project-comics.md",
+          "note": "角色、场景、逐镜编写与作者确认"
+        },
+        {
+          "path": "docs/changes/2026-11-22-152-comic-integration.md",
+          "note": "真实下载、可编辑内容与原私图的核对"
+        },
+        {
+          "path": "docs/wiki/assets/comic-export-2026-11-22.json",
+          "note": "真实下载的原生页、可编辑标题、私图与长对白续页验收"
+        },
+        {
+          "path": "docs/wiki/decisions/0032-project-collaboration.md",
+          "note": "个人会话与授权项目的共编操作"
+        },
+        {
+          "path": "docs/changes/2026-11-22-156-project-collaboration-integration.md",
+          "note": "多账户原稿、版本与权限恢复"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-22-135-presentation-store.md",
+        "docs/changes/2026-11-22-136-presentation-http-export.md",
+        "docs/changes/2026-11-22-137-presentation-workbench.md",
+        "docs/changes/2026-11-22-138-presentation-integration.md",
+        "docs/changes/2026-11-22-149-comic-store.md",
+        "docs/changes/2026-11-22-150-comic-private-export.md",
+        "docs/changes/2026-11-22-151-comic-workbench.md",
+        "docs/changes/2026-11-22-152-comic-integration.md",
+        "docs/changes/2026-11-22-153-project-collaboration-members.md",
+        "docs/changes/2026-11-22-154-shared-project-draft.md",
+        "docs/changes/2026-11-22-155-project-collaboration-workbench.md",
+        "docs/changes/2026-11-22-156-project-collaboration-integration.md"
+      ],
       "completed_on": null,
       "blocker": null
     },
     {
       "id": "V22",
       "title": "公开收费发布验收",
-      "status": "todo",
+      "status": "in_progress",
       "modules": [
         "H01",
         "H03",
@@ -2019,10 +2888,182 @@
         "安全测试、容量/灾备和供应升级回归全部留证",
         "部署灰度、回滚演练与运营移交完成再开放公众"
       ],
-      "checks": [],
-      "evidence": [],
-      "ledgers": [],
+      "checks": [
+        {
+          "label": "V22-A 账户资料、安全事件及本人申诉分页下载",
+          "status": "passed",
+          "command": "真实 PostgreSQL 两账户密码/会话核验、受限账户及 Chromium 下载四份 JSON 与数据库逐项核对",
+          "note": "集成人对冻结的 033 运行真实账户及 PostgreSQL 专项。会话撤销与账户分区 4.54 秒，申诉隔离与强转义字节分页 4.37 秒，双账户 Chromium 下载 10.11 秒。四份文件分别包含一份本人资料、100 加 12 条安全事件及一份受限账户本人的申诉；数据库逐条核对顺序、范围和原始申诉正文通过。 固定 035 完整 PG 通过，studio 1670.146s。"
+        },
+        {
+          "label": "V22-B 客服工单、本人追问和客服公开答复",
+          "status": "passed",
+          "command": "两侧真实账户、独立客服授权、访问隔离、原收据、并发和联备恢复",
+          "note": "034 工单专项十项通过，共 48.800 秒。三账户真实 Chromium 10.69 秒，停写撤权后在新库恢复 10.57 秒，四种操作丢失提交确认后的原键回读共 11.57 秒。浏览器核对四个版本及原收据，数据库确认追问和答复各自的操作者，权益与媒体均无新增。 518 项前端及六套冒烟通过。 固定 035 完整 PG 通过，studio 1670.146s。"
+        },
+        {
+          "label": "V22-C 工作台固定制品依赖与许可证证据",
+          "status": "passed",
+          "command": "离线 Go 和 npm 锁核对、真实重建 dist 比对、SPDX 2.3 官方 Schema、篡改文件拒绝",
+          "note": "034 和 035 各有独立制品清单，均为45包47关系、33个前端输出逐字节一致。035另核对整批实际运行的服务与前端。实际网关、部署镜像、第三方通知及最终分发审查待责任方确认。 另以同一冻结源码逐字节复现 037 服务与 55 个前端文件；SPDX 2.3 独立核对 45 包 47 边、20 对 gzip、22 个 npm 归档内的 434 份安装文件。完整 PG 的制品范围另见 215。"
+        },
+        {
+          "label": "V22-D 本地安全与渠道升级证据复核",
+          "status": "passed",
+          "command": "032—034 四份已执行日志的 25 个具名用例与同名源测试和制品证据逐项复核",
+          "note": "覆盖会话撤权、权限隔离、数据导出、资金只读、客服及渠道兼容。真实供应商版本、生产升级验证和责任方签收仍待补充。 另以同一冻结源码逐字节复现 037 服务与 55 个前端文件；SPDX 2.3 独立核对 45 包 47 边、20 对 gzip、22 个 npm 归档内的 434 份安装文件。完整 PG 的制品范围另见 215。"
+        },
+        {
+          "label": "公开发布、真实外部渠道、隐私、容量灾备与运营移交",
+          "status": "blocked",
+          "command": "真实商户/供应商验收、隐私规则确认、完整容量与灾备、受控灰度及运营交接",
+          "note": "需要相应外部环境、渠道配置、实际责任人与发布授权。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "docs/wiki/account-data-export.md",
+          "note": "下载入口、数据范围与分页时效"
+        },
+        {
+          "path": "docs/changes/2026-11-22-164-personal-data-export-integration.md",
+          "note": "普通及受限账户的浏览器与数据库核对"
+        },
+        {
+          "path": "docs/wiki/decisions/0034-support-tickets.md",
+          "note": "工单状态与客服授权"
+        },
+        {
+          "path": "docs/changes/2026-11-22-170-support-ticket-integration.md",
+          "note": "三账户工单、撤权和新库联备恢复"
+        },
+        {
+          "path": "docs/wiki/assets/workbench-034.spdx.json",
+          "note": "本机034制品与锁定依赖许可证据"
+        },
+        {
+          "path": "docs/wiki/release-dependencies.md",
+          "note": "复验与真实网关、许可缺项"
+        },
+        {
+          "path": "docs/wiki/release-security-evidence.md",
+          "note": "本地安全与外部升级验收的证据范围"
+        },
+        {
+          "path": "docs/wiki/assets/workbench-035.spdx.json",
+          "note": "035 固定服务与工作台制品的 SPDX 2.3 清单"
+        },
+        {
+          "path": "docs/changes/2026-11-22-215-release-evidence-037.md",
+          "note": "037 制品与 SPDX 复核"
+        },
+        {
+          "path": "docs/wiki/release-evidence-037.md",
+          "note": "037 制品来源和验证边界"
+        },
+        {
+          "path": "docs/wiki/assets/workbench-037.spdx.json",
+          "note": "037 的 SPDX 2.3 清单"
+        },
+        {
+          "path": "docs/wiki/assets/workbench-037-verification.json",
+          "note": "037 机器核对摘要"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-22-162-account-data-export.md",
+        "docs/changes/2026-11-22-163-account-data-export-workbench.md",
+        "docs/changes/2026-11-22-164-personal-data-export-integration.md",
+        "docs/changes/2026-11-22-167-support-ticket-store.md",
+        "docs/changes/2026-11-22-168-support-ticket-access-http.md",
+        "docs/changes/2026-11-22-169-support-ticket-workbench.md",
+        "docs/changes/2026-11-22-170-support-ticket-integration.md",
+        "docs/changes/2026-11-22-178-release-sbom.md",
+        "docs/changes/2026-11-22-179-local-release-security-evidence.md",
+        "docs/changes/2026-11-22-215-release-evidence-037.md"
+      ],
       "completed_on": null,
+      "blocker": null
+    },
+    {
+      "id": "V23",
+      "title": "工作台四语与首次访问地区识别",
+      "status": "done",
+      "modules": [
+        "H08",
+        "H09"
+      ],
+      "depends_on": [
+        "V00"
+      ],
+      "scope": "中文简繁、英文和日语的站内界面，按访问 IP 设置初始语言，记忆手动选择。",
+      "acceptance": [
+        "按大陆、港澳台、日本、其他地区选择对应语言，覆盖 IPv4 和 IPv6。",
+        "登录前后可切换语言；刷新保持手动选择，返回自动模式按地区重新判断。",
+        "本地验证切换时保留输入及原请求，检查语言包、构建、测试及文档同步。"
+      ],
+      "checks": [
+        {
+          "label": "Go 地址归属、代理与服务回归",
+          "command": "go test -p 1 -count=1 ./...",
+          "status": "passed",
+          "note": "全包通过；隔离真实配置且未设置 TEST_DATABASE_URL。IPv4/IPv6、受信代理、伪造头、登录前接口、数据表完整性与内置描述身份均有专项断言。"
+        },
+        {
+          "label": "界面文案、偏好和交互回归",
+          "command": "npm --prefix apps/workbench test -- --maxWorkers=3",
+          "status": "passed",
+          "note": "56 文件、606 项通过。校验三份词典的键与占位符、并发选择、存储异常、鉴权提示、原请求和画布首存基准。"
+        },
+        {
+          "label": "静态制品与服务构建",
+          "command": "tsc --noEmit && vite build --outDir <独立临时目录>；go build -o <临时服务> ./cmd/server",
+          "status": "passed",
+          "note": "严格类型检查、Vite 生产包和 Go 可执行文件成功。三份词典按选定语言加载。"
+        },
+        {
+          "label": "真实浏览器地区与手动选择",
+          "command": "node apps/workbench/scripts/locale-browser-smoke.mjs",
+          "status": "passed",
+          "note": "本机 demo 服务、独立私有目录、LOCALE_TRUSTED_PROXIES=127.0.0.1/32、LOCALE_BROWSER_URL 指向该服务。六个地区地址首访、移动端切换保留输入、刷新跳过地区检测、回到自动及受控未登录会话的登录与找回均通过。"
+        },
+        {
+          "label": "TODO 与文档治理",
+          "command": "npm run todo:sync && npm run check:todo && npm run check:docs && npm run check:changes",
+          "status": "passed",
+          "note": "任务源、生成入口、台账及相关 Wiki 同步。"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "internal/localeip/locale_test.go",
+          "note": "五个地区、其他地区、IPv6、代理链及数据完整性"
+        },
+        {
+          "path": "internal/localeip/SOURCES.txt",
+          "note": "地区地址数据与摘要"
+        },
+        {
+          "path": "internal/studio/locale_http_test.go",
+          "note": "公开只读协议和模型文案来源"
+        },
+        {
+          "path": "apps/workbench/scripts/locale-browser-smoke.mjs",
+          "note": "新浏览器上下文下的地区和语言全流程"
+        },
+        {
+          "path": "apps/workbench/src/locale.test.ts",
+          "note": "词典、竞态及浏览器存储回归"
+        },
+        {
+          "path": "docs/wiki/frontend.md",
+          "note": "四语规则与可信代理配置"
+        }
+      ],
+      "ledgers": [
+        "docs/changes/2026-11-22-226-workbench-languages.md"
+      ],
+      "completed_on": "2026-11-22",
       "blocker": null
     }
   ]

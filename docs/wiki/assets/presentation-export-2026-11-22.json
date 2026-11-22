@@ -1,0 +1,58 @@
+{
+  "scope": "local authenticated Chromium, disposable PostgreSQL",
+  "postgres_test_seconds": 46.647,
+  "browser_test_seconds": 10.28,
+  "pptx_reader": "python-pptx 1.0.2",
+  "independent_renderer": "LibreOffice Impress 26.8.3.1",
+  "source_image_sha256": "f0a0ee631e0c67d0007d77e1427ecd13e42aafbc81028fa436d981d460fa362e",
+  "offline_html_verified": true,
+  "decks": [
+    {
+      "file": "presentation-edited-check.pptx",
+      "bytes": 18756,
+      "sha256": "8f527bdd59031a99027b7a02a6a40fdfa894448bad9bfcfcb2c501958efb597a"
+    },
+    {
+      "file": "presentation-v1-reopened.pptx",
+      "bytes": 63659,
+      "sha256": "4ea97b3435a98a082d1061ab8ff540c1492285e0084f5ebb884e9d43e0f13e86"
+    },
+    {
+      "file": "presentation-v1.pptx",
+      "bytes": 63659,
+      "sha256": "5fe9979b9c9079689f2c51c24d74f7fa819180d191f9484c9980dd2963a7628e"
+    },
+    {
+      "file": "presentation-v2.pptx",
+      "bytes": 63653,
+      "sha256": "55af382ce5d5b9e4cc71140f45aad5e81b09c32f498664e091765af841b3c28f"
+    }
+  ],
+  "printed_pages": [
+    {
+      "file": "impress/presentation-v1.pdf",
+      "pages": 3,
+      "sha256": "f248760ea849448df522d4db88bd2ed4bf02d7b152f144e6dc1c633bad4ba3ce"
+    },
+    {
+      "file": "impress/presentation-v2.pdf",
+      "pages": 3,
+      "sha256": "c73ad57bdaaf9a1f891898005fa98dfdce0f36fce2f5a25d4e90a484973f06c1"
+    },
+    {
+      "file": "impress/presentation-v1-reopened.pdf",
+      "pages": 3,
+      "sha256": "22326e66a13f81ca80582102559480f3c292ef164097b1663f4cf4e96a7993a5"
+    },
+    {
+      "file": "impress/presentation-edited-check.pdf",
+      "pages": 3,
+      "sha256": "38c9be04981a804231a2f772c2702f80b63f568a7d93a684678b4ce2d2ad8c2d"
+    },
+    {
+      "file": "browser-print/presentation-v1.pdf",
+      "pages": 3,
+      "sha256": "d3f39ec05448844933fbde2044f72bd6ebe663d0b6fd0a2c58ca2d07c7c1e474"
+    }
+  ]
+}

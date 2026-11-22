@@ -235,101 +235,54 @@ func (a *App) conversationMessagesHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) conversationMessagesPage(r *http.Request, limit int) (conversationMessagePage, error) {
 	p := principalFrom(r)
+	if a.store != nil {
+		return a.store.conversationMessagesPage(r, p, limit)
+	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	c, err := a.conversationLocked(p.Workspace.ID, p.Project.ID, r.PathValue("id"))
 	if err != nil {
 		return conversationMessagePage{}, err
 	}
-	leaf := r.URL.Query().Get("leaf_id")
-	if leaf == "" {
-		leaf = stringID(c.HeadMessageID)
-	}
-	if leaf != "" && !validChatID(leaf, "msg") {
-		return conversationMessagePage{}, conversationNotFound()
-	}
-	cursor, err := parseChatCursor(r.URL.Query().Get("before"), chatCursorScope(r, "messages", c.ID, leaf))
+	page, err := newChatMessagePage(r, c)
 	if err != nil {
 		return conversationMessagePage{}, err
 	}
-	var path []chatNode
-	records := map[string]Run{}
-	if a.store != nil {
-		err = a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
-			var e error
-			path, e = readChatPathSQL(ctx, conn, p.Workspace.ID, p.Project.ID, c.ID, leaf)
-			if e != nil {
-				return e
-			}
-			records, e = readChatRunMapSQL(ctx, conn, p.Workspace.ID, p.Project.ID, path)
-			return e
-		})
-	} else {
-		path, err = a.chatPathMemory(c, leaf)
-		for _, n := range path {
-			if n.RunID != nil {
-				if run, ok := a.runs[*n.RunID]; ok {
-					records[*n.RunID] = run.Run
-				}
-			}
-		}
-	}
+	path, err := a.chatPathMemory(c, page.cursor.Leaf)
 	if err != nil {
 		return conversationMessagePage{}, err
 	}
-	start := 0
-	if cursor.BeforeID != "" {
-		start = -1
-		for i, n := range path {
-			if n.ID == cursor.BeforeID {
-				start = i
-				break
-			}
+	if before := page.cursor.BeforeID; before != "" {
+		for len(path) > 0 && path[0].ID != before {
+			path = path[1:]
 		}
-		if start < 0 {
-			return conversationMessagePage{}, failure(400, "INVALID_CHAT_CURSOR", "分页祖先不属于选中分支")
+		if len(path) == 0 {
+			return conversationMessagePage{}, invalidChatPageAncestor()
 		}
 	}
-	page := conversationMessagePage{Items: []MessageNode{}, ConversationVersion: c.Version}
-	if leaf != "" {
-		page.LeafMessageID = &leaf
-	}
-	size := 4096
 	load := func(id string) (Run, error) {
-		run, ok := records[id]
-		if !ok {
-			return Run{}, conversationNotFound()
+		if record := a.runs[id]; record != nil {
+			return record.Run, nil
 		}
-		return run, nil
+		return Run{}, conversationNotFound()
 	}
-	for i := start; i < len(path) && len(page.Items) < limit; i++ {
-		node, e := hydrateChatNode(path[i], load)
-		if e != nil {
-			return conversationMessagePage{}, e
+	for _, n := range path {
+		if len(page.Items) == limit {
+			return page.finish(n.ID), nil
 		}
-		blob, e := json.Marshal(node)
-		if e != nil {
-			return conversationMessagePage{}, e
+		node, err := hydrateChatNode(n, load)
+		if err != nil {
+			return conversationMessagePage{}, err
 		}
-		if size+len(blob)+1 > 1<<20 {
-			if len(page.Items) == 0 {
-				return conversationMessagePage{}, failure(413, "CHAT_PAGE_TOO_LARGE", "单条消息超过读取预算")
-			}
-			break
+		fits, err := page.add(node)
+		if err != nil {
+			return conversationMessagePage{}, err
 		}
-		size += len(blob) + 1
-		page.Items = append(page.Items, node)
+		if !fits {
+			return page.finish(n.ID), nil
+		}
 	}
-	next := start + len(page.Items)
-	if next < len(path) {
-		page.HasMore = true
-		cursor.BeforeID = path[next].ID
-		page.NextCursor = encodeChatCursor(cursor)
-	}
-	for i, j := 0, len(page.Items)-1; i < j; i, j = i+1, j-1 {
-		page.Items[i], page.Items[j] = page.Items[j], page.Items[i]
-	}
-	return page, nil
+	return page.finish(""), nil
 }
 
 type conversationBranch struct {

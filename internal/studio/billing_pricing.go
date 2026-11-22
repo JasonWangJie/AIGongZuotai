@@ -114,7 +114,8 @@ func loadPricingCatalog(c Config) (*pricingCatalog, error) {
 				return nil, errors.New("invalid output token price or both token prices zero")
 			}
 		case "image", "video":
-			if r.Operation != "generate" && !(r.Kind == "image" && r.Operation == "edit") || !catalogID.MatchString(r.PresetID) || r.InputPerMillionMicros != "" || r.OutputPerMillionMicros != "" {
+			validOperation := r.Operation == "generate" || r.Kind == "image" && r.Operation == "edit" || r.Kind == "video" && r.Operation == "first_frame"
+			if !validOperation || !catalogID.MatchString(r.PresetID) || r.InputPerMillionMicros != "" || r.OutputPerMillionMicros != "" {
 				return nil, errors.New("media prices require an exact preset and operation with artifact price only")
 			}
 			p.Basis = "delivered_artifact"

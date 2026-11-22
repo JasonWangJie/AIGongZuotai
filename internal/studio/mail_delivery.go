@@ -65,6 +65,17 @@ func enqueueMailSQL(ctx context.Context, tx pgx.Tx, item encryptedMail) error {
 	return err
 }
 
+func (m *mailDelivery) checkPendingKey(ctx context.Context, q mailQuerier) error {
+	var mismatch bool
+	if err := q.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM studio_mail_outbox WHERE state IN('PENDING','RETRY') AND expires_at>clock_timestamp() AND key_id<>$1)`, m.cipher.keyID).Scan(&mismatch); err != nil {
+		return err
+	}
+	if mismatch {
+		return failure(503, "MAIL_KEY_MISMATCH", "待发送邮件使用其他加密密钥；请恢复原密钥后启动")
+	}
+	return nil
+}
+
 // The existing process-wide PostgreSQL writer lock prevents another process
 // delivering concurrently. SENDING from an earlier process is never re-sent.
 func (m *mailDelivery) prepare() error {
@@ -74,12 +85,8 @@ func (m *mailDelivery) prepare() error {
 			return err
 		}
 		defer tx.Rollback(ctx)
-		var mismatch bool
-		if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM studio_mail_outbox WHERE state IN('PENDING','RETRY') AND expires_at>clock_timestamp() AND key_id<>$1)`, m.cipher.keyID).Scan(&mismatch); err != nil {
+		if err = m.checkPendingKey(ctx, tx); err != nil {
 			return err
-		}
-		if mismatch {
-			return failure(503, "MAIL_KEY_MISMATCH", "待发送邮件使用其他加密密钥；请恢复原密钥后启动")
 		}
 		if _, err = tx.Exec(ctx, `UPDATE studio_mail_outbox SET state='SUBMIT_UNKNOWN',last_error_code='SMTP_ACCEPTANCE_UNKNOWN',updated_at=clock_timestamp() WHERE state='SENDING'`); err != nil {
 			return err

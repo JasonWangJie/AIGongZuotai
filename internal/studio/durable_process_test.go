@@ -29,6 +29,7 @@ type durableProcessConfig struct {
 	DatabaseURL, ReferenceDir, AssetDir, GatewayURL, ReadyFile string
 	ChatGatewayURL                                             string
 	BillingPriceFile                                           string
+	RunDeltaBatching                                           bool        `json:",omitempty"`
 	Mail                                                       *MailConfig `json:",omitempty"`
 	MailCAPEM                                                  []byte      `json:",omitempty"`
 }
@@ -52,6 +53,7 @@ func TestDurableProcessChild(t *testing.T) {
 	// Each restart uses the same test-only independent delivery key; production
 	// still rejects absent keys before touching an asynchronous PG deployment.
 	config.MediaDelivery = MediaDeliveryConfig{EncryptionKey: coreDeliveryKey()}
+	config.RunDeltaBatching = fixture.RunDeltaBatching
 	if fixture.ChatGatewayURL != "" {
 		config.BaseURL, config.APIKey, config.ChatModel = fixture.ChatGatewayURL, "local-chat-process-fixture", "fixture-chat-model"
 	}

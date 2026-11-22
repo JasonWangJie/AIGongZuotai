@@ -1,3 +1,4 @@
+import { uiText } from './locale';
 import { capability } from './capabilities';
 import type { Bootstrap, Kind, Model, ModelCatalog, ParameterPreset, TaskInput, ImageOperation } from './types';
 
@@ -19,6 +20,7 @@ export function validCatalog(value: unknown): value is ModelCatalog {
     if (!model || typeof model.id !== 'string' || !model.id || ids.has(model.id) || !['chat', 'image', 'video'].includes(model.kind) || typeof model.name !== 'string' || typeof model.description !== 'string' || typeof model.enabled !== 'boolean' || typeof model.version !== 'string' || !model.version) return false;
     ids.add(model.id); const cap = model.capabilities;
     if (!cap || typeof cap.cancel_supported !== 'boolean' || !Number.isInteger(cap.max_count) || cap.max_count < 1 || cap.max_count > (model.kind === 'image' ? 4 : 1) || !Number.isInteger(cap.max_prompt_bytes) || cap.max_prompt_bytes < 1 || cap.max_prompt_bytes > 16000 || !Array.isArray(cap.parameter_presets) || cap.parameter_presets.length > 32) return false;
+    if (cap.video_first_frame_supported !== undefined && (typeof cap.video_first_frame_supported !== 'boolean' || (cap.video_first_frame_supported && model.kind !== 'video'))) return false;
     if (cap.image_edit_supported !== undefined && typeof cap.image_edit_supported !== 'boolean') return false;
     if (cap.max_reference_images !== undefined && (!Number.isInteger(cap.max_reference_images) || cap.max_reference_images < 0 || cap.max_reference_images > 4)) return false;
     if (cap.image_edit_supported && (model.kind !== 'image' || !cap.max_reference_images)) return false;
@@ -30,11 +32,11 @@ export function validCatalog(value: unknown): value is ModelCatalog {
 }
 export function modelReason(reason?: string): string | undefined {
   if (!reason) return undefined;
-  const known: Record<string, string> = { disabled_by_operator: '该模型已由工作区管理员停用。', provider_not_configured: '该模型的服务尚未配置，请选择其他可用模型。' };
-  return known[reason] || (/^[a-z][a-z0-9_]*$/.test(reason) ? '该模型暂不可用，请选择其他可用模型。' : reason);
+  const known: Record<string, string> = { disabled_by_operator: uiText('该模型已由工作区管理员停用。'), provider_not_configured: uiText('该模型的服务尚未配置，请选择其他可用模型。') };
+  return known[reason] || (/^[a-z][a-z0-9_]*$/.test(reason) ? uiText('该模型暂不可用，请选择其他可用模型。') : reason);
 }
 export function modelCapability(bootstrap: Bootstrap | null, model?: Model) {
-  if (!model) return { enabled: false, cancel_supported: false, max_count: 1, max_prompt_bytes: 16000, parameter_presets: [] as ParameterPreset[], image_edit_supported: false, max_reference_images: 0, reason: '当前模式没有可用模型。' };
+  if (!model) return { enabled: false, cancel_supported: false, max_count: 1, max_prompt_bytes: 16000, parameter_presets: [] as ParameterPreset[], image_edit_supported: false, max_reference_images: 0, reason: uiText('当前模式没有可用模型。') };
   if (model.capabilities) return { ...model.capabilities, enabled: model.enabled === true, reason: modelReason(model.reason), max_count: Math.max(1, model.capabilities.max_count), image_edit_supported: model.capabilities.image_edit_supported === true, max_reference_images: model.capabilities.image_edit_supported ? model.capabilities.max_reference_images || 0 : 0 };
   const old = capability(bootstrap, model.kind);
   return { ...old, enabled: model.enabled ?? old.enabled, max_count: old.max_count || 1, max_prompt_bytes: 16000, image_edit_supported: false, max_reference_images: 0, parameter_presets: model.kind === 'chat' ? [] : (old.aspect_ratios || ['1:1']).map(value => ({ id: value, name: value, aspect_ratio: value })), reason: modelReason(model.reason || old.reason) };
@@ -51,11 +53,11 @@ export function resolveSelection(bootstrap: Bootstrap | null, kind: Kind, prefer
   const adjusted = !!preference && (preference.modelId !== selection.modelId || preference.modelVersion !== selection.modelVersion || preference.presetId !== selection.presetId || preference.count !== selection.count);
   return { model, capabilities, presets, preset, count, selection, adjusted };
 }
-export function presetSummary(preset?: ParameterPreset): string { if (!preset) return '文本生成'; return [preset.aspect_ratio, preset.size, preset.resolution, preset.seconds === undefined ? undefined : `${preset.seconds} 秒`].filter(Boolean).join(' · '); }
+export function presetSummary(preset?: ParameterPreset): string { if (!preset) return uiText('文本生成'); return [preset.aspect_ratio, preset.size, preset.resolution, preset.seconds === undefined ? undefined : uiText("{0} 秒", preset.seconds)].filter(Boolean).join(' · '); }
 export function promptBytes(prompt: string): number { return new TextEncoder().encode(prompt).byteLength; }
 export function buildModelTaskInput(projectId: string, model: Model, prompt: string, preset: ParameterPreset, count: number, operation: ImageOperation = 'generate', referenceIds: string[] = []): TaskInput {
-  if (model.kind === 'chat') throw new Error('文本模型不能创建媒体任务。');
-  if (operation === 'edit' && (model.kind !== 'image' || model.capabilities?.image_edit_supported !== true || referenceIds.length < 1 || referenceIds.length > (model.capabilities.max_reference_images || 0) || new Set(referenceIds).size !== referenceIds.length)) throw new Error('当前模型或参考图不符合图片编辑要求。');
+  if (model.kind === 'chat') throw new Error(uiText('文本模型不能创建媒体任务。'));
+  if (operation === 'edit' && (model.kind !== 'image' || model.capabilities?.image_edit_supported !== true || referenceIds.length < 1 || referenceIds.length > (model.capabilities.max_reference_images || 0) || new Set(referenceIds).size !== referenceIds.length)) throw new Error(uiText('当前模型或参考图不符合图片编辑要求。'));
   const parameters: TaskInput['parameters'] = { aspect_ratio: preset.aspect_ratio, count: model.kind === 'video' ? 1 : count };
   if (preset.size !== undefined) parameters.size = preset.size;
   if (preset.resolution !== undefined) parameters.resolution = preset.resolution;

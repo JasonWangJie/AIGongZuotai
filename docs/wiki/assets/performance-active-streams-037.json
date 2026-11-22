@@ -1,0 +1,107 @@
+{
+  "accepted_cancelled_while_queued": 1,
+  "active_wave_span_ms": 1204,
+  "arch": "amd64",
+  "completed_runs": 64,
+  "confirmed_concurrent_execution_slots": 64,
+  "confirmed_concurrent_sse": 65,
+  "delayed_reader_pause_ms": 1333,
+  "delayed_readers": 1,
+  "delta_measurement": "same-process monotonic clock immediately before model HTTP write until blank line of matching platform SSE was read on normal client",
+  "deltas_per_run": 12,
+  "elapsed_ms": 1999,
+  "extra_model_posts": 0,
+  "final_stream_slots": 0,
+  "finished_at": "2026-11-21T22:51:17.2486818Z",
+  "format": 1,
+  "global_execution_limit": 64,
+  "go": "go1.26.11",
+  "http_cross_scope_sse_rejected": 1,
+  "http_extra_live_sse": 1,
+  "http_normal_live_sse": 64,
+  "http_queued_run_cancels": 1,
+  "http_run_creates": 65,
+  "http_terminal_replay_sse": 64,
+  "later_wave_min_spacing_ms": 100,
+  "missing": 0,
+  "mode": "64",
+  "model_execution_limit": 32,
+  "model_posts": 64,
+  "models": 2,
+  "observed_normal_deltas": 768,
+  "observed_slow_consumer_evictions": 0,
+  "os": "windows",
+  "out_of_order": 0,
+  "peak_active_model_requests": 64,
+  "percentiles": {
+    "admission_http_roundtrip": {
+      "samples": 64,
+      "p50_ms": 3.7657,
+      "p95_ms": 6.0067,
+      "p99_ms": 13.4127,
+      "max_ms": 13.4127
+    },
+    "all_delta_release_to_sse_observed": {
+      "samples": 768,
+      "p50_ms": 23.0148,
+      "p95_ms": 44.4216,
+      "p99_ms": 47.2321,
+      "max_ms": 48.8248
+    },
+    "create_start_to_provider_request": {
+      "samples": 64,
+      "p50_ms": 6.423,
+      "p95_ms": 9.3392,
+      "p99_ms": 22.3308,
+      "max_ms": 22.3308
+    },
+    "finish_barrier_to_terminal_sse_observed": {
+      "samples": 64,
+      "p50_ms": 60.0534,
+      "p95_ms": 130.3313,
+      "p99_ms": 135.1646,
+      "max_ms": 135.1646
+    },
+    "first_delta_release_to_sse_observed": {
+      "samples": 64,
+      "p50_ms": 24.825,
+      "p95_ms": 47.2127,
+      "p99_ms": 48.8248,
+      "max_ms": 48.8248
+    },
+    "independent_pg_terminal_and_log_read": {
+      "samples": 64,
+      "p50_ms": 0,
+      "p95_ms": 0.5977,
+      "p99_ms": 9.7756,
+      "max_ms": 9.7756
+    },
+    "later_delta_release_to_sse_observed": {
+      "samples": 704,
+      "p50_ms": 22.6594,
+      "p95_ms": 44.0303,
+      "p99_ms": 46.7147,
+      "max_ms": 48.305
+    },
+    "live_sse_open": {
+      "samples": 64,
+      "p50_ms": 0.5228,
+      "p95_ms": 1.6668,
+      "p99_ms": 36.3663,
+      "max_ms": 36.3663
+    },
+    "terminal_sse_from_zero_full_response": {
+      "samples": 64,
+      "p50_ms": 0.5555,
+      "p95_ms": 1.3265,
+      "p99_ms": 26.3512,
+      "max_ms": 26.3512
+    }
+  },
+  "persisted_replayed_deltas": 768,
+  "platform": "one authenticated Go HTTP/1.1 process and one PostgreSQL database",
+  "started_at": "2026-11-21T22:51:15.2496378Z",
+  "upstream": "owned loopback streaming HTTP",
+  "workspace_execution_limit": 16,
+  "workspaces": 4
+}

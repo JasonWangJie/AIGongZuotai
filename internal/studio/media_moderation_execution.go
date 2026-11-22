@@ -3,6 +3,7 @@ package studio
 import (
 	"context"
 	"errors"
+	"io"
 	"sync/atomic"
 	"time"
 )
@@ -11,6 +12,7 @@ type taskMediaModerationAdmission struct {
 	workspaceID string
 	input       TaskInput
 	refs        []referenceRecord
+	firstFrame  *AssetInfo
 	hash        [32]byte
 	checked     bool
 	policy      *MediaModerationPolicy
@@ -32,6 +34,9 @@ func (p *taskMediaModerationAdmission) prepare(input TaskInput, parameters TaskP
 	identities := make([]MediaModerationContent, 0, len(refs))
 	for _, ref := range refs {
 		identities = append(identities, MediaModerationContent{Kind: "image", ContentType: ref.Blob.ContentType, ByteSize: ref.Blob.ByteSize, SHA256: ref.Blob.SHA256})
+	}
+	if f := p.firstFrame; f != nil {
+		identities = append(identities, MediaModerationContent{Kind: "image", ContentType: f.ContentType, ByteSize: f.ByteSize, SHA256: f.SHA256})
 	}
 	hash := payloadHash(struct {
 		Input      TaskInput
@@ -60,25 +65,36 @@ func (p *taskMediaModerationAdmission) check(ctx context.Context, a *App) {
 		return
 	}
 	for _, ref := range p.refs {
-		permit, permitErr := a.mediaModeration.acquireInputPermit(ctx, p.workspaceID)
-		if permitErr != nil {
-			p.err = permitErr
-			return
-		}
-		file, err := a.references.OpenVerified(ctx, ref.Blob)
-		if err != nil {
-			permit.Close()
-			p.err = mediaModerationInputError(ModerationDecision{State: "REVIEW", ReasonCode: "check_unavailable"})
-			return
-		}
-		decision := permit.Check(ctx, p.policy, "input", MediaModerationContent{Kind: "image", ContentType: ref.Blob.ContentType, ByteSize: ref.Blob.ByteSize, SHA256: ref.Blob.SHA256}, file)
-		_ = file.Close()
-		permit.Close()
-		if decision.State != "ALLOWED" {
-			p.err = mediaModerationInputError(decision)
+		s := MediaEditSource{ContentType: ref.Blob.ContentType, ByteSize: ref.Blob.ByteSize, SHA256: ref.Blob.SHA256, Open: func() (io.ReadCloser, error) { return a.references.OpenVerified(ctx, ref.Blob) }}
+		if p.err = p.checkImage(ctx, a, s); p.err != nil {
 			return
 		}
 	}
+	if p.firstFrame != nil {
+		p.err = p.checkImage(ctx, a, a.firstFrameSource(ctx, *p.firstFrame))
+	}
+}
+
+func (p *taskMediaModerationAdmission) checkImage(ctx context.Context, a *App, src MediaEditSource) error {
+	permit, err := a.mediaModeration.acquireInputPermit(ctx, p.workspaceID)
+	if err != nil {
+		return err
+	}
+	defer permit.Close()
+	file, err := src.Open()
+	if err != nil {
+		return mediaModerationInputError(ModerationDecision{State: "REVIEW", ReasonCode: "check_unavailable"})
+	}
+	defer file.Close()
+	reader, ok := file.(io.ReadSeeker)
+	if !ok {
+		return mediaModerationInputError(ModerationDecision{State: "REVIEW", ReasonCode: "check_unavailable"})
+	}
+	decision := permit.Check(ctx, p.policy, "input", MediaModerationContent{Kind: "image", ContentType: src.ContentType, ByteSize: src.ByteSize, SHA256: src.SHA256}, reader)
+	if decision.State != "ALLOWED" {
+		return mediaModerationInputError(decision)
+	}
+	return nil
 }
 
 func mediaModerationInputError(decision ModerationDecision) error {

@@ -1,0 +1,235 @@
+{
+  "format": "studio.stream-journal-poc.v1",
+  "profile": {
+    "logical_runs": 10000,
+    "writer_shards": 8,
+    "replay_readers": 4,
+    "target_events_per_second": 100000,
+    "warmup_seconds": 2,
+    "measurement_seconds": 12
+  },
+  "started_utc": "2026-11-21T22:54:46.8750788Z",
+  "environment": {
+    "OS": "windows",
+    "Arch": "amd64",
+    "Go": "go1.26.11",
+    "CPUDescription": "Intel64 Family 6 Model 170 Stepping 4, GenuineIntel",
+    "LogicalCPUs": 14,
+    "GoMaxProcs": 14,
+    "HeapBefore": 1690880,
+    "HeapAfter": 3780576,
+    "GCs": 421,
+    "Postgres": {
+      "fsync": "on",
+      "full_page_writes": "on",
+      "max_connections": "100",
+      "regular_wal_logged_relations": "3",
+      "server_version": "16.14",
+      "shared_buffers": "128MB",
+      "synchronous_commit": "on",
+      "wal_compression": "off",
+      "wal_level": "replica"
+    }
+  },
+  "limits": {
+    "batch_events": 256,
+    "batches_per_page": 4,
+    "delta_text_bytes": 16,
+    "flush_ms": 8,
+    "packed_record_bytes": 36,
+    "queue_slots_per_shard": 1024,
+    "source_tick_ms": 5
+  },
+  "one_second_samples": [
+    {
+      "second": 1,
+      "target": 100000,
+      "offered_unique": 100000,
+      "admitted": 100000,
+      "acknowledged": 99623,
+      "verified_replayed": 99748,
+      "commits": 794,
+      "replay_pages": 795
+    },
+    {
+      "second": 2,
+      "target": 100000,
+      "offered_unique": 100000,
+      "admitted": 100000,
+      "acknowledged": 100500,
+      "verified_replayed": 100500,
+      "commits": 804,
+      "replay_pages": 804
+    },
+    {
+      "second": 3,
+      "target": 100000,
+      "offered_unique": 100000,
+      "admitted": 100000,
+      "acknowledged": 99251,
+      "verified_replayed": 99376,
+      "commits": 756,
+      "replay_pages": 757
+    },
+    {
+      "second": 4,
+      "target": 100000,
+      "offered_unique": 100000,
+      "admitted": 100000,
+      "acknowledged": 100374,
+      "verified_replayed": 100374,
+      "commits": 795,
+      "replay_pages": 795
+    },
+    {
+      "second": 5,
+      "target": 100000,
+      "offered_unique": 100000,
+      "admitted": 100000,
+      "acknowledged": 100125,
+      "verified_replayed": 100000,
+      "commits": 779,
+      "replay_pages": 778
+    },
+    {
+      "second": 6,
+      "target": 100000,
+      "offered_unique": 100000,
+      "admitted": 100000,
+      "acknowledged": 99688,
+      "verified_replayed": 99813,
+      "commits": 769,
+      "replay_pages": 770
+    },
+    {
+      "second": 7,
+      "target": 100000,
+      "offered_unique": 100000,
+      "admitted": 100000,
+      "acknowledged": 99999,
+      "verified_replayed": 99999,
+      "commits": 787,
+      "replay_pages": 787
+    },
+    {
+      "second": 8,
+      "target": 100000,
+      "offered_unique": 100000,
+      "admitted": 100000,
+      "acknowledged": 100376,
+      "verified_replayed": 100001,
+      "commits": 789,
+      "replay_pages": 786
+    },
+    {
+      "second": 9,
+      "target": 100000,
+      "offered_unique": 100000,
+      "admitted": 100000,
+      "acknowledged": 99812,
+      "verified_replayed": 99937,
+      "commits": 787,
+      "replay_pages": 788
+    },
+    {
+      "second": 10,
+      "target": 100000,
+      "offered_unique": 100000,
+      "admitted": 100000,
+      "acknowledged": 100125,
+      "verified_replayed": 100375,
+      "commits": 799,
+      "replay_pages": 801
+    },
+    {
+      "second": 11,
+      "target": 100000,
+      "offered_unique": 100000,
+      "admitted": 100000,
+      "acknowledged": 100249,
+      "verified_replayed": 99874,
+      "commits": 800,
+      "replay_pages": 797
+    },
+    {
+      "second": 12,
+      "target": 100000,
+      "offered_unique": 100000,
+      "admitted": 100000,
+      "acknowledged": 100189,
+      "verified_replayed": 100564,
+      "commits": 800,
+      "replay_pages": 803
+    }
+  ],
+  "warmup_window_and_drain_totals": {
+    "acknowledged": 1400000,
+    "admitted": 1400000,
+    "enqueue_attempts": 1400000,
+    "offered_unique": 1400000,
+    "queue_full_ticks": 0,
+    "readers_overlapping_commits_in_measurement": 4,
+    "readers_verified_before_last_commit": 4,
+    "unissued_or_unadmitted_slots": 0,
+    "verified_replayed": 1400000
+  },
+  "measurement_events_per_second": {
+    "acknowledged": 100025.91666666667,
+    "admitted": 100000,
+    "offered_unique": 100000,
+    "verified_replayed": 100046.75
+  },
+  "warmup_and_measurement_target_slots": 1400000,
+  "observed_peak_buffered_per_shard": [
+    313,
+    125,
+    313,
+    313,
+    188,
+    312,
+    250,
+    250
+  ],
+  "largest_persisted_batch": 256,
+  "latency": {
+    "batch_transaction_to_commit_ack": {
+      "n": 9459,
+      "p50_us_upper": 1567,
+      "p95_us_upper": 2431,
+      "p99_us_upper": 3647,
+      "max_us": 15103
+    },
+    "offered_to_commit_ack": {
+      "n": 1200000,
+      "p50_us_upper": 8703,
+      "p95_us_upper": 11519,
+      "p99_us_upper": 13567,
+      "max_us": 23580
+    },
+    "offered_to_confirmed_replay": {
+      "n": 1200000,
+      "p50_us_upper": 9471,
+      "p95_us_upper": 12543,
+      "p99_us_upper": 14591,
+      "max_us": 24125
+    },
+    "offered_to_transaction_start": {
+      "n": 1200000,
+      "p50_us_upper": 6015,
+      "p95_us_upper": 9727,
+      "p99_us_upper": 10751,
+      "max_us": 20091
+    }
+  },
+  "committed_inventory": {
+    "RunHeads": 10000,
+    "NonemptyRuns": 10000,
+    "HeadSum": 1400000,
+    "JournalRecords": 1400000,
+    "Batches": 11028,
+    "Positions": 11028
+  },
+  "post_window_drain_ms": 0,
+  "integrity_pass": true,
+  "measured_target_met": true
+}

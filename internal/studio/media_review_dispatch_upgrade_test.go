@@ -164,8 +164,8 @@ func TestPostgresMediaReviewDispatchUpgrade018NeverBackfillsCandidates(t *testin
 		t.Fatal(err)
 	}
 	upgraded.close()
-	if err = conn.QueryRow(ctx, "SELECT count(*),max(version) FROM studio_schema_versions").Scan(&count, &maximum); err != nil || count != 20 || maximum != 20 {
-		t.Fatal("loader did not apply current exact 020", err)
+	if err = conn.QueryRow(ctx, "SELECT count(*),max(version) FROM studio_schema_versions").Scan(&count, &maximum); err != nil || count != maintenanceSchemaVersion || maximum != maintenanceSchemaVersion {
+		t.Fatal("loader did not apply all current migrations", err)
 	}
 	if !reflect.DeepEqual(before, snapshot()) || outboxCount(t, conn, "SELECT count(*) FROM studio_media_review_dispatch") != 0 {
 		t.Fatal("019 migration changed old evidence or invented READY")

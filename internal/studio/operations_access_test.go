@@ -15,12 +15,12 @@ import (
 )
 
 func TestOperationsRoleMatrixAndClosedInputs(t *testing.T) {
-	for role, permissions := range map[string][]string{"observer": {"read"}, "operator": {"read", "case_open", "investigate"}, "finance": {"read", "case_open", "finance"}, "moderator": {"read", "generation_restrict", "appeal_resolve"}} {
+	for role, permissions := range map[string][]string{"support": {"support_ticket"}, "risk_reviewer": {"risk_review"}, "observer": {"read"}, "operator": {"read", "case_open", "investigate"}, "finance": {"read", "case_open", "finance"}, "moderator": {"read", "generation_restrict", "appeal_resolve", "content_appeal_review"}} {
 		got := operationsRolePermissions(role)
 		if strings.Join(got, ",") != strings.Join(permissions, ",") {
 			t.Fatal(role, got)
 		}
-		for _, permission := range []string{"read", "case_open", "investigate", "finance", "generation_restrict", "appeal_resolve"} {
+		for _, permission := range []string{"read", "case_open", "investigate", "finance", "generation_restrict", "appeal_resolve", "content_appeal_review", "risk_review", "support_ticket"} {
 			allowed := false
 			for _, p := range permissions {
 				allowed = allowed || p == permission

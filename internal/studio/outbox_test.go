@@ -91,15 +91,16 @@ func TestPostgresOutboxLifecycleDedupAndRestart(t *testing.T) {
 	if err := s.createRun(run, "outbox-create-key", payloadHash(run), audit); err != nil {
 		t.Fatal(err)
 	}
-	run.Status = "RUNNING"
-	if err := s.saveRun(run); err != nil {
+	l := claimFixtureRun(t, s, &run)
+	if err := s.appendLeasedRunDelta(l, run.Seq, "private", time.Now()); err != nil {
 		t.Fatal(err)
 	}
-	run.Seq = 1
-	if err := s.saveRun(run); err != nil {
+	run.Output += "private"
+	run.Seq++
+	if err := s.saveLeasedRun(&run, l, run.Seq); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.saveRun(run); err != nil {
+	if err := s.saveLeasedRun(&run, l, run.Seq); err != nil {
 		t.Fatal(err)
 	}
 	if count := outboxCount(t, admin, "SELECT count(*) FROM studio_outbox_events"); count != 4 {
@@ -306,30 +307,41 @@ func commitAckDropProxy(t *testing.T, databaseURL string) (string, *atomic.Bool,
 		}
 		defer backend.Close()
 		go func() { _, _ = io.Copy(backend, client); _ = backend.Close() }()
-		reader := bufio.NewReader(backend)
-		for {
-			header := make([]byte, 5)
-			if _, e = io.ReadFull(reader, header); e != nil {
-				return
-			}
-			size := int(binary.BigEndian.Uint32(header[1:]))
-			if size < 4 || size > 16<<20 {
-				return
-			}
-			body := make([]byte, size-4)
-			if _, e = io.ReadFull(reader, body); e != nil {
-				return
-			}
-			if header[0] == 'C' && string(body) == "COMMIT\x00" && armed.Load() {
-				close(dropped)
-				return
-			}
-			if _, e = client.Write(append(header, body...)); e != nil {
-				return
-			}
+		if relayUntilCommitAck(client, backend, func(uint32) bool { return armed.Load() }) {
+			close(dropped)
 		}
 	}()
 	return u.String(), armed, dropped
+}
+
+// Only pass the backend PID to the test's selector. BackendKeyData also
+// contains a private cancellation key which must never be exposed.
+func relayUntilCommitAck(client io.Writer, backend io.Reader, drop func(uint32) bool) bool {
+	reader := bufio.NewReader(backend)
+	var pid uint32
+	for {
+		var header [5]byte
+		if _, err := io.ReadFull(reader, header[:]); err != nil {
+			return false
+		}
+		size := int(binary.BigEndian.Uint32(header[1:]))
+		if size < 4 || size > 16<<20 {
+			return false
+		}
+		body := make([]byte, size-4)
+		if _, err := io.ReadFull(reader, body); err != nil {
+			return false
+		}
+		if header[0] == 'K' && len(body) >= 4 {
+			pid = binary.BigEndian.Uint32(body[:4])
+		}
+		if header[0] == 'C' && string(body) == "COMMIT\x00" && drop(pid) {
+			return true
+		}
+		if _, err := client.Write(append(header[:], body...)); err != nil {
+			return false
+		}
+	}
 }
 
 func TestPostgresOutboxUnknownCommitRecoversCommittedEvent(t *testing.T) {

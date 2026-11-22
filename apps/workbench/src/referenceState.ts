@@ -1,3 +1,4 @@
+import { uiText } from './locale';
 import type { ApiError } from './api';
 import type { ReferenceAsset, ReferenceLimits } from './types';
 import { mediaContentAllowed, mergeReferenceAsset } from './mediaModeration';
@@ -8,11 +9,11 @@ export type ReferenceState = { items: ReferenceItem[]; selected: string[]; valid
 export function emptyReferences(): ReferenceState { return { items: [], selected: [], validation: [], hasMore: false, offset: 0 }; }
 export function referenceScope(ownerId: string, projectId: string): string { return JSON.stringify([ownerId, projectId]); }
 export function fileValidation(file: Pick<File, 'name' | 'size' | 'type'>, limits: ReferenceLimits): string | null {
-  if (file.size <= 0) return '文件为空，请重新选择。';
-  if (file.size > limits.max_file_bytes) return `文件超过 ${(limits.max_file_bytes / 1048576).toFixed(0)} MiB 上限。`;
+  if (file.size <= 0) return uiText('文件为空，请重新选择。');
+  if (file.size > limits.max_file_bytes) return uiText("文件超过 {0} MiB 上限。", (limits.max_file_bytes / 1048576).toFixed(0));
   const extensionType = /\.png$/i.test(file.name) ? 'image/png' : /\.jpe?g$/i.test(file.name) ? 'image/jpeg' : /\.webp$/i.test(file.name) ? 'image/webp' : '';
   const type = file.type || extensionType;
-  return limits.allowed_content_types.includes(type) ? null : '仅支持 PNG、JPEG、WebP 图片。';
+  return limits.allowed_content_types.includes(type) ? null : uiText('仅支持 PNG、JPEG、WebP 图片。');
 }
 export function patchReference(state: ReferenceState, id: string, attempt: number, change: Partial<ReferenceItem>): ReferenceState {
   const item = state.items.find(value => value.id === id); if (!item || item.attempt !== attempt) return state;
@@ -35,7 +36,7 @@ export function reconcileReferenceList(state: ReferenceState, assets: ReferenceA
   const visible = new Set(assets.filter(asset => asset.project_id === projectId).map(asset => asset.id));
   const removed = new Set(state.items.filter(item => item.phase === 'ready' && item.asset && knownReady.has(item.asset.id) && !visible.has(item.asset.id)).map(item => item.id));
   const selected = state.selected.filter(id => !removed.has(id));
-  return mergeReferences({ ...state, items: state.items.filter(item => !removed.has(item.id)), selected, validation: selected.length !== state.selected.length ? ['部分参考素材已回收或不可用，已从本次选择移出。已受理任务的原请求保持不变。'] : state.validation }, assets, projectId);
+  return mergeReferences({ ...state, items: state.items.filter(item => !removed.has(item.id)), selected, validation: selected.length !== state.selected.length ? [uiText('部分参考素材已回收或不可用，已从本次选择移出。已受理任务的原请求保持不变。')] : state.validation }, assets, projectId);
 }
 export function selectedReferenceIds(state: ReferenceState): string[] | null {
   const items = state.selected.map(id => state.items.find(item => item.id === id));

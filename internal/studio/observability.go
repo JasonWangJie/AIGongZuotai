@@ -77,17 +77,19 @@ type observedDuration struct {
 // A mutex yields coherent cumulative histogram snapshots. Storage is fixed,
 // except streamWorkspaces, whose size cannot exceed the global 128 SSE slots.
 type observability struct {
-	mu               sync.Mutex
-	requests         [len(observedRoutes)][len(observedMethods)][len(observedStatuses)]uint64
-	durations        [len(observedRoutes)][len(observedMethods)]observedDuration
-	errors           [len(observedErrors)]uint64
-	streamMu         sync.Mutex
-	streamWorkspaces map[string]int
-	slowConsumers    atomic.Uint64
-	slowWrites       atomic.Uint64
-	durableEvents    [2]atomic.Uint64
-	taskLeases       [4]atomic.Uint64
-	logger           *slog.Logger // Fixed before serving; tests can capture safe structured logs.
+	mu                       sync.Mutex
+	requests                 [len(observedRoutes)][len(observedMethods)][len(observedStatuses)]uint64
+	durations                [len(observedRoutes)][len(observedMethods)]observedDuration
+	errors                   [len(observedErrors)]uint64
+	streamMu                 sync.Mutex
+	streamWorkspaces         map[string]int
+	slowConsumers            atomic.Uint64
+	slowWrites               atomic.Uint64
+	creditRiskHeldRejections atomic.Uint64
+	creditRiskRateRejections atomic.Uint64
+	durableEvents            [2]atomic.Uint64
+	taskLeases               [4]atomic.Uint64
+	logger                   *slog.Logger // Fixed before serving; tests can capture safe structured logs.
 }
 
 func validateObservabilityConfig(c Config) error {
@@ -262,6 +264,12 @@ func (a *App) observeHTTP(mux *http.ServeMux, next http.Handler) http.Handler {
 			elapsed := time.Since(started)
 			class := observedError(status, recorder.errorCode)
 			a.obs.record(route, method, status, class, elapsed)
+			switch recorder.errorCode {
+			case "CREDIT_RISK_HELD_LIMIT":
+				a.obs.creditRiskHeldRejections.Add(1)
+			case "CREDIT_RISK_RATE_LIMIT":
+				a.obs.creditRiskRateRejections.Add(1)
+			}
 			if recorder.writeTimedOut {
 				a.obs.slowWrites.Add(1)
 			}
@@ -386,11 +394,23 @@ func (a *App) prometheusText() string {
 			fmt.Fprintf(&out, "studio_http_errors_total{error_class=%q} %d\n", observedErrors[class], count)
 		}
 	}
+	metricHeader(&out, "studio_credit_risk_rejections_total", "Paid admission requests rejected by the primary workspace credit risk rule.", "counter")
+	fmt.Fprintf(&out, "studio_credit_risk_rejections_total{rule=\"held_limit\"} %d\nstudio_credit_risk_rejections_total{rule=\"rate_limit\"} %d\n", a.obs.creditRiskHeldRejections.Load(), a.obs.creditRiskRateRejections.Load())
 	metricHeader(&out, "studio_active_streams", "Currently occupied global SSE admission slots.", "gauge")
 	fmt.Fprintf(&out, "studio_active_streams %d\n", len(a.streamSlots))
+	var sessionRounds, sessionsChecked uint64
+	if a.streamSessions != nil {
+		sessionRounds = a.streamSessions.rounds.Load()
+		sessionsChecked = a.streamSessions.checked.Load()
+	}
+	metricHeader(&out, "studio_stream_session_rounds_total", "Completed batched SSE session validation rounds.", "counter")
+	fmt.Fprintf(&out, "studio_stream_session_rounds_total %d\n", sessionRounds)
+	metricHeader(&out, "studio_stream_sessions_checked_total", "Distinct sessions submitted for checking, summed over completed rounds.", "counter")
+	fmt.Fprintf(&out, "studio_stream_sessions_checked_total %d\n", sessionsChecked)
 	metricHeader(&out, "studio_slow_consumers_total", "Subscribers disconnected because a bounded event buffer filled or an HTTP write timed out.", "counter")
 	fmt.Fprintf(&out, "studio_slow_consumers_total{reason=\"buffer_full\"} %d\nstudio_slow_consumers_total{reason=\"write_timeout\"} %d\n", a.obs.slowConsumers.Load(), a.obs.slowWrites.Load())
 	a.obs.writeExecutionMetrics(&out)
+	a.runDeltaBatch.writeMetrics(&out)
 	writeMediaSchedulingMetrics(&out, a.mediaExecution.snapshot())
 	writeMediaFairnessMetrics(&out, a.mediaScheduler.snapshot(), a.mediaModeration.permitSnapshot())
 	ready, _ := a.readiness()
@@ -403,6 +423,7 @@ func (a *App) prometheusText() string {
 	a.mu.Lock()
 	counts, _ := a.admissionCountsLocked("") // Explicitly the bounded local cache, never a global SQL scan.
 	scheduling := a.execution.snapshotLocked(time.Now())
+	a.writeManagedChatMetricsLocked(&out)
 	a.mu.Unlock()
 	writeChatSchedulingMetrics(&out, scheduling)
 	type count struct {

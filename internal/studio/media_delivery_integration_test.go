@@ -157,13 +157,14 @@ func newDeliveryHTTPFixture(t *testing.T, blockSlot int) *deliveryHTTPFixture {
 			}
 			f.mu.Lock()
 			blockedBytes := f.blockedImage
+			videoBytes := f.video
 			f.mu.Unlock()
 			if slot == 1 && len(blockedBytes) > 0 {
 				w.Header().Set("Content-Type", "image/png")
 				_, _ = w.Write(blockedBytes)
 			} else if task.kind == "video" {
 				w.Header().Set("Content-Type", "video/mp4")
-				_, _ = w.Write(f.video)
+				_, _ = w.Write(videoBytes)
 			} else {
 				w.Header().Set("Content-Type", "image/png")
 				_, _ = w.Write(f.image)

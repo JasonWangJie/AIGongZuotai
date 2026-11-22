@@ -189,15 +189,15 @@ func (a *App) createConversationRun(workspaceID, projectID, id, key, actor strin
 
 func (a *App) createConversationRunContext(ctx context.Context, workspaceID, projectID, id, key, actor string, input ConversationRunInput) (Run, bool, error) {
 	approval := &runModerationAdmission{}
-	run, replayed, err := a.createConversationRunApproved(workspaceID, projectID, id, key, actor, input, approval)
+	run, replayed, err := a.createConversationRunApproved(accountRequestPrincipal(ctx), workspaceID, projectID, id, key, actor, input, approval)
 	if !isModerationPreparation(err) {
 		return run, replayed, err
 	}
 	approval.check(ctx, a.moderation)
-	return a.createConversationRunApproved(workspaceID, projectID, id, key, actor, input, approval)
+	return a.createConversationRunApproved(accountRequestPrincipal(ctx), workspaceID, projectID, id, key, actor, input, approval)
 }
 
-func (a *App) createConversationRunApproved(workspaceID, projectID, id, key, actor string, input ConversationRunInput, approval *runModerationAdmission) (Run, bool, error) {
+func (a *App) createConversationRunApproved(requester *principal, workspaceID, projectID, id, key, actor string, input ConversationRunInput, approval *runModerationAdmission) (Run, bool, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.ctx.Err() != nil {
@@ -264,8 +264,7 @@ func (a *App) createConversationRunApproved(workspaceID, projectID, id, key, act
 	if err = a.checkAdmissionLocked(workspaceID, input.ModelID, "chat"); err != nil {
 		return Run{}, false, err
 	}
-	a.evictTerminalsLocked()
-	if len(a.runs) >= a.config.MaxRecords {
+	if a.store == nil && len(a.runs) >= a.config.MaxRecords {
 		return Run{}, false, failure(503, "RUN_QUEUE_FULL", "生成队列或本地缓存已满，请稍后重试原请求")
 	}
 	if err = a.execution.checkLocked(workspaceID); err != nil {
@@ -280,6 +279,9 @@ func (a *App) createConversationRunApproved(workspaceID, projectID, id, key, act
 				return e
 			}
 			defer tx.Rollback(ctx)
+			if e = checkOrdinaryAccountSQL(ctx, tx, requester); e != nil {
+				return e
+			}
 			if e = checkWorkspaceGenerationSQL(ctx, tx, workspaceID); e != nil {
 				return e
 			}
@@ -287,25 +289,7 @@ func (a *App) createConversationRunApproved(workspaceID, projectID, id, key, act
 			if e != nil {
 				return e
 			}
-			path, e := readChatPathSQL(ctx, tx, workspaceID, projectID, id, stringID(input.ParentMessageID))
-			if e != nil {
-				return e
-			}
-			records, e := readChatRunMapSQL(ctx, tx, workspaceID, projectID, path)
-			if e != nil {
-				return e
-			}
-			load := func(runID string) (Run, error) {
-				r, ok := records[runID]
-				if !ok {
-					return Run{}, conversationNotFound()
-				}
-				return r, nil
-			}
-			edit := func(nodeID string) (chatNode, error) {
-				return readChatNodeSQL(ctx, tx, workspaceID, projectID, id, nodeID)
-			}
-			next, user, assistant, ex, e := prepareConversationTurn(c, input, prompt, model, path, load, edit)
+			next, user, assistant, ex, e := preparePersistentConversationTurn(ctx, tx, c, input, prompt, model, a.config.LongConversationHistory)
 			if e != nil {
 				return e
 			}
@@ -320,7 +304,7 @@ func (a *App) createConversationRunApproved(workspaceID, projectID, id, key, act
 			run.ProviderMode = a.config.Mode
 			run.BillingQuoteID, run.BillingRequestHash = input.QuoteID, ledgerConversationRequestHash(id, input)
 			audit := newAuditEvent(workspaceID, projectID, actor, "run.accepted", "run", run.ID, AuditDetails{ModelID: run.ModelID, ToStatus: run.Status})
-			if e = insertBilledRunSQL(ctx, tx, &run, index, hash, []AuditEvent{audit}); e != nil {
+			if e = insertBilledRunSQL(ctx, tx, &run, index, hash, []AuditEvent{audit}, requester); e != nil {
 				return e
 			}
 			if e = insertChatNodeSQL(ctx, tx, user); e != nil {
@@ -397,11 +381,15 @@ func (a *App) createConversationRunApproved(workspaceID, projectID, id, key, act
 		return Run{}, false, err
 	}
 	a.runs[run.ID] = &runRecord{Run: run, UpstreamModel: execution.UpstreamModel, ChatExecution: execution, Subscribers: make(map[chan event]bool)}
-	a.execution.enqueueLocked(executionJob{ID: run.ID, WorkspaceID: run.WorkspaceID, ModelKey: execution.UpstreamModel, EnqueuedAt: time.Now()})
+	a.execution.enqueueLocked(executionJob{ID: run.ID, WorkspaceID: run.WorkspaceID, ModelKey: execution.UpstreamModel, EnqueuedAt: time.Now(), childEligible: a.chatChildren != nil && a.store != nil && execution != nil && run.ConversationID != ""})
 	return copyRun(run), false, nil
 }
 
 func prepareConversationTurn(c Conversation, input ConversationRunInput, prompt string, model catalogEntry, path []chatNode, load func(string) (Run, error), edit func(string) (chatNode, error)) (Run, chatNode, chatNode, *chatExecution, error) {
+	return prepareBoundedConversationTurn(c, input, prompt, model, path, load, edit, len(path), conversationNodeLimit, conversationPathLimit)
+}
+
+func prepareBoundedConversationTurn(c Conversation, input ConversationRunInput, prompt string, model catalogEntry, path []chatNode, load func(string) (Run, error), edit func(string) (chatNode, error), depth, nodeLimit, pathLimit int) (Run, chatNode, chatNode, *chatExecution, error) {
 	fail := func(err error) (Run, chatNode, chatNode, *chatExecution, error) {
 		return Run{}, chatNode{}, chatNode{}, nil, err
 	}
@@ -411,7 +399,7 @@ func prepareConversationTurn(c Conversation, input ConversationRunInput, prompt 
 	if c.ActiveRunID != nil {
 		return fail(failure(409, "CONVERSATION_BUSY", "当前对话已有运行，请等待完成或主动停止"))
 	}
-	if c.NodeCount+2 > conversationNodeLimit || len(path)+2 > conversationPathLimit {
+	if c.NodeCount+2 > nodeLimit || depth+2 > pathLimit {
 		return fail(failure(429, "CONVERSATION_LIMIT", "会话节点或当前分支深度已达上限"))
 	}
 	if stringID(input.ParentMessageID) != "" && (len(path) == 0 || path[0].Role != "assistant") {
@@ -445,6 +433,7 @@ func prepareConversationTurn(c Conversation, input ConversationRunInput, prompt 
 	if err != nil {
 		return fail(err)
 	}
+	execution.Summary.OmittedMessages = depth - len(execution.SourceMessageIDs)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	run := Run{ID: newID("run"), WorkspaceID: c.WorkspaceID, ProjectID: c.ProjectID, ConversationID: c.ID, ConversationVersion: c.Version + 1, ModelID: model.Model.ID, ModelName: model.Model.Name, ModelVersion: model.Model.Version, ModelCapabilities: copyCapabilities(&model.Model.Capabilities), Prompt: prompt, Status: "QUEUED", CreatedAt: now, UpdatedAt: now, ContextSummary: &execution.Summary}
 	user := chatNode{WorkspaceID: c.WorkspaceID, ProjectID: c.ProjectID, EditedFromID: copyChatID(input.EditedMessageID), MessageNode: MessageNode{ID: newID("msg"), ConversationID: c.ID, ParentID: copyChatID(input.ParentMessageID), Role: "user", Content: prompt, Status: "COMPLETED", CreatedAt: now, UpdatedAt: now}}

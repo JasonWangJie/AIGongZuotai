@@ -24,6 +24,7 @@ type Task struct {
 	BillingQuoteID     string             `json:"-"`
 	Operation          string             `json:"operation,omitempty"`
 	ReferenceAssetIDs  []string           `json:"reference_asset_ids,omitempty"`
+	FirstFrame         *WorkflowCandidate `json:"first_frame,omitempty"`
 	ModelName          string             `json:"model_name,omitempty"`
 	ModelVersion       string             `json:"model_version,omitempty"`
 	ModelCapabilities  *ModelCapabilities `json:"model_capabilities,omitempty"`
@@ -76,23 +77,27 @@ type Run struct {
 }
 
 type RunInput struct {
-	QuoteID      string `json:"quote_id,omitempty"`
-	ModelVersion string `json:"model_version,omitempty"`
-	ProjectID    string `json:"project_id"`
-	ModelID      string `json:"model_id"`
-	Input        string `json:"input"`
+	WorkflowAttemptID string `json:"workflow_attempt_id,omitempty"`
+	QuoteID           string `json:"quote_id,omitempty"`
+	ModelVersion      string `json:"model_version,omitempty"`
+	ProjectID         string `json:"project_id"`
+	ModelID           string `json:"model_id"`
+	Input             string `json:"input"`
 }
 
 type TaskInput struct {
-	QuoteID      string `json:"quote_id,omitempty"`
-	Operation    string `json:"operation,omitempty"`
-	ModelVersion string `json:"model_version,omitempty"`
-	ProjectID    string `json:"project_id"`
-	Kind         string `json:"kind"`
-	ModelID      string `json:"model_id"`
-	Inputs       struct {
-		Prompt            string   `json:"prompt"`
-		ReferenceAssetIDs []string `json:"reference_asset_ids,omitempty"`
+	WorkflowAttemptID string `json:"workflow_attempt_id,omitempty"`
+	QuoteID           string `json:"quote_id,omitempty"`
+	Operation         string `json:"operation,omitempty"`
+	ModelVersion      string `json:"model_version,omitempty"`
+	ProjectID         string `json:"project_id"`
+	Kind              string `json:"kind"`
+	ModelID           string `json:"model_id"`
+	Inputs            struct {
+		Prompt            string             `json:"prompt"`
+		ReferenceAssetIDs []string           `json:"reference_asset_ids,omitempty"`
+		WorkflowID        string             `json:"workflow_id,omitempty"`
+		FirstFrame        *WorkflowCandidate `json:"first_frame,omitempty"`
 	} `json:"inputs"`
 	Parameters TaskParameters `json:"parameters"`
 }
@@ -135,6 +140,10 @@ type Project struct {
 }
 
 func copyTask(t Task) Task {
+	if t.FirstFrame != nil {
+		source := *t.FirstFrame
+		t.FirstFrame = &source
+	}
 	t.Moderation = copyRunModeration(t.Moderation)
 	if !taskArtifactsReleased(t) {
 		t.Artifacts = nil

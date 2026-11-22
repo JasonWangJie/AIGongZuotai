@@ -31,14 +31,18 @@ func executionModerationConfig(t *testing.T, rules []ModerationRule) ModerationC
 // without PostgreSQL + required authentication.
 func newModeratedExecutionFixture(t *testing.T, databaseURL string, rules []ModerationRule) (*App, *httptest.Server, *http.Client, testIdentity) {
 	t.Helper()
-	config := Config{DatabaseURL: databaseURL}
+	return moderatedExecutionFixtureWithConfig(t, Config{DatabaseURL: databaseURL}, rules)
+}
+
+func moderatedExecutionFixtureWithConfig(t *testing.T, config Config, rules []ModerationRule) (*App, *httptest.Server, *http.Client, testIdentity) {
+	t.Helper()
 	policy := executionModerationConfig(t, rules)
-	if databaseURL != "" {
+	if config.DatabaseURL != "" {
 		config.AuthMode = "required"
 		config.Moderation = policy
 	}
 	a, server := testApp(t, config)
-	if databaseURL == "" {
+	if config.DatabaseURL == "" {
 		var err error
 		a.moderation, err = newModerationEngine(policy, "demo")
 		if err != nil {
@@ -47,7 +51,7 @@ func newModeratedExecutionFixture(t *testing.T, databaseURL string, rules []Mode
 	}
 	client := authClient(t)
 	identity := testIdentity{Workspace: Workspace{ID: "ws_demo"}, Project: Project{ID: "prj_demo", WorkspaceID: "ws_demo"}}
-	if databaseURL != "" {
+	if config.DatabaseURL != "" {
 		identity = registerFixture(t, client, server.URL, "moderation-execution@example.test")
 	}
 	return a, server, client, identity

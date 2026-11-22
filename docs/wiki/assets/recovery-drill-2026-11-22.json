@@ -1,0 +1,79 @@
+{
+  "verified_at": "2026-11-21T17:06:46.324Z",
+  "scope": "isolated single-host recovery drill",
+  "postgres": {
+    "server_major": 16,
+    "drill_id": "pitr_10634b8b45b52b0a5fe9592f18a5aa64",
+    "recovery_target": "v18a_685692812f60ad9722576018",
+    "database": "studio",
+    "archive_method": "basic_archive",
+    "base_method": "pg_basebackup/plain/stream",
+    "evidence_scope": "local Windows, isolated loopback cluster",
+    "durations_ms": {
+      "source_ready": 6013,
+      "base_ready": 3179,
+      "point_archived": 4601,
+      "source_detached": 561,
+      "restored_ready": 5639,
+      "stopped": 150
+    },
+    "server_version": "postgres (PostgreSQL) 16.14",
+    "system_identifier": "7710671999329581788",
+    "base_manifest_sha256": "f3b4220d0ed799264c2b42c77560ff33c922b653fc00663d625c34d20de429dd",
+    "point_lsn": "0/4537C00",
+    "point_observed_at": "2026-11-22T01:05:40.853195+08:00",
+    "post_commit_lsn": "0/4545978",
+    "post_commit_observed_at": "2026-11-22T01:05:44.622559+08:00",
+    "point_to_post_flush_wal_bytes": "56696",
+    "target_segment_absent_from_base": true,
+    "archive_segments": [
+      {
+        "file": "000000010000000000000001",
+        "bytes": 16777216,
+        "sha256": "97d2e81dc42e9ef14bfec082b1291ced67d50c3585e2c6dcb3386e8946ecdf35"
+      },
+      {
+        "file": "000000010000000000000002",
+        "bytes": 16777216,
+        "sha256": "35a7a9f8b8ff8c5027d2fa04ef0d8969aa40635098165398039d07f1de684029"
+      },
+      {
+        "file": "000000010000000000000003",
+        "bytes": 16777216,
+        "sha256": "7f9a11aee4706a01eadbe826de2ba6e3d5ba319e04550920ecf5b74f038f4a13"
+      },
+      {
+        "file": "000000010000000000000004",
+        "bytes": 16777216,
+        "sha256": "521e1f3826670da9b63ccce1cfaa1853ed11ff7afe308b82a8b2834c6a4c3b6b"
+      }
+    ],
+    "target_and_post_segments": [
+      "000000010000000000000004"
+    ],
+    "source_before_and_after": "after,after_base,baseline,before",
+    "source_detached": true,
+    "source_archive_detached": true,
+    "paused_replay_lsn": "0/4537C00",
+    "restored_before": 1,
+    "restored_after": 0,
+    "promoted": true,
+    "phase": "stopped"
+  },
+  "private_backup": {
+    "files": 11,
+    "bytes": 11382,
+    "sha256": "47006ffd53c43e02f89ee02eb9bb73c510e0cab10e921e2db3f92ad27dc85496"
+  },
+  "restore_through_authenticated_read_ms": 23910,
+  "platform": {
+    "original_account": true,
+    "draft_revision": 1,
+    "later_revision_excluded": true,
+    "original_asset_and_thumbnail_versions": true,
+    "private_bytes_compared": 4,
+    "private_download_requires_login": true,
+    "original_reservations": 1,
+    "charged_micros": "200000"
+  }
+}

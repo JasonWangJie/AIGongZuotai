@@ -145,14 +145,11 @@ func TestPostgresLedgerSettlementRefundAndImmutableEvidence(t *testing.T) {
 	if w := ledgerWallet(t, s); w.AvailableMicros != 7000 || w.ReservedMicros != 3000 {
 		t.Fatalf("reserve %+v", w)
 	}
-	run.Status = "RUNNING"
-	if err := s.saveRunCandidate(&run); err != nil {
-		t.Fatal(err)
-	}
+	l := claimFixtureRun(t, s, &run)
 	run.Status = "COMPLETED"
 	run.Seq = 1
 	run.BillingUsage = &ChatUsage{Status: "reported", Source: "gateway", Complete: true, PromptTokens: 100, CompletionTokens: 40, TotalTokens: 140}
-	if err := s.saveRunCandidate(&run); err != nil {
+	if err := s.saveLeasedRun(&run, l, 0); err != nil {
 		t.Fatal(err)
 	}
 	if run.Billing.State != "SETTLED" || run.Billing.ChargedMicros != 180 || run.Billing.ReleasedMicros != 2820 {
@@ -250,16 +247,20 @@ func TestPostgresLedgerReviewReleaseAndUsageBoundaries(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			run := ledgerRun(t, s, "live")
+			var l runLease
 			if tc.started {
-				run.Status = "RUNNING"
-				if e := s.saveRunCandidate(&run); e != nil {
-					t.Fatal(e)
-				}
+				l = claimFixtureRun(t, s, &run)
 			}
 			run.Status = tc.status
 			run.BillingUsage = tc.usage
 			run.Seq++
-			if e := s.saveRunCandidate(&run); e != nil {
+			var e error
+			if tc.status == "CANCELLED" || tc.status == "INTERRUPTED" {
+				e = s.saveControlRun(&run)
+			} else {
+				e = s.saveLeasedRun(&run, l, run.Seq-1)
+			}
+			if e != nil {
 				t.Fatal(e)
 			}
 			if run.Billing.State != tc.want || run.Billing.ChargedMicros != 0 {
@@ -335,7 +336,7 @@ func TestPostgresLedgerConcurrentReserveCreditReplayAndRollback(t *testing.T) {
 	run.BillingRequestHash = q.RequestHash
 	walletBefore := ledgerWallet(t, s)
 	err := ledgerTx(s, func(ctx context.Context, tx pgx.Tx) error {
-		if e := insertBilledRunSQL(ctx, tx, &run, "rollback-run-key", payloadHash(run), nil); e != nil {
+		if e := insertBilledRunSQL(ctx, tx, &run, "rollback-run-key", payloadHash(run), nil, nil); e != nil {
 			return e
 		}
 		return failure(409, "FIXTURE_ROLLBACK", "rollback")
@@ -398,15 +399,15 @@ func TestPostgresLedgerMediaPartialAndUnknownRecovery(t *testing.T) {
 	}
 	// Startup turns a begun LLM into INTERRUPTED; funds are held for review.
 	run := ledgerRun(t, s, "live")
-	run.Status = "RUNNING"
-	if err := s.saveRunCandidate(&run); err != nil {
-		t.Fatal(err)
-	}
+	claimFixtureRun(t, s, &run)
 	a := &App{config: Config{Mode: "demo"}, projects: map[string]Project{}, runs: map[string]*runRecord{}, tasks: map[string]*taskRecord{}}
 	if err := s.restore(a); err != nil {
 		t.Fatal(err)
 	}
-	recovered := a.runs[run.ID].Run
+	recovered, err := s.loadRun(run.ID)
+	if err != nil || recovered.Billing == nil {
+		t.Fatal("missing durable run or reservation after interrupted execution", err)
+	}
 	if recovered.Status != "INTERRUPTED" || recovered.Billing.State != "REVIEW" {
 		t.Fatalf("restore released unknown charge %+v", recovered)
 	}
@@ -439,8 +440,10 @@ func TestPostgresLedgerQuoteLimitsMismatchAndLegacyIsolation(t *testing.T) {
 	if err := s.createRun(legacy, "legacy-free-run", payloadHash(legacy)); err != nil {
 		t.Fatal(err)
 	}
+	l := claimFixtureRun(t, s, &legacy)
 	legacy.Status = "COMPLETED"
-	if err := s.saveRun(legacy); err != nil {
+	legacy.Seq++
+	if err := s.saveLeasedRun(&legacy, l, legacy.Seq-1); err != nil {
 		t.Fatal(err)
 	}
 	if outboxCount(t, admin, "SELECT count(*) FROM studio_ledger_reservations") != 0 {
@@ -469,10 +472,7 @@ func TestPostgresLedgerOutboxBackpressureAndLeaseFenceRollback(t *testing.T) {
 	s, _, admin := outboxStore(t)
 	ledgerGrant(t, s, 10000)
 	run := ledgerRun(t, s, "live")
-	run.Status = "RUNNING"
-	if err := s.saveRunCandidate(&run); err != nil {
-		t.Fatal(err)
-	}
+	l := claimFixtureRun(t, s, &run)
 	before := outboxCount(t, admin, "SELECT count(*) FROM studio_ledger_journals")
 	if _, err := admin.Exec(context.Background(), "UPDATE studio_outbox_limits SET pending=10000 WHERE singleton"); err != nil {
 		t.Fatal(err)
@@ -481,7 +481,7 @@ func TestPostgresLedgerOutboxBackpressureAndLeaseFenceRollback(t *testing.T) {
 	candidate.Status = "COMPLETED"
 	candidate.Seq++
 	candidate.BillingUsage = &ChatUsage{Status: "reported", Source: "gateway", Complete: true, PromptTokens: 100, TotalTokens: 100}
-	requireOperation(t, s.saveRunCandidate(&candidate), "EVENT_BACKLOG_FULL")
+	requireOperation(t, s.saveLeasedRun(&candidate, l, run.Seq), "EVENT_BACKLOG_FULL")
 	if candidate.Billing.State != "HELD" || outboxCount(t, admin, "SELECT count(*) FROM studio_ledger_journals") != before {
 		t.Fatal("failed state transaction exposed uncommitted settlement")
 	}
@@ -491,7 +491,7 @@ func TestPostgresLedgerOutboxBackpressureAndLeaseFenceRollback(t *testing.T) {
 	if _, err := admin.Exec(context.Background(), "UPDATE studio_outbox_limits SET pending=(SELECT count(*) FROM studio_outbox_events WHERE projected_at IS NULL) WHERE singleton"); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.saveRunCandidate(&candidate); err != nil {
+	if err := s.saveLeasedRun(&candidate, l, run.Seq); err != nil {
 		t.Fatal(err)
 	}
 	if candidate.Billing.State != "SETTLED" {
@@ -608,7 +608,8 @@ func TestPostgresLedgerConcurrentAdminReplayAndUnknownCommit(t *testing.T) {
 	}
 	// This request never reached RUNNING; queued interrupted work is proven not
 	// submitted and can release. Begun execution recovery is tested separately.
-	if a.runs[run.ID].Run.Billing.State != "RELEASED" {
+	recovered, err := reopened.loadRun(run.ID)
+	if err != nil || recovered.Billing == nil || recovered.Billing.State != "RELEASED" {
 		t.Fatal("unstarted interrupted reservation was not released")
 	}
 	ledgerAssertBalanced(t, reopened)

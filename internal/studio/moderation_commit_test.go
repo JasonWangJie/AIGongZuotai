@@ -34,11 +34,8 @@ func TestPostgresModerationUnknownCommitRecoversOnlyCommittedDecision(t *testing
 			if err = s.createRunCandidate(&run, "ws_demo:runs:"+key, payloadHash(input)); err != nil {
 				t.Fatal(err)
 			}
-			run.Status = "RUNNING"
-			if err = s.saveRunCandidate(&run); err != nil {
-				t.Fatal(err)
-			}
-			record := &runRecord{Run: copyRun(run), Subscribers: map[chan event]bool{}}
+			l := claimFixtureRun(t, s, &run)
+			record := &runRecord{Run: copyRun(run), leaseWatch: &runLeaseWatch{lease: l}, Subscribers: map[chan event]bool{}}
 			candidate := copyRun(run)
 			candidate.Moderation.State, candidate.Moderation.Version = decision, 2
 			status := "FAILED"

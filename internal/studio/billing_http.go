@@ -156,10 +156,12 @@ func (a *App) createBillingQuote(r *http.Request, p *principal, in billingQuoteI
 	if err := a.checkGenerationAccessLocked(p.Workspace.ID); err != nil {
 		return BillingQuote{}, err
 	}
-	row := ledgerQuoteRow{ID: newID("quo"), WorkspaceID: p.Workspace.ID, PriceVersion: a.pricing.Version}
+	row := ledgerQuoteRow{ID: newID("quo"), OwnerUserID: p.User.ID, WorkspaceID: p.Workspace.ID, PriceVersion: a.pricing.Version}
 	var model catalogEntry
 	var err error
 	var conversation *ConversationRunInput
+	var attemptID, attemptKind string
+	var attemptInput workflowChildRequest
 	var prompt string
 	switch {
 	case len(in.RunInput) > 0:
@@ -168,6 +170,9 @@ func (a *App) createBillingQuote(r *http.Request, p *principal, in billingQuoteI
 			return BillingQuote{}, err
 		}
 		row.ProjectID, row.ResourceType, row.RequestHash = input.ProjectID, "run", ledgerRunRequestHash(input)
+		if input.WorkflowAttemptID != "" {
+			attemptID, attemptKind, attemptInput.Run = input.WorkflowAttemptID, "text", &input
+		}
 		model, err = a.resolveModel(input.ModelID, "chat", input.ModelVersion, input.Input)
 		if err != nil {
 			return BillingQuote{}, err
@@ -185,13 +190,13 @@ func (a *App) createBillingQuote(r *http.Request, p *principal, in billingQuoteI
 		if err = decodeBillingInput(in.TaskInput, &input, true); err != nil {
 			return BillingQuote{}, err
 		}
-		row.ProjectID, row.ResourceType, row.RequestHash = input.ProjectID, "task", ledgerTaskRequestHash(input)
-		operation := input.Operation
-		if operation == "" {
-			operation = "generate"
+		row.ProjectID, row.ResourceType, row.RequestHash = input.ProjectID, "task", panelVideoGuardFrom(r.Context()).quoteHash(input)
+		if input.WorkflowAttemptID != "" {
+			attemptID, attemptKind, attemptInput.Task = input.WorkflowAttemptID, input.Kind, &input
 		}
-		if input.Kind != "image" && input.Kind != "video" || operation != "generate" && operation != "edit" || operation == "edit" && input.Kind != "image" || operation == "generate" && len(input.Inputs.ReferenceAssetIDs) > 0 {
-			return BillingQuote{}, failure(422, "INVALID_OPERATION", "任务类型、操作或参考素材不匹配")
+		operation, opErr := taskOperation(input)
+		if opErr != nil {
+			return BillingQuote{}, opErr
 		}
 		model, err = a.resolveModel(input.ModelID, input.Kind, input.ModelVersion, input.Inputs.Prompt)
 		if err != nil {
@@ -199,6 +204,11 @@ func (a *App) createBillingQuote(r *http.Request, p *principal, in billingQuoteI
 		}
 		if !a.authorizeProject(p, input.ProjectID) {
 			return BillingQuote{}, failure(404, "PROJECT_NOT_FOUND", "项目不存在或不属于当前工作区")
+		}
+		if operation == "first_frame" {
+			if _, err = a.firstFrameInfo(subscriptionScope{p.Workspace.ID, input.ProjectID}, input, model.Model); err != nil {
+				return BillingQuote{}, err
+			}
 		}
 		if operation == "edit" {
 			if !model.Model.Capabilities.ImageEditSupported || len(input.Inputs.ReferenceAssetIDs) > model.Model.Capabilities.MaxReferenceImages {
@@ -263,6 +273,20 @@ func (a *App) createBillingQuote(r *http.Request, p *principal, in billingQuoteI
 			return e
 		}
 		defer tx.Rollback(ctx)
+		if e = checkOrdinaryAccountSQL(ctx, tx, p); e != nil {
+			return e
+		}
+		if panel := panelVideoGuardFrom(r.Context()); panel != nil {
+			task := Task{WorkspaceID: row.WorkspaceID, ProjectID: row.ProjectID, Kind: "video", Operation: "generate", Prompt: panel.prompt}
+			if e = panel.checkSQL(ctx, tx, p, task); e != nil {
+				return e
+			}
+		}
+		if attemptID != "" {
+			if e = verifyWorkflowAttemptQuoteSQL(ctx, tx, p, subscriptionScope{p.Workspace.ID, row.ProjectID}, attemptID, attemptKind, attemptInput, a.config.Mode); e != nil {
+				return e
+			}
+		}
 		if e = checkWorkspaceGenerationSQL(ctx, tx, p.Workspace.ID); e != nil {
 			return e
 		}
@@ -271,30 +295,22 @@ func (a *App) createBillingQuote(r *http.Request, p *principal, in billingQuoteI
 			if e != nil {
 				return e
 			}
-			path, e := readChatPathSQL(ctx, tx, p.Workspace.ID, row.ProjectID, in.ConversationID, stringID(conversation.ParentMessageID))
-			if e != nil {
-				return e
-			}
-			runs, e := readChatRunMapSQL(ctx, tx, p.Workspace.ID, row.ProjectID, path)
-			if e != nil {
-				return e
-			}
-			load := func(id string) (Run, error) {
-				run, ok := runs[id]
-				if !ok {
-					return Run{}, conversationNotFound()
-				}
-				return run, nil
-			}
-			edit := func(id string) (chatNode, error) {
-				return readChatNodeSQL(ctx, tx, p.Workspace.ID, row.ProjectID, in.ConversationID, id)
-			}
-			if _, _, _, _, e = prepareConversationTurn(c, *conversation, prompt, model, path, load, edit); e != nil {
+			if _, _, _, _, e = preparePersistentConversationTurn(ctx, tx, c, *conversation, prompt, model, a.config.LongConversationHistory); e != nil {
 				return e
 			}
 		}
 		if e = tx.QueryRow(ctx, "SELECT clock_timestamp()").Scan(&row.CreatedAt); e != nil {
 			return e
+		}
+		if panelVideoGuardFrom(r.Context()) != nil {
+			q, found, e := existingPanelQuoteSQL(ctx, tx, row)
+			if e != nil {
+				return e
+			}
+			if found {
+				row = q
+				return tx.Commit(ctx)
+			}
 		}
 		row.ExpiresAt = row.CreatedAt.Add(10 * time.Minute)
 		if e = insertLedgerQuoteSQL(ctx, tx, row); e != nil {

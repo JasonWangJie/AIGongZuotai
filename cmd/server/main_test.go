@@ -37,20 +37,29 @@ func TestModerationEnvironmentStrict(t *testing.T) {
 	}
 }
 
-func TestOperationsEnvironmentStrict(t *testing.T) {
-	for _, tc := range []struct {
-		raw                    string
-		present, want, invalid bool
-	}{{"", false, false, false}, {"false", true, false, false}, {"true", true, true, false}, {"", true, false, true}, {"TRUE", true, false, true}, {"1", true, false, true}, {" true", true, false, true}} {
-		value, err := operationsFromEnv(func(string) (string, bool) { return tc.raw, tc.present })
-		if value != tc.want || (err != nil) != tc.invalid {
-			t.Fatalf("value=%q present=%t: value=%t err=%v", tc.raw, tc.present, value, err)
-		}
+func TestExplicitFeatureFlags(t *testing.T) {
+	for _, name := range []string{"OPERATIONS_ENABLED", "LONG_CONVERSATION_HISTORY_ENABLED"} {
+		t.Run(name, func(t *testing.T) {
+			for _, tc := range []struct {
+				raw                    string
+				present, want, invalid bool
+			}{{"", false, false, false}, {"false", true, false, false}, {"true", true, true, false}, {"", true, false, true}, {"TRUE", true, false, true}, {"1", true, false, true}, {" true", true, false, true}} {
+				value, err := enabledFromEnv(name, func(key string) (string, bool) {
+					if key != name {
+						t.Fatalf("unexpected setting %q", key)
+					}
+					return tc.raw, tc.present
+				})
+				if value != tc.want || (err != nil) != tc.invalid {
+					t.Fatalf("value=%q present=%t: value=%t err=%v", tc.raw, tc.present, value, err)
+				}
+			}
+		})
 	}
 }
 
 func TestAdmissionEnvironmentStrictValues(t *testing.T) {
-	for _, name := range []string{"ADMISSION_WORKSPACE_RUNS", "ADMISSION_MODEL_RUNS", "ADMISSION_WORKSPACE_TASKS", "ADMISSION_MODEL_TASKS", "ADMISSION_WORKSPACE_STREAMS"} {
+	for _, name := range []string{"ADMISSION_WORKSPACE_RUNS", "ADMISSION_MODEL_RUNS", "ADMISSION_WORKSPACE_TASKS", "ADMISSION_MODEL_TASKS", "ADMISSION_WORKSPACE_STREAMS", "ADMISSION_GLOBAL_STREAMS"} {
 		for _, raw := range []string{"", "0", "-1", "1.5", "abc", "4097", "9999999999999999999999999"} {
 			t.Run(name+"/"+raw, func(t *testing.T) {
 				_, err := admissionFromEnv(func(key string) (string, bool) { return raw, key == name })

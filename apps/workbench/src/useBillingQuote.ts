@@ -1,3 +1,4 @@
+import { uiText } from './locale';
 import { useEffect, useRef, useState } from 'react';
 import { api, ApiError } from './api';
 import type { Bootstrap } from './types';
@@ -18,9 +19,9 @@ export function useBillingQuote(bootstrap: Bootstrap | null, request: QuoteReque
     try {
       const quote = await api.billingQuote(identity.project.id, body, controller.current.signal);
       if (ticket !== generation.current || current.current !== sentSignature) return;
-      if (!quoteResponseMatches(quote, body, identity)) throw new ApiError('报价身份或计量单位不匹配，请刷新后重新获取。');
+      if (!quoteResponseMatches(quote, body, identity)) throw new ApiError(uiText('报价身份或计量单位不匹配，请刷新后重新获取。'));
       setNow(Date.now()); setAccepted({ scope, request: body, quote });
-    } catch (cause) { if (ticket !== generation.current || current.current !== sentSignature) return; const issue = cause instanceof ApiError ? cause : new ApiError('暂时无法取得报价。'); setError(issue); if (issue.status === 401) onExpired(); }
+    } catch (cause) { if (ticket !== generation.current || current.current !== sentSignature) return; const issue = cause instanceof ApiError ? cause : new ApiError(uiText('暂时无法取得报价。')); setError(issue); if (issue.status === 401) onExpired(); }
     finally { if (ticket === generation.current && current.current === sentSignature) { locked.current = false; setLoading(false); } }
   }
   const visible = accepted && accepted.scope === scope && quoteSignature(scope, accepted.request) === signature ? accepted : null;

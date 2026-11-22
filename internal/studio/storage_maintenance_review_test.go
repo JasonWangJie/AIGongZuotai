@@ -48,7 +48,7 @@ func TestPostgresMediaReviewDispatchMaintenancePreservesFilesAndInvalidatesPlans
 		t.Fatal(err)
 	}
 	readyPlan, err := MaintainPrivateStorage(context.Background(), maintenance)
-	if err != nil || readyPlan.SchemaVersion != 20 || len(readyPlan.Candidates) != 1 || readyPlan.Candidates[0].Name != orphan || readyPlan.ProtectedFiles != 3 {
+	if err != nil || readyPlan.SchemaVersion != maintenanceSchemaVersion || len(readyPlan.Candidates) != 1 || readyPlan.Candidates[0].Name != orphan || readyPlan.ProtectedFiles != 3 {
 		t.Fatal("READY candidates or receipts were not protected", err, readyPlan)
 	}
 	// A task-version change alone must invalidate a plan even when the dispatch
@@ -66,11 +66,11 @@ func TestPostgresMediaReviewDispatchMaintenancePreservesFilesAndInvalidatesPlans
 		t.Fatal("task version missing from maintenance identity", err)
 	}
 	ledger, err := AdministerLedger(context.Background(), LedgerAdminConfig{DatabaseURL: cfg.DatabaseURL, Action: "inspect", WorkspaceID: identity.Workspace.ID})
-	if err != nil || ledger.SchemaVersion != 20 {
+	if err != nil || ledger.SchemaVersion != maintenanceSchemaVersion {
 		t.Fatal("ledger inspection does not accept exact020", err)
 	}
 	roles, err := AdministerOperations(context.Background(), OperationsAdminConfig{DatabaseURL: cfg.DatabaseURL, Action: "inspect", WorkspaceID: identity.Workspace.ID, UserID: identity.User.ID})
-	if err != nil || roles.SchemaVersion != 20 {
+	if err != nil || roles.SchemaVersion != maintenanceSchemaVersion {
 		t.Fatal("operations inspection does not accept exact020", err)
 	}
 	if _, err = MigrateOwnedAssets(context.Background(), AssetMigrationConfig{DatabaseURL: cfg.DatabaseURL, Directory: cfg.AssetDir, Limit: 100}); err == nil || !strings.Contains(err.Error(), "delivery assets") {

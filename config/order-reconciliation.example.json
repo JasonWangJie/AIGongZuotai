@@ -1,0 +1,13 @@
+{
+  "format": "studio.order-evidence.v1",
+  "merchant": "synthetic-shop",
+  "environment": "test",
+  "workspace_id": "ws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "from": "2026-11-01T00:00:00Z",
+  "to": "2026-11-02T00:00:00Z",
+  "entries": [
+    {"event_id":"demo-event-1","kind":"payment","payment_id":"demo-payment-1","order_id":"ord_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","currency":"CNY","amount_minor":"1200","occurred_at":"2026-11-01T09:00:00Z"},
+    {"event_id":"demo-event-2","kind":"refund","payment_id":"demo-payment-1","refund_id":"demo-refund-1","order_id":"ord_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","currency":"CNY","amount_minor":"1200","occurred_at":"2026-11-01T10:00:00Z"}
+  ]
+}
+

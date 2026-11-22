@@ -1,0 +1,36 @@
+{
+  "authenticated_browser_pages": 7,
+  "browser_generation_posts": 0,
+  "chromium_product": "Chrome/157.0.8103.79",
+  "first_page_mounted": 4,
+  "first_page_received": 20,
+  "fixture": "authenticated_pg_035_branch_128",
+  "history_rows_seen": 128,
+  "late_response_isolated": true,
+  "loopback_provider_posts": 65,
+  "max_anchor_displacement_css_px": 0.140625,
+  "max_sampled_mounted_rows": 8,
+  "narrow_anchor_displacement_css_px": 0.140625,
+  "narrow_viewport_css_px": [
+    390,
+    844
+  ],
+  "original_draft_restored": true,
+  "pg_completed_turns": 64,
+  "pg_execution_snapshots": 64,
+  "pg_messages": 128,
+  "prepend_operations": 6,
+  "real_tab_to_unmounted_neighbor": true,
+  "schema_version": 1,
+  "scope_negative_checks": 1,
+  "sibling_completed_turns": 1,
+  "viewport_css_px": [
+    1280,
+    900
+  ],
+  "workbench_dist": {
+    "dist_sha256": "712e39c7948085aa03e1d04abd46c5a30853a5f09fa5cbbf9e6d819ebf9a2df3",
+    "dist_files": 33,
+    "index_sha256": "bf8c3faaa967a8f3d79cde7c86204b80cc4ad29df4360cbc3e083122fe368008"
+  }
+}

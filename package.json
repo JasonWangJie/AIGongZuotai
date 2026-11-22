@@ -29,6 +29,7 @@
     "smoke:references": "node scripts/reference-smoke.mjs",
     "perf:local": "node scripts/load.mjs",
     "smoke:library": "node scripts/library-smoke.mjs",
-    "smoke:conversations": "node scripts/conversation-smoke.mjs"
+    "smoke:conversations": "node scripts/conversation-smoke.mjs",
+    "perf:frontend": "node scripts/perf/frontend.mjs"
   }
 }

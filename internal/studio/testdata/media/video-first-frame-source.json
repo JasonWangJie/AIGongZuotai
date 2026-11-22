@@ -1,0 +1,15 @@
+{
+  "documentation_url": "https://api.aiimg.lol/async-image-api-docs",
+  "public_document_asset": "https://api.aiimg.lol/static/js/async/6168.5abcbf94eb.js",
+  "document_updated": "2026-11-20",
+  "observed_on": "2026-11-21",
+  "asset_bytes": 36004,
+  "asset_sha256": "3f2a55146093aea1778c6d2985470ca0bcb1dfd6c225a5ebc9f8ab198b103c85",
+  "section": "5.1.1",
+  "endpoint": "/v1/videos/generations_async",
+  "file_part": "input_reference",
+  "requires_model_file_input_support": true,
+  "documented_total_request_limit_bytes": 67108864,
+  "fixture_uses_real_image_bytes": true,
+  "live_generation_requests_sent": 0
+}

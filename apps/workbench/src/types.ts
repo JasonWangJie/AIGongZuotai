@@ -1,15 +1,16 @@
+import { uiText } from './locale';
 export type Kind = 'chat' | 'image' | 'video';
-export type View = Kind | 'assets' | 'tasks' | 'canvas' | 'activity' | 'security' | 'billing' | 'operations' | 'generation';
+export type View = Kind | 'assets' | 'tasks' | 'canvas' | 'activity' | 'security' | 'billing' | 'operations' | 'generation' | 'image-setup' | 'content-appeals' | 'account-access' | 'account-governance' | 'risk-review' | 'presentations' | 'video-edit' | 'comic' | 'collaboration' | 'order-intents' | 'support' | 'support-desk';
 export type ParameterPreset = { id: string; name: string; aspect_ratio: string; size?: string; resolution?: string; seconds?: number };
-export type ModelCapabilities = { cancel_supported: boolean; max_count: number; max_prompt_bytes: number; parameter_presets: ParameterPreset[]; image_edit_supported?: boolean; max_reference_images?: number; context_window_tokens?: number; max_output_tokens?: number };
+export type ModelCapabilities = { cancel_supported: boolean; max_count: number; max_prompt_bytes: number; parameter_presets: ParameterPreset[]; image_edit_supported?: boolean; video_first_frame_supported?: boolean; max_reference_images?: number; context_window_tokens?: number; max_output_tokens?: number };
 export type ImageOperation = 'generate' | 'edit';
 export type ReferenceLimits = { max_file_bytes: number; max_pixels: number; max_dimension: number; max_reference_images: number; allowed_content_types: string[]; workspace_max_bytes: number; workspace_max_files: number };
 export type ReferenceAsset = { id: string; project_id: string; name: string; content_type: string; byte_size: number; width: number; height: number; created_at: string; url: string; thumbnail_url: string; moderation?: import('./moderation').ModerationSummary };
-export type Model = { id: string; name: string; kind: Kind; description: string; enabled?: boolean; reason?: string; version?: string; capabilities?: ModelCapabilities };
+export type Model = { id: string; name: string; kind: Kind; description: string; builtin_description?: boolean; enabled?: boolean; reason?: string; version?: string; capabilities?: ModelCapabilities };
 export type ModelCatalog = { version: string; models: Model[] };
 export type User = { id: string; email: string; name: string; email_verified?: boolean; email_verified_at?: string | null };
 export type Project = { id: string; name: string };
-export type AuthSession = { auth_enabled: boolean; user: User | null; account_security?: import('./accountSecurity').AccountSecurity; workspace?: { id: string; name: string }; project?: Project; projects?: Project[] };
+export type AuthSession = { auth_enabled: boolean; account_restricted?: boolean; user: User | null; account_security?: import('./accountSecurity').AccountSecurity; workspace?: { id: string; name: string }; project?: Project; projects?: Project[] };
 export type KindCapability = { enabled: boolean; cancel_supported?: boolean; max_count?: number; aspect_ratios?: string[]; reason?: string };
 export type HistoryPage<T> = { items: T[]; limit?: number; offset?: number; has_more?: boolean };
 export type DraftNode = { id: string; title: string; note: string };
@@ -38,13 +39,14 @@ export type Bootstrap = {
   account_security?: import('./accountSecurity').AccountSecurity;
   capabilities?: Partial<Record<Kind, KindCapability>>;
 };
+export type FirstFrame = { asset_id: string; artifact_id: string; task_id: string; revision: number; content_version: string };
 export type Artifact = { id: string; url: string; kind: string; title: string };
 export type ResourceError = { code: string; message: string };
 export type Task = {
   moderation?: import('./moderation').ModerationSummary;
   billing?: import('./billing').BillingSummary;
   provider_mode?: 'demo' | 'live';
-  operation?: ImageOperation; reference_asset_ids?: string[];
+  operation?: ImageOperation | 'first_frame'; first_frame?: FirstFrame; reference_asset_ids?: string[];
   model_name?: string; model_version?: string; parameters?: MediaParameters;
   id: string; project_id: string; kind: 'image' | 'video'; model_id: string; prompt: string;
   status: string; progress: number; version: number; created_at: string; updated_at: string;
@@ -60,8 +62,8 @@ export type Run = {
   status: string; output: string; seq: number; created_at: string; updated_at: string; error?: ResourceError;
 };
 export type MediaParameters = { aspect_ratio: string; count: number; size?: string; resolution?: string; seconds?: number };
-export type RunInput = { project_id: string; model_id: string; model_version?: string; input: string; quote_id?: string };
-export type TaskInput = { quote_id?: string; project_id: string; kind: 'image' | 'video'; model_id: string; model_version?: string; operation?: ImageOperation; inputs: { prompt: string; reference_asset_ids?: string[] }; parameters: MediaParameters };
+export type RunInput = { workflow_attempt_id?: string; project_id: string; model_id: string; model_version?: string; input: string; quote_id?: string };
+export type TaskInput = { workflow_attempt_id?: string; quote_id?: string; project_id: string; kind: 'image' | 'video'; model_id: string; model_version?: string; operation?: ImageOperation | 'first_frame'; inputs: { prompt: string; reference_asset_ids?: string[]; workflow_id?: string; first_frame?: FirstFrame }; parameters: MediaParameters };
 export type RunEvent = { event: string; data: unknown; id?: string };
 export const terminal = (status: string) => ['COMPLETED', 'SUCCEEDED', 'PARTIAL', 'CANCELLED', 'FAILED', 'INTERRUPTED'].includes(status.toUpperCase());
-export const statusName = (status: string) => ({ CREATED: '已创建', SUBMITTING: '提交中', SUBMIT_UNKNOWN: '上游受理待确认', PROVIDER_STATE_UNKNOWN: '上游状态待核实', RECONCILE_REQUIRED: '需要核对', SUBMITTED: '已提交', ACCEPTED: '已受理', QUEUED: '排队中', RUNNING: '生成中', STREAMING: '输出中', PROCESSING: '处理中', INGESTING: '结果入库中', MODERATING: '内容检查中', SAVING: '保存中', SUCCEEDED: '已完成', COMPLETED: '已完成', PARTIAL: '部分完成', CANCEL_REQUESTED: '正在取消', CANCELLING: '正在取消', CANCELLED: '已取消', INTERRUPTED: '运行已中断', FAILED: '失败' }[status.toUpperCase()] || status);
+export const statusName = (status: string) => ({ CREATED: uiText('已创建'), SUBMITTING: uiText('提交中'), SUBMIT_UNKNOWN: uiText('上游受理待确认'), PROVIDER_STATE_UNKNOWN: uiText('上游状态待核实'), RECONCILE_REQUIRED: uiText('需要核对'), SUBMITTED: uiText('已提交'), ACCEPTED: uiText('已受理'), QUEUED: uiText('排队中'), RUNNING: uiText('生成中'), STREAMING: uiText('输出中'), PROCESSING: uiText('处理中'), INGESTING: uiText('结果入库中'), MODERATING: uiText('内容检查中'), SAVING: uiText('保存中'), SUCCEEDED: uiText('已完成'), COMPLETED: uiText('已完成'), PARTIAL: uiText('部分完成'), CANCEL_REQUESTED: uiText('正在取消'), CANCELLING: uiText('正在取消'), CANCELLED: uiText('已取消'), INTERRUPTED: uiText('运行已中断'), FAILED: uiText('失败') }[status.toUpperCase()] || status);

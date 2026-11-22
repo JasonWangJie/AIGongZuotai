@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "evidence": "docs/changes/2026-11-22-200-workbench-network-browser.md",
+  "condition": "已登录普通账号打开 PostgreSQL 项目首页，进入聊天前的冷缓存窗口",
+  "observed_conditional_chunks": ["accountGovernance"]
+}
+

@@ -27,11 +27,19 @@ func (s *postgresStore) idempotency(index string) (idemRecord, bool, error) {
 func (s *postgresStore) loadRun(id string) (Run, error) {
 	var run Run
 	err := s.do(func(ctx context.Context, conn *pgx.Conn) error {
-		var data []byte
-		if err := conn.QueryRow(ctx, "SELECT document FROM studio_runs WHERE id=$1", id).Scan(&data); err != nil {
+		tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+		if err != nil {
 			return err
 		}
-		return json.Unmarshal(data, &run)
+		defer tx.Rollback(ctx)
+		run, err = readRunDocumentSQL(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if _, err = loadRunStreamPrefixSQL(ctx, tx, &run); err != nil {
+			return err
+		}
+		return tx.Commit(ctx)
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = failure(404, "NOT_FOUND", "运行不存在")
@@ -41,47 +49,51 @@ func (s *postgresStore) loadRun(id string) (Run, error) {
 func (s *postgresStore) loadTask(id string) (*taskRecord, error) {
 	t := &taskRecord{}
 	err := s.do(func(ctx context.Context, conn *pgx.Conn) error {
-		var data, input, handle, submission []byte
-		if err := conn.QueryRow(ctx, "SELECT document,input,handle,submission,next_poll FROM studio_tasks WHERE id=$1", id).Scan(&data, &input, &handle, &submission, &t.NextPoll); err != nil {
-			return err
-		}
-		for _, pair := range []struct {
-			data []byte
-			out  any
-		}{{data, &t.Task}, {input, &t.Input}, {handle, &t.Handle}, {submission, &t.Submission}} {
-			if len(pair.data) > 0 {
-				if err := json.Unmarshal(pair.data, pair.out); err != nil {
-					return err
-				}
-			}
-		}
-		if t.Task.Moderation != nil {
-			var err error
-			t.MediaModeration, err = loadTaskMediaModerationSQL(ctx, conn, t.Task.ID)
-			if err != nil {
-				return err
-			}
-		}
-		var deliveryErr error
-		t.Delivery, deliveryErr = loadMediaDeliverySQL(ctx, conn, t.Task.ID)
-		if deliveryErr != nil {
-			return deliveryErr
-		}
-		t.ReviewDispatch, deliveryErr = loadMediaReviewDispatchSQL(ctx, conn, t.Task.ID)
-		if deliveryErr != nil {
-			return deliveryErr
-		}
-		t.Schedule, deliveryErr = loadMediaScheduleSQL(ctx, conn, t.Task.ID)
-		if deliveryErr != nil {
-			return deliveryErr
-		}
-		return nil
+		return readTaskRecordSQL(ctx, conn, t, "SELECT document,input,handle,submission,next_poll FROM studio_tasks WHERE id=$1", id)
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = failure(404, "NOT_FOUND", "任务不存在")
 	}
 	return t, err
 }
+func readTaskRecordSQL(ctx context.Context, conn sqlQueryRower, t *taskRecord, query string, args ...any) error {
+	var data, input, handle, submission []byte
+	if err := conn.QueryRow(ctx, query, args...).Scan(&data, &input, &handle, &submission, &t.NextPoll); err != nil {
+		return err
+	}
+	for _, pair := range []struct {
+		data []byte
+		out  any
+	}{{data, &t.Task}, {input, &t.Input}, {handle, &t.Handle}, {submission, &t.Submission}} {
+		if len(pair.data) > 0 {
+			if err := json.Unmarshal(pair.data, pair.out); err != nil {
+				return err
+			}
+		}
+	}
+	if t.Task.Moderation != nil {
+		var err error
+		t.MediaModeration, err = loadTaskMediaModerationSQL(ctx, conn, t.Task.ID)
+		if err != nil {
+			return err
+		}
+	}
+	var deliveryErr error
+	t.Delivery, deliveryErr = loadMediaDeliverySQL(ctx, conn, t.Task.ID)
+	if deliveryErr != nil {
+		return deliveryErr
+	}
+	t.ReviewDispatch, deliveryErr = loadMediaReviewDispatchSQL(ctx, conn, t.Task.ID)
+	if deliveryErr != nil {
+		return deliveryErr
+	}
+	t.Schedule, deliveryErr = loadMediaScheduleSQL(ctx, conn, t.Task.ID)
+	if deliveryErr != nil {
+		return deliveryErr
+	}
+	return nil
+}
+
 func (a *App) getRunLocked(id string) (*runRecord, error) {
 	if r, ok := a.runs[id]; ok {
 		return r, nil
@@ -93,12 +105,38 @@ func (a *App) getRunLocked(id string) (*runRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-	a.evictTerminalsLocked()
 	r := &runRecord{Run: run, Subscribers: make(map[chan event]bool), LastCheckpoint: time.Now()}
 	r.Output.WriteString(run.Output)
-	a.runs[id] = r
+	a.cacheIdleRunLocked(r)
 	return r, nil
 }
+
+func (a *App) cacheIdleRunLocked(r *runRecord) {
+	if len(a.runs) < a.config.MaxRecords {
+		a.runs[r.Run.ID] = r
+	}
+}
+
+// Accepted jobs and open SSE handlers can temporarily exceed the idle cache
+// budget. The scheduler pins the record until the worker has actually returned.
+func (a *App) releaseRunCacheLocked(r *runRecord) {
+	if a.store == nil || len(a.runs) <= a.config.MaxRecords || r == nil || r.streamReaders != 0 {
+		return
+	}
+	// Close owns the final interrupted checkpoint after workers exit. This
+	// includes a picked but unstarted job and a start/finish transaction that
+	// rolled back on outbox pressure as the worker context was cancelled.
+	if a.ctx.Err() != nil && !terminal(r.Run.Status) {
+		return
+	}
+	id := r.Run.ID
+	_, queued := a.execution.queued[id]
+	_, running := a.execution.running[id]
+	if !queued && !running && a.runs[id] == r {
+		delete(a.runs, id)
+	}
+}
+
 func (a *App) getTaskLocked(id string) (*taskRecord, error) {
 	if r, ok := a.tasks[id]; ok {
 		return r, nil
@@ -111,27 +149,30 @@ func (a *App) getTaskLocked(id string) (*taskRecord, error) {
 		return nil, err
 	}
 	t.Task.CanReconcile = a.canReconcileTask(t)
-	a.evictTerminalsLocked()
-	a.tasks[id] = t
+	a.cacheIdleTaskLocked(t)
 	return t, nil
 }
+
+// New and cold-read records can stay in PostgreSQL when the cache is full.
+// A worker may temporarily need an additional entry for its committed state.
+func (a *App) cacheIdleTaskLocked(t *taskRecord) {
+	id := t.Task.ID
+	current := a.tasks[id]
+	if current != nil && current.Task.Version > t.Task.Version {
+		return
+	}
+	if current != nil || a.store == nil || len(a.tasks) < a.config.MaxRecords || a.activeTaskClaims[id] > 0 {
+		a.tasks[id] = t
+	}
+}
+
 func (a *App) evictTerminalsLocked() {
 	if a.store == nil {
 		return
 	}
-	if len(a.runs) >= a.config.MaxRecords {
-		for id, r := range a.runs {
-			if terminal(r.Run.Status) && len(r.Subscribers) == 0 {
-				delete(a.runs, id)
-				if len(a.runs) < a.config.MaxRecords {
-					break
-				}
-			}
-		}
-	}
 	if len(a.tasks) >= a.config.MaxRecords {
 		for id, t := range a.tasks {
-			if (terminal(t.Task.Status) || t.Task.Status == "SUBMIT_UNKNOWN" || t.Task.Status == "RECONCILE_REQUIRED") && !t.InFlight {
+			if (terminal(t.Task.Status) || t.Task.Status == "SUBMIT_UNKNOWN" || t.Task.Status == "RECONCILE_REQUIRED") && !t.InFlight && a.activeTaskClaims[id] == 0 {
 				delete(a.tasks, id)
 				if len(a.tasks) < a.config.MaxRecords {
 					break

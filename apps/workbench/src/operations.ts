@@ -1,7 +1,8 @@
+import { uiText } from './locale';
 import { ApiError } from './api';
 import type { BillingSummary } from './billing';
 
-export type OperationPermission = 'read' | 'investigate' | 'finance' | 'case_open' | 'generation_restrict' | 'appeal_resolve';
+export type OperationPermission = 'read' | 'investigate' | 'finance' | 'case_open' | 'generation_restrict' | 'appeal_resolve' | 'content_appeal_review' | 'risk_review';
 export type OperationAction = 'reconcile' | 'release' | 'charge' | 'no_action';
 export type OperationReason = 'provider_unknown' | 'delivery_issue' | 'usage_missing' | 'billing_review' | 'manual_review';
 export type OperationAccess = { enabled: boolean; access: { workspace_id: string; role: string; permissions: string[]; version: number }[]; reason?: string };
@@ -16,11 +17,11 @@ export type OperationPlanInput = { workspace_id: string; expected_version: numbe
 export type OperationPlan = { id: string; case_id: string; case_version: number; resource_version: number; billing_version: number; action: OperationAction; plan_digest: string; expires_at: string; effect: { charged_micros: string; released_micros: string; unit: 'CREDIT'; scale: 6 } };
 export type OperationExecuteInput = { workspace_id: string; expected_version: number; plan_id: string; plan_digest: string; password: string };
 export type OperationEvent = { id: string; action: string; resource_type: string; resource_id: string; operation_id: string; reason_code: string; evidence_ref: string; version: number; created_at: string };
-export function operationEventName(action: string) { return ({ 'case.created': '建立核实工单', 'case.previewed': '生成处置预演', 'case.executed': '提交处置结果' } as Record<string, string>)[action] || '运营核实记录'; }
-export const operationReasons: Record<OperationReason, string> = { provider_unknown: '上游状态不明', delivery_issue: '交付结果异常', usage_missing: '计量缺失或矛盾', billing_review: '冻结额度核实', manual_review: '人工复核' };
-export const operationActions: Record<OperationAction, string> = { reconcile: '核对原任务', release: '释放冻结额度', charge: '按证据结算', no_action: '仅关闭工单' };
-export const operationRoles: Record<string, string> = { observer: '只读观察', operator: '任务核对', finance: '财务核实', moderator: '生成权限复核' };
-const permissions: OperationPermission[] = ['read', 'investigate', 'finance', 'case_open', 'generation_restrict', 'appeal_resolve'];
+export function operationEventName(action: string) { return ({ 'case.created': uiText('建立核实工单'), 'case.previewed': uiText('生成处置预演'), 'case.executed': uiText('提交处置结果') } as Record<string, string>)[action] || uiText('运营核实记录'); }
+export const operationReasons: Record<OperationReason, string> = { get provider_unknown() { return uiText('上游状态不明'); }, get delivery_issue() { return uiText('交付结果异常'); }, get usage_missing() { return uiText('计量缺失或矛盾'); }, get billing_review() { return uiText('冻结额度核实'); }, get manual_review() { return uiText('人工复核'); } };
+export const operationActions: Record<OperationAction, string> = { get reconcile() { return uiText('核对原任务'); }, get release() { return uiText('释放冻结额度'); }, get charge() { return uiText('按证据结算'); }, get no_action() { return uiText('仅关闭工单'); } };
+export const operationRoles: Record<string, string> = { get observer() { return uiText('只读观察'); }, get operator() { return uiText('任务核对'); }, get finance() { return uiText('财务核实'); }, get moderator() { return uiText('生成权限复核'); }, get risk_reviewer() { return uiText('额度风控复核'); } };
+const permissions: OperationPermission[] = ['read', 'investigate', 'finance', 'case_open', 'generation_restrict', 'appeal_resolve', 'content_appeal_review', 'risk_review'];
 const safeID = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(value);
 
 export function operationScopes(value: OperationAccess | null): OperationScope[] {
@@ -33,12 +34,24 @@ export function operationScopes(value: OperationAccess | null): OperationScope[]
     for (const p of permissions) if (item.permissions.includes(p) && !old.permissions.includes(p)) old.permissions.push(p);
     result.set(item.workspace_id, old);
   }
-  return [...result.values()].filter(scope => scope.permissions.includes('read'));
+  return [...result.values()].filter(scope => scope.permissions.includes('read') || scope.roles.includes('risk_reviewer') && scope.permissions.includes('risk_review'));
 }
+export function supportWorkspaces(access: OperationAccess | null): string[] {
+  if (!access?.enabled || !Array.isArray(access.access) || access.access.length > 128) return [];
+  const workspaces = new Set<string>();
+  for (const row of access.access) {
+    if (row?.role === 'support' && Array.isArray(row.permissions) && row.permissions.includes('support_ticket') &&
+        Number.isSafeInteger(row.version) && row.version > 0 && /^ws_[a-f0-9]{32}$/.test(row.workspace_id)) {
+      workspaces.add(row.workspace_id);
+    }
+  }
+  return [...workspaces];
+}
+
 export function allowedOperation(scope: OperationScope | undefined, action: OperationAction): boolean { return !!scope?.permissions.includes(action === 'charge' || action === 'release' ? 'finance' : 'investigate'); }
 export function operationEvidenceError(reason: string, evidence: string): string {
-  if (!Object.hasOwn(operationReasons, reason)) return '请选择本次核实原因。';
-  if (!/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/.test(evidence) || evidence.includes('://')) return '证据编号使用 1—128 位安全字符，例如 ticket:001；不要填写网址、正文或凭据。';
+  if (!Object.hasOwn(operationReasons, reason)) return uiText('请选择本次核实原因。');
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/.test(evidence) || evidence.includes('://')) return uiText('证据编号使用 1—128 位安全字符，例如 ticket:001；不要填写网址、正文或凭据。');
   return '';
 }
 export function operationUsage(mode: string, input: string, output: string, total: string): OperationUsage | null {
@@ -68,9 +81,9 @@ export class OperationsRecovery {
   get(user: string, workspace: string) { return this.#pending.get(this.key(user, workspace))?.value || null; }
   attempt(user: string, workspace: string) { return this.#pending.get(this.key(user, workspace))?.attempt; }
   remember(user: string, workspace: string, value: OperationUnknown) {
-    const key = this.key(user, workspace); if (!this.#pending.has(key) && this.#pending.size >= 64) throw new Error('运营待核对记录已达本页上限，请先核对已有工单。');
+    const key = this.key(user, workspace); if (!this.#pending.has(key) && this.#pending.size >= 64) throw new Error(uiText('运营待核对记录已达本页上限，请先核对已有工单。'));
     const attempt = Symbol('operation-attempt');
-    if (value.kind === 'case_create') { const b = value.body; if (b.workspace_id !== workspace) throw new Error('开单范围不匹配。'); this.#pending.set(key, { attempt, value: { kind: 'case_create', resourceType: value.resourceType, resourceID: value.resourceID, key: value.key, body: { workspace_id: b.workspace_id, resource_type: b.resource_type, resource_id: b.resource_id, resource_version: b.resource_version, reason: b.reason, evidence_ref: b.evidence_ref } } }); }
+    if (value.kind === 'case_create') { const b = value.body; if (b.workspace_id !== workspace) throw new Error(uiText('开单范围不匹配。')); this.#pending.set(key, { attempt, value: { kind: 'case_create', resourceType: value.resourceType, resourceID: value.resourceID, key: value.key, body: { workspace_id: b.workspace_id, resource_type: b.resource_type, resource_id: b.resource_id, resource_version: b.resource_version, reason: b.reason, evidence_ref: b.evidence_ref } } }); }
     else if (value.kind === 'execute') this.#pending.set(key, { attempt, value: { kind: 'execute', caseID: value.caseID, planID: value.planID } });
     else this.#pending.set(key, { attempt, value: { kind: 'plan', caseID: value.caseID } });
     return attempt;
@@ -87,9 +100,9 @@ export class OperationPassword {
   take() { const value = this.#value; this.clear(); return value; }
 }
 export function safeOperationError(cause: unknown): ApiError {
-  const error = cause instanceof ApiError ? cause : new ApiError('运营请求未确认。', 0, true);
-  const messages: Record<string, string> = { OPERATIONS_PASSWORD_INVALID: '当前密码不正确，请重新输入。', INVALID_OPERATIONS_PASSWORD: '当前密码需要 10—72 字节有效文本。', OPERATIONS_REAUTH_REQUIRED: '账户凭据已变化，请重新核对身份后预演。', OPERATIONS_NOT_FOUND: '当前工作区、工单不存在或已不在授权范围。', OPERATIONS_CASE_EXISTS: '该资源已有待处置工单，请刷新队列后打开原单。', OPERATIONS_CASE_CHANGED: '工单已有新版本，请刷新后重新预演。', OPERATIONS_CASE_RESOLVED: '工单已结束，请刷新查看已提交收据。', OPERATIONS_PLAN_EXPIRED: '预演已过期，请核对最新工单后重新预演。', OPERATIONS_PLAN_CHANGED: '资源、凭据、授权或预演内容已变化，请重新读取后预演。', OPERATIONS_PLAN_CONSUMED: '该预演已经执行，请刷新原工单核对收据。', OPERATIONS_PLAN_LIMIT: '有效预演已达上限，请等待旧计划过期后再试。', OPERATIONS_CASE_LIMIT: '工单容量已达上限，请联系运营管理员。', OPERATIONS_RATE_LIMIT: '密码核验过于频繁，请等待冷却后再试。', OPERATIONS_REQUEST_CANCELLED: '本次确认请求已取消，请核对工单后重新预演。', AUTH_REQUIRED: '登录状态已失效，请重新登录后核对工单。', INVALID_CREDENTIALS: '当前密码不正确，请重新输入。', UNAUTHORIZED: '登录状态已失效，请重新登录后核对工单。', OPS_FORBIDDEN: '当前账户没有此工作区的运营权限。', OPERATION_FORBIDDEN: '当前角色没有此处置权限。', OPS_DISABLED: '此环境未开启运营核实台。', OPERATIONS_DISABLED: '此环境未开启运营核实台。', CASE_VERSION_CONFLICT: '工单已有新版本，请刷新后重新预演。', PLAN_EXPIRED: '预演已过期，请核对最新工单后重新预演。', PLAN_STALE: '资源状态已变化，请刷新后重新预演。', PLAN_DIGEST_MISMATCH: '预演摘要不匹配，不能执行本次操作。', PLAN_ALREADY_EXECUTED: '该预演已经执行，请刷新工单查看回执。', IDEMPOTENCY_CONFLICT: '原操作编号已用于其他请求，请核对工单记录。', LEDGER_EXECUTION_ACTIVE: '任务仍在执行或自动查询，不能进行财务核销。', LEDGER_REVIEW_REQUIRED: '该冻结单已不处于待核实状态，请刷新工单。' };
+  const error = cause instanceof ApiError ? cause : new ApiError(uiText('运营请求未确认。'), 0, true);
+  const messages: Record<string, string> = { OPERATIONS_PASSWORD_INVALID: uiText('当前密码不正确，请重新输入。'), INVALID_OPERATIONS_PASSWORD: uiText('当前密码需要 10—72 字节有效文本。'), OPERATIONS_REAUTH_REQUIRED: uiText('账户凭据已变化，请重新核对身份后预演。'), OPERATIONS_NOT_FOUND: uiText('当前工作区、工单不存在或已不在授权范围。'), OPERATIONS_CASE_EXISTS: uiText('该资源已有待处置工单，请刷新队列后打开原单。'), OPERATIONS_CASE_CHANGED: uiText('工单已有新版本，请刷新后重新预演。'), OPERATIONS_CASE_RESOLVED: uiText('工单已结束，请刷新查看已提交收据。'), OPERATIONS_PLAN_EXPIRED: uiText('预演已过期，请核对最新工单后重新预演。'), OPERATIONS_PLAN_CHANGED: uiText('资源、凭据、授权或预演内容已变化，请重新读取后预演。'), OPERATIONS_PLAN_CONSUMED: uiText('该预演已经执行，请刷新原工单核对收据。'), OPERATIONS_PLAN_LIMIT: uiText('有效预演已达上限，请等待旧计划过期后再试。'), OPERATIONS_CASE_LIMIT: uiText('工单容量已达上限，请联系运营管理员。'), OPERATIONS_RATE_LIMIT: uiText('密码核验过于频繁，请等待冷却后再试。'), OPERATIONS_REQUEST_CANCELLED: uiText('本次确认请求已取消，请核对工单后重新预演。'), AUTH_REQUIRED: uiText('登录状态已失效，请重新登录后核对工单。'), INVALID_CREDENTIALS: uiText('当前密码不正确，请重新输入。'), UNAUTHORIZED: uiText('登录状态已失效，请重新登录后核对工单。'), OPS_FORBIDDEN: uiText('当前账户没有此工作区的运营权限。'), OPERATION_FORBIDDEN: uiText('当前角色没有此处置权限。'), OPS_DISABLED: uiText('此环境未开启运营核实台。'), OPERATIONS_DISABLED: uiText('此环境未开启运营核实台。'), CASE_VERSION_CONFLICT: uiText('工单已有新版本，请刷新后重新预演。'), PLAN_EXPIRED: uiText('预演已过期，请核对最新工单后重新预演。'), PLAN_STALE: uiText('资源状态已变化，请刷新后重新预演。'), PLAN_DIGEST_MISMATCH: uiText('预演摘要不匹配，不能执行本次操作。'), PLAN_ALREADY_EXECUTED: uiText('该预演已经执行，请刷新工单查看回执。'), IDEMPOTENCY_CONFLICT: uiText('原操作编号已用于其他请求，请核对工单记录。'), LEDGER_EXECUTION_ACTIVE: uiText('任务仍在执行或自动查询，不能进行财务核销。'), LEDGER_REVIEW_REQUIRED: uiText('该冻结单已不处于待核实状态，请刷新工单。') };
   const known = error.code && Object.hasOwn(messages, error.code) ? error.code : undefined;
-  const message = known ? messages[known] : error.uncertain ? '响应未能确认。请只刷新工单核对，不要再次提交处置。' : error.status === 403 ? '当前角色不能执行此操作，请核对工作区权限。' : error.status === 401 ? '登录状态需要核对，请重新登录后查看工单。' : error.status === 429 ? '操作过于频繁或已达容量限制，请稍后核对。' : error.status === 409 ? '工单、预演或资源版本已变化，请刷新核对。' : error.status === 422 ? '本次证据或操作不符合服务端规则，请核对后重新预演。' : '运营请求未完成，请刷新查看当前状态。';
+  const message = known ? messages[known] : error.uncertain ? uiText('响应未能确认。请只刷新工单核对，不要再次提交处置。') : error.status === 403 ? uiText('当前角色不能执行此操作，请核对工作区权限。') : error.status === 401 ? uiText('登录状态需要核对，请重新登录后查看工单。') : error.status === 429 ? uiText('操作过于频繁或已达容量限制，请稍后核对。') : error.status === 409 ? uiText('工单、预演或资源版本已变化，请刷新核对。') : error.status === 422 ? uiText('本次证据或操作不符合服务端规则，请核对后重新预演。') : uiText('运营请求未完成，请刷新查看当前状态。');
   return new ApiError(message, error.status, error.uncertain, known, error.requestId, error.retryAt);
 }

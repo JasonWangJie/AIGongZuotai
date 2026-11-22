@@ -39,6 +39,6 @@ func (a *App) parkMediaScheduleIdentity(id string) {
 	if err = a.store.saveTask(t); err != nil {
 		return
 	}
-	a.tasks[id] = t
+	a.cacheIdleTaskLocked(t)
 	a.publishTaskLocked(t.Task)
 }

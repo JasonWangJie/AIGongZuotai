@@ -1,0 +1,114 @@
+{
+  "profile": "full",
+  "ordinary_completed_turns": 5000,
+  "nodes_after_continue": 10002,
+  "frozen_contexts_after_continue": 5001,
+  "loopback_provider_posts": 5001,
+  "authenticated_history_pages": 500,
+  "authenticated_history_read_ms": 1885,
+  "build_progress": [
+    {
+      "turns": 0,
+      "elapsed_ms": 0,
+      "outbox_pending": 0,
+      "cached_runs_including_pins": 0,
+      "schema_table_and_index_bytes": 3891200
+    },
+    {
+      "turns": 100,
+      "elapsed_ms": 2862,
+      "outbox_pending": 16,
+      "cached_runs_including_pins": 100,
+      "schema_table_and_index_bytes": 6733824
+    },
+    {
+      "turns": 150,
+      "elapsed_ms": 5364,
+      "outbox_pending": 11,
+      "cached_runs_including_pins": 150,
+      "schema_table_and_index_bytes": 7962624
+    },
+    {
+      "turns": 500,
+      "elapsed_ms": 19654,
+      "outbox_pending": 21,
+      "cached_runs_including_pins": 500,
+      "schema_table_and_index_bytes": 16793600
+    },
+    {
+      "turns": 1000,
+      "elapsed_ms": 40477,
+      "outbox_pending": 21,
+      "cached_runs_including_pins": 512,
+      "schema_table_and_index_bytes": 29196288
+    },
+    {
+      "turns": 1500,
+      "elapsed_ms": 54420,
+      "outbox_pending": 35,
+      "cached_runs_including_pins": 512,
+      "schema_table_and_index_bytes": 36741120
+    },
+    {
+      "turns": 2000,
+      "elapsed_ms": 66895,
+      "outbox_pending": 30,
+      "cached_runs_including_pins": 512,
+      "schema_table_and_index_bytes": 46301184
+    },
+    {
+      "turns": 2500,
+      "elapsed_ms": 81420,
+      "outbox_pending": 31,
+      "cached_runs_including_pins": 512,
+      "schema_table_and_index_bytes": 59138048
+    },
+    {
+      "turns": 3000,
+      "elapsed_ms": 94468,
+      "outbox_pending": 45,
+      "cached_runs_including_pins": 512,
+      "schema_table_and_index_bytes": 72237056
+    },
+    {
+      "turns": 3500,
+      "elapsed_ms": 108034,
+      "outbox_pending": 1,
+      "cached_runs_including_pins": 512,
+      "schema_table_and_index_bytes": 82518016
+    },
+    {
+      "turns": 4000,
+      "elapsed_ms": 125214,
+      "outbox_pending": 41,
+      "cached_runs_including_pins": 512,
+      "schema_table_and_index_bytes": 88768512
+    },
+    {
+      "turns": 4500,
+      "elapsed_ms": 139237,
+      "outbox_pending": 41,
+      "cached_runs_including_pins": 512,
+      "schema_table_and_index_bytes": 95232000
+    },
+    {
+      "turns": 5000,
+      "elapsed_ms": 153653,
+      "outbox_pending": 25,
+      "cached_runs_including_pins": 512,
+      "schema_table_and_index_bytes": 103063552
+    }
+  ],
+  "original_key_replayed": true,
+  "continue_omitted_messages": 9872,
+  "browser": {
+    "unique_authenticated_pages": 500,
+    "indexed_nodes": 10000,
+    "max_sampled_mounted_nodes": 10,
+    "max_sampled_resident_bodies": 120,
+    "max_sampled_resident_bytes": 2040,
+    "evicted_page_revisits": 3,
+    "generation_posts": 0,
+    "elapsed_ms": 60628
+  }
+}

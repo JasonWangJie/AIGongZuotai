@@ -17,7 +17,7 @@ func insertLedgerQuoteSQL(ctx context.Context, tx pgx.Tx, v ledgerQuoteRow) erro
 	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", int64(0x4c454447455251)); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(ctx, `DELETE FROM studio_ledger_quotes WHERE id IN(SELECT id FROM studio_ledger_quotes WHERE reservation_id IS NULL AND expires_at<clock_timestamp()-interval '1 day' ORDER BY expires_at,id LIMIT 1000)`); err != nil {
+	if _, err := tx.Exec(ctx, `DELETE FROM studio_ledger_quotes WHERE id IN(SELECT q.id FROM studio_ledger_quotes q WHERE q.reservation_id IS NULL AND q.expires_at<clock_timestamp()-interval '1 day' AND NOT EXISTS(SELECT 1 FROM studio_credit_risk_reviews r WHERE r.quote_id=q.id) ORDER BY q.expires_at,q.id LIMIT 1000 FOR UPDATE OF q SKIP LOCKED)`); err != nil {
 		return err
 	}
 	var own, total int
@@ -34,7 +34,7 @@ func insertLedgerQuoteSQL(ctx context.Context, tx pgx.Tx, v ledgerQuoteRow) erro
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(ctx, `INSERT INTO studio_ledger_quotes(id,workspace_id,project_id,resource_type,conversation_id,model_id,model_version,price_version,request_hash,price,reserve_micros,expires_at,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, v.ID, v.WorkspaceID, v.ProjectID, v.ResourceType, v.ConversationID, v.ModelID, v.ModelVersion, v.PriceVersion, v.RequestHash[:], price, v.ReserveMicros, v.ExpiresAt, v.CreatedAt)
+	_, err = tx.Exec(ctx, `INSERT INTO studio_ledger_quotes(id,workspace_id,project_id,resource_type,conversation_id,model_id,model_version,price_version,request_hash,price,reserve_micros,expires_at,created_at,owner_user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NULLIF($14,''))`, v.ID, v.WorkspaceID, v.ProjectID, v.ResourceType, v.ConversationID, v.ModelID, v.ModelVersion, v.PriceVersion, v.RequestHash[:], price, v.ReserveMicros, v.ExpiresAt, v.CreatedAt, v.OwnerUserID)
 	return err
 }
 
@@ -57,6 +57,9 @@ func ensureLedgerWalletSQL(ctx context.Context, tx pgx.Tx, workspace string) err
 }
 
 func reserveLedgerSQL(ctx context.Context, tx pgx.Tx, request LedgerReservationRequest) (*BillingSummary, error) {
+	if err := lockGenerationWorkspaceSQL(ctx, tx, request.WorkspaceID, false); err != nil {
+		return nil, err
+	}
 	q, err := readLedgerQuoteSQL(ctx, tx, request.QuoteID, true)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, failure(409, "QUOTE_INVALID", "报价不存在或不可用于该请求")
@@ -70,39 +73,31 @@ func reserveLedgerSQL(ctx context.Context, tx pgx.Tx, request LedgerReservationR
 	if q.ReservationID != "" {
 		return nil, failure(409, "QUOTE_USED", "报价已经用于其他受理，请核对原幂等请求")
 	}
-	var fresh bool
-	if err = tx.QueryRow(ctx, "SELECT $1::timestamptz>clock_timestamp()", q.ExpiresAt).Scan(&fresh); err != nil {
+	held, admittedAt, err := lockedSpendableQuoteSQL(ctx, tx, q)
+	if err != nil {
 		return nil, err
 	}
-	if !fresh {
-		return nil, failure(409, "QUOTE_EXPIRED", "报价已过期，请重新获取报价")
-	}
-	if err = ensureLedgerWalletSQL(ctx, tx, q.WorkspaceID); err != nil {
+	permit, err := creditRiskAdmissionSQL(ctx, tx, q, request.ActorUserID, held, admittedAt)
+	if err != nil {
 		return nil, err
-	}
-	var balance, held, charged int64
-	if err = tx.QueryRow(ctx, `SELECT a.balance_micros,h.balance_micros,w.charged_micros FROM studio_ledger_wallets w JOIN studio_ledger_accounts a ON a.id='available:'||w.workspace_id JOIN studio_ledger_accounts h ON h.id='reserved:'||w.workspace_id WHERE w.workspace_id=$1`, q.WorkspaceID).Scan(&balance, &held, &charged); err != nil {
-		return nil, err
-	}
-	if balance < q.ReserveMicros {
-		return nil, failure(402, "INSUFFICIENT_CREDITS", "可用额度不足，尚未受理生成请求")
-	}
-	// The wallet lock serializes reserves and settlements. The reserved account
-	// is the transactionally maintained sum of all remaining holds, including
-	// REVIEW. Reserve cumulative charge headroom now, before accepting work.
-	// Refund restores spendable credits but never rewrites historical charged.
-	// Subtract instead of summing three amounts to avoid overflow.
-	if held > MaxLedgerMicros-charged || q.ReserveMicros > MaxLedgerMicros-charged-held {
-		return nil, failure(409, "LEDGER_CAPACITY", "累计结算额度及现有冻结已占满账本容量，尚未受理生成请求")
 	}
 	id := newID("res")
 	price, _ := json.Marshal(q.Price)
-	_, err = tx.Exec(ctx, `INSERT INTO studio_ledger_reservations(id,quote_id,workspace_id,project_id,resource_type,resource_id,model_id,price_version,price,reserved_micros) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, id, q.ID, q.WorkspaceID, q.ProjectID, q.ResourceType, request.ResourceID, q.ModelID, q.PriceVersion, price, q.ReserveMicros)
+	_, err = tx.Exec(ctx, `INSERT INTO studio_ledger_reservations(id,quote_id,workspace_id,project_id,resource_type,resource_id,model_id,price_version,price,reserved_micros,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`, id, q.ID, q.WorkspaceID, q.ProjectID, q.ResourceType, request.ResourceID, q.ModelID, q.PriceVersion, price, q.ReserveMicros, admittedAt)
 	if err != nil {
 		return nil, err
 	}
 	if _, err = tx.Exec(ctx, "UPDATE studio_ledger_quotes SET reservation_id=$2 WHERE id=$1", q.ID, id); err != nil {
 		return nil, err
+	}
+	if permit != "" {
+		tag, e := tx.Exec(ctx, `UPDATE studio_credit_risk_permits SET reservation_id=$2 WHERE review_id=$1 AND reservation_id IS NULL AND expires_at>clock_timestamp()`, permit, id)
+		if e != nil {
+			return nil, e
+		}
+		if tag.RowsAffected() != 1 {
+			return nil, failure(409, "CREDIT_RISK_PERMIT_STALE", "原报价的单次复核许可已变化")
+		}
 	}
 	r := ledgerReservationRow{LedgerReservation: LedgerReservation{BillingSummary: BillingSummary{QuoteID: q.ID, ReservationID: id, PriceVersion: q.PriceVersion, State: "HELD", ReservedMicros: q.ReserveMicros, Unit: LedgerUnit, Scale: LedgerScale, Version: 1}, ProjectID: q.ProjectID, ResourceType: q.ResourceType, ResourceID: request.ResourceID, ModelID: q.ModelID}, WorkspaceID: q.WorkspaceID, Price: q.Price}
 	if _, err = postLedgerTransferSQL(ctx, tx, r, "RESERVE", q.ReserveMicros, "available:"+q.WorkspaceID, "reserved:"+q.WorkspaceID, ""); err != nil {

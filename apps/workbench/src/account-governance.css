@@ -1,0 +1,65 @@
+.ag-page {
+  width: 100%;
+  min-width: 0;
+}
+.ag-restricted {
+  max-width: 820px;
+  padding: clamp(16px, 5vw, 54px);
+  margin: 0 auto;
+  min-height: 100vh;
+}
+.ag-nav,
+.ag-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 20px;
+}
+.ag-nav button[aria-pressed='true'] {
+  border-color: #9172aa;
+}
+.ag-target label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.ag-status {
+  padding: 18px 20px;
+  border: 1px solid #3d3745;
+  border-left: 3px solid #85b8a7;
+  background: #1d1a23;
+  border-radius: 5px;
+  margin: 16px 0;
+}
+.ag-status.ag-held {
+  border-left-color: #dab779;
+}
+.ag-status p,
+.ag-status small {
+  display: block;
+  margin-top: 7px;
+}
+.ag-history {
+  margin: 20px 0;
+}
+.ag-history .appeal-detail h3:first-child {
+  border: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+@media (max-width: 500px) {
+  .ag-nav .button {
+    font-size: 12px;
+  }
+  .ag-restricted {
+    padding: 16px;
+  }
+  .ag-target label {
+    width: 100%;
+  }
+  .ag-page .security-page {
+    width: 100%;
+    overflow-wrap: anywhere;
+  }
+}

@@ -72,6 +72,27 @@ func (p *AsyncMediaProvider) PrepareEditModel(ctx context.Context, input TaskInp
 	if err != nil {
 		return MediaSubmission{}, err
 	}
+	return p.prepareMultipart(ctx, input, upstreamModel, submission, refs, false)
+}
+
+// PrepareFirstFrameModel freezes one registered image in the gateway's
+// documented input_reference file part. It makes no network submission.
+func (p *AsyncMediaProvider) PrepareFirstFrameModel(ctx context.Context, input TaskInput, upstreamModel string, firstFrame MediaEditSource) (MediaSubmission, error) {
+	if err := ctx.Err(); err != nil {
+		return MediaSubmission{}, err
+	}
+	if input.Kind != "video" || input.Operation != "first_frame" || input.Inputs.FirstFrame == nil || input.Inputs.WorkflowID == "" || len(input.Inputs.ReferenceAssetIDs) != 0 || input.Parameters.Seconds < 1 || p.bodies == nil {
+		return MediaSubmission{}, &MediaProviderError{Code: "MEDIA_CAPABILITY_UNAVAILABLE", Message: "first-frame video requires a selected image, a frozen duration and private request storage"}
+	}
+	submission, err := p.prepareMediaModel(input, upstreamModel)
+	if err != nil {
+		return MediaSubmission{}, err
+	}
+	submission.InputType = "first_frame"
+	return p.prepareMultipart(ctx, input, upstreamModel, submission, []MediaEditSource{firstFrame}, true)
+}
+
+func (p *AsyncMediaProvider) prepareMultipart(ctx context.Context, input TaskInput, upstreamModel string, submission MediaSubmission, refs []MediaEditSource, video bool) (MediaSubmission, error) {
 	for _, ref := range refs {
 		if ref.Open == nil || ref.ByteSize < 1 || ref.ByteSize > maxMediaReferenceBytes || !mediaContentHash.MatchString(ref.SHA256) || referenceExtension(ref.ContentType) == "" {
 			return MediaSubmission{}, referencePreparationError()
@@ -84,7 +105,12 @@ func (p *AsyncMediaProvider) PrepareEditModel(ctx context.Context, input TaskInp
 		if err := writer.SetBoundary(boundary); err != nil {
 			return err
 		}
-		fields := [][2]string{{"model", upstreamModel}, {"prompt", strings.TrimSpace(input.Inputs.Prompt)}, {"n", strconv.Itoa(input.Parameters.Count)}}
+		fields := [][2]string{{"model", upstreamModel}, {"prompt", strings.TrimSpace(input.Inputs.Prompt)}}
+		if video {
+			fields = append(fields, [2]string{"seconds", strconv.Itoa(input.Parameters.Seconds)})
+		} else {
+			fields = append(fields, [2]string{"n", strconv.Itoa(input.Parameters.Count)})
+		}
 		for _, field := range [][2]string{{"aspect_ratio", input.Parameters.AspectRatio}, {"size", input.Parameters.Size}, {"resolution", input.Parameters.Resolution}} {
 			if field[1] != "" {
 				fields = append(fields, field)
@@ -102,7 +128,11 @@ func (p *AsyncMediaProvider) PrepareEditModel(ctx context.Context, input TaskInp
 			if err := ctx.Err(); err != nil {
 				return err
 			}
-			if err := writeMediaReference(ctx, writer, index, ref); err != nil {
+			field, filename := "image[]", fmt.Sprintf("reference-%d", index+1)
+			if video {
+				field, filename = "input_reference", "first-frame"
+			}
+			if err := writeMediaReference(ctx, writer, field, filename, ref); err != nil {
 				return err
 			}
 		}
@@ -127,7 +157,10 @@ func (p *AsyncMediaProvider) PrepareEditModel(ctx context.Context, input TaskInp
 	}
 	submission.Body = nil
 	submission.BodyFileID, submission.BodySize, submission.ContentType = stored.ID, stored.ByteSize, stored.ContentType
-	submission.BodySHA256, submission.Endpoint = stored.SHA256, imageEditEndpoint
+	submission.BodySHA256 = stored.SHA256
+	if !video {
+		submission.Endpoint = imageEditEndpoint
+	}
 	return submission, nil
 }
 
@@ -144,14 +177,18 @@ func referenceExtension(contentType string) string {
 	}
 }
 
-func writeMediaReference(ctx context.Context, writer *multipart.Writer, index int, ref MediaEditSource) error {
+func writeMediaReference(ctx context.Context, writer *multipart.Writer, field, filename string, ref MediaEditSource) error {
 	file, err := ref.Open()
+	var providerErr *MediaProviderError
+	if errors.As(err, &providerErr) && providerErr.Code == "ASSET_STORAGE_BUSY" {
+		return ErrReferenceBusy
+	}
 	if err != nil || file == nil {
 		return referencePreparationError()
 	}
 	defer file.Close()
 	header := make(textproto.MIMEHeader)
-	header.Set("Content-Disposition", fmt.Sprintf(`form-data; name="image[]"; filename="reference-%d%s"`, index+1, referenceExtension(ref.ContentType)))
+	header.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s%s"`, field, filename, referenceExtension(ref.ContentType)))
 	header.Set("Content-Type", ref.ContentType)
 	part, err := writer.CreatePart(header)
 	if err != nil {
@@ -182,7 +219,7 @@ func (r mediaContextReader) Read(destination []byte) (int, error) {
 
 func (p *AsyncMediaProvider) openSubmissionBody(ctx context.Context, submission MediaSubmission) (io.ReadCloser, string, int64, error) {
 	if submission.BodyFileID == "" {
-		if len(submission.Body) == 0 || len(submission.Body) > 128<<10 || submission.BodySize != 0 || submission.ContentType != "" && submission.ContentType != "application/json" || submission.Endpoint == imageEditEndpoint {
+		if submission.InputType != "" || len(submission.Body) == 0 || len(submission.Body) > 128<<10 || submission.BodySize != 0 || submission.ContentType != "" && submission.ContentType != "application/json" || submission.Endpoint == imageEditEndpoint {
 			return nil, "", 0, submissionIdentityError()
 		}
 		sum := sha256.Sum256(submission.Body)
@@ -192,7 +229,9 @@ func (p *AsyncMediaProvider) openSubmissionBody(ctx context.Context, submission 
 		return io.NopCloser(bytes.NewReader(submission.Body)), "application/json", int64(len(submission.Body)), nil
 	}
 	mediaType, params, err := mime.ParseMediaType(submission.ContentType)
-	if err != nil || mediaType != "multipart/form-data" || len(params) != 1 || len(params["boundary"]) < 1 || len(params["boundary"]) > 70 || strings.ContainsAny(submission.ContentType, "\r\n") || p.bodies == nil || len(submission.Body) != 0 || submission.Kind != "image" || submission.Endpoint != imageEditEndpoint || submission.BodySize < 1 || submission.BodySize > maxMediaEditBodyBytes || !mediaContentHash.MatchString(submission.BodySHA256) {
+	edit := submission.Kind == "image" && submission.Endpoint == imageEditEndpoint && submission.InputType == ""
+	firstFrame := submission.Kind == "video" && submission.Endpoint == videoGenerationEndpoint && submission.InputType == "first_frame"
+	if err != nil || mediaType != "multipart/form-data" || len(params) != 1 || len(params["boundary"]) < 1 || len(params["boundary"]) > 70 || strings.ContainsAny(submission.ContentType, "\r\n") || p.bodies == nil || len(submission.Body) != 0 || (!edit && !firstFrame) || submission.BodySize < 1 || submission.BodySize > maxMediaEditBodyBytes || !mediaContentHash.MatchString(submission.BodySHA256) {
 		return nil, "", 0, submissionIdentityError()
 	}
 	file, err := p.bodies.OpenBody(submission.BodyFileID)

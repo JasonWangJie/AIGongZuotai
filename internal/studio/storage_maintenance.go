@@ -56,7 +56,7 @@ var referenceGCFile = regexp.MustCompile(`^(blob_[a-f0-9]{64}\.bin|reference_par
 var assetGCFile = regexp.MustCompile(`^(asset_[a-f0-9]{64}\.(bin|json|thumb\.png)|(part|meta|asset_thumb|asset_manifest)_[a-f0-9]{32}\.tmp)$`)
 
 const maintenanceEntryLimit = 100000
-const maintenanceSchemaVersion = 20
+const maintenanceSchemaVersion = 38
 
 // MaintainPrivateStorage is an offline, explicitly configured admin operation.
 // It acquires both OS directory locks and the application's PostgreSQL writer
@@ -247,7 +247,7 @@ func maintenanceBaseReachable(ctx context.Context, conn *pgx.Conn) (map[string]b
 	refs, assets := map[string]bool{}, map[string]bool{}
 	var versions []int32
 	if err := conn.QueryRow(ctx, "SELECT array_agg(version ORDER BY version) FROM studio_schema_versions").Scan(&versions); err != nil || len(versions) != maintenanceSchemaVersion {
-		return nil, nil, errors.New("maintenance requires exactly schema versions 001..020; it does not run migrations")
+		return nil, nil, fmt.Errorf("maintenance requires exactly schema versions 001..%03d; it does not run migrations", maintenanceSchemaVersion)
 	}
 	for i, v := range versions {
 		if int(v) != i+1 {

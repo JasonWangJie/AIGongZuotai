@@ -3,6 +3,7 @@ package studio
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"io"
@@ -121,17 +122,11 @@ func (a *App) getProjectDraft(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	draft := ProjectDraft{ProjectID: projectID, Nodes: []DraftNode{}}
+	var draft ProjectDraft
 	err = a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
-		var nodes []byte
-		err := conn.QueryRow(ctx, `SELECT v.revision,v.nodes,v.created_at FROM studio_project_drafts d JOIN studio_draft_revisions v ON v.project_id=d.project_id AND v.revision=d.revision WHERE d.workspace_id=$1 AND d.project_id=$2`, workspaceID, projectID).Scan(&draft.Revision, &nodes, &draft.UpdatedAt)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		return json.Unmarshal(nodes, &draft.Nodes)
+		var e error
+		draft, e = currentDraftSQL(ctx, conn, workspaceID, projectID)
+		return e
 	})
 	if err != nil {
 		writeError(w, err)
@@ -159,7 +154,7 @@ func (a *App) putProjectDraft(w http.ResponseWriter, r *http.Request) {
 	var draft ProjectDraft
 	var replay bool
 	err = a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
-		draft, replay, err = saveDraftSQL(ctx, conn, workspaceID, projectID, auditActorID(r), key, input)
+		draft, replay, err = saveDraftSQL(ctx, conn, workspaceID, projectID, auditActorID(r), key, input, principalFrom(r))
 		return err
 	})
 	if err != nil {
@@ -174,6 +169,19 @@ func (a *App) putProjectDraft(w http.ResponseWriter, r *http.Request) {
 
 type draftQuerier interface {
 	QueryRow(context.Context, string, ...any) pgx.Row
+}
+
+func currentDraftSQL(ctx context.Context, q draftQuerier, workspace, project string) (ProjectDraft, error) {
+	draft := ProjectDraft{ProjectID: project, Nodes: []DraftNode{}}
+	var raw []byte
+	err := q.QueryRow(ctx, `SELECT v.revision,v.nodes,v.created_at FROM studio_project_drafts d JOIN studio_draft_revisions v ON v.project_id=d.project_id AND v.revision=d.revision WHERE d.workspace_id=$1 AND d.project_id=$2`, workspace, project).Scan(&draft.Revision, &raw, &draft.UpdatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return draft, nil
+	}
+	if err == nil {
+		err = json.Unmarshal(raw, &draft.Nodes)
+	}
+	return draft, err
 }
 
 func readDraftRevisionSQL(ctx context.Context, db draftQuerier, workspaceID, projectID string, revision uint64) (ProjectDraft, error) {
@@ -192,7 +200,7 @@ func readDraftRevisionSQL(ctx context.Context, db draftQuerier, workspaceID, pro
 
 // Locking the project row also serializes the first save, when no draft head
 // exists. The SQL CAS remains effective with independent database connections.
-func saveDraftSQL(ctx context.Context, conn *pgx.Conn, workspaceID, projectID, actorID, key string, input draftSaveInput) (ProjectDraft, bool, error) {
+func saveDraftSQL(ctx context.Context, conn *pgx.Conn, workspaceID, projectID, actorID, key string, input draftSaveInput, actors ...*principal) (ProjectDraft, bool, error) {
 	if err := validateDraft(input); err != nil {
 		return ProjectDraft{}, false, err
 	}
@@ -201,17 +209,33 @@ func saveDraftSQL(ctx context.Context, conn *pgx.Conn, workspaceID, projectID, a
 		return ProjectDraft{}, false, err
 	}
 	defer tx.Rollback(ctx)
+	if len(actors) > 0 && actors[0] != nil && actors[0].User != nil {
+		if err = checkOrdinaryAccountSQL(ctx, tx, actors[0]); err != nil {
+			return ProjectDraft{}, false, err
+		}
+	}
 	var lockedProject string
-	if err = tx.QueryRow(ctx, `SELECT id FROM studio_projects WHERE id=$1 AND workspace_id=$2 FOR UPDATE`, projectID, workspaceID).Scan(&lockedProject); err != nil {
+	if err = tx.QueryRow(ctx, `SELECT id FROM studio_projects WHERE id=$1 AND workspace_id=$2 FOR NO KEY UPDATE`, projectID, workspaceID).Scan(&lockedProject); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			err = failure(404, "PROJECT_NOT_FOUND", "项目不存在或不属于当前工作区")
 		}
 		return ProjectDraft{}, false, err
 	}
+	draft, replay, err := saveLockedDraftSQL(ctx, tx, workspaceID, projectID, actorID, key, input, false)
+	if err != nil {
+		return ProjectDraft{}, false, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return ProjectDraft{}, false, err
+	}
+	return draft, replay, nil
+}
+
+// The caller holds the stable project row until commit. Shared writers have
+// already passed the session and role check in this transaction.
+func saveLockedDraftSQL(ctx context.Context, tx pgx.Tx, workspaceID, projectID, actorID, key string, input draftSaveInput, member bool) (ProjectDraft, bool, error) {
 	hash := payloadHash(input)
-	var storedHash []byte
-	var originalRevision uint64
-	err = tx.QueryRow(ctx, `SELECT payload_hash,revision FROM studio_draft_idempotency WHERE workspace_id=$1 AND project_id=$2 AND idempotency_key=$3`, workspaceID, projectID, key).Scan(&storedHash, &originalRevision)
+	storedHash, originalRevision, err := draftReceiptSQL(ctx, tx, workspaceID, projectID, actorID, key, member)
 	if err == nil {
 		if !bytes.Equal(storedHash, hash[:]) {
 			return ProjectDraft{}, false, failure(409, "IDEMPOTENCY_CONFLICT", "该幂等键已用于不同草稿；重试时必须使用原键和原请求")
@@ -220,7 +244,7 @@ func saveDraftSQL(ctx context.Context, conn *pgx.Conn, workspaceID, projectID, a
 		if err != nil {
 			return ProjectDraft{}, false, err
 		}
-		return draft, true, tx.Commit(ctx)
+		return draft, true, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return ProjectDraft{}, false, err
@@ -256,13 +280,19 @@ func saveDraftSQL(ctx context.Context, conn *pgx.Conn, workspaceID, projectID, a
 	if result.RowsAffected() != 1 {
 		return ProjectDraft{}, false, failure(409, "DRAFT_CONFLICT", "草稿已有新版本，请读取最新版本")
 	}
-	if _, err = tx.Exec(ctx, `INSERT INTO studio_draft_idempotency(project_id,workspace_id,idempotency_key,payload_hash,revision,created_at) VALUES($1,$2,$3,$4,$5,$6)`, projectID, workspaceID, key, hash[:], draft.Revision, draft.UpdatedAt); err != nil {
+	if member {
+		k := sha256.Sum256([]byte(key))
+		_, err = tx.Exec(ctx, `INSERT INTO studio_collaboration_draft_keys(project_id,workspace_id,actor_id,key_hash,request_hash,revision) VALUES($1,$2,$3,$4,$5,$6)`, projectID, workspaceID, actorID, k[:], hash[:], draft.Revision)
+	} else {
+		_, err = tx.Exec(ctx, `INSERT INTO studio_draft_idempotency(project_id,workspace_id,idempotency_key,payload_hash,revision,created_at) VALUES($1,$2,$3,$4,$5,$6)`, projectID, workspaceID, key, hash[:], draft.Revision, draft.UpdatedAt)
+	}
+	if err != nil {
 		return ProjectDraft{}, false, err
 	}
 	if err = insertAuditSQL(ctx, tx, newAuditEvent(workspaceID, projectID, actorID, "draft.saved", "draft", projectID, AuditDetails{Revision: draft.Revision, NodeCount: len(input.Nodes)})); err != nil {
 		return ProjectDraft{}, false, err
 	}
-	return draft, false, tx.Commit(ctx)
+	return draft, false, nil
 }
 
 func (a *App) getProjectDraftRevision(w http.ResponseWriter, r *http.Request) {
@@ -294,41 +324,61 @@ func (a *App) listProjectDraftRevisions(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err)
 		return
 	}
+	before, limit, err := draftHistoryWindow(r)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	var page draftRevisionPage
+	err = a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
+		var e error
+		page, e = draftHistorySQL(ctx, conn, workspaceID, projectID, before, limit)
+		return e
+	})
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, 200, page)
+}
+
+func draftHistoryWindow(r *http.Request) (uint64, int, error) {
+	var err error
 	limit := 20
 	if raw := r.URL.Query().Get("limit"); raw != "" {
 		limit, err = strconv.Atoi(raw)
 		if err != nil || limit < 1 || limit > 50 {
-			writeError(w, failure(400, "INVALID_DRAFT_LIMIT", "limit 必须为 1 至 50"))
-			return
+			return 0, 0, failure(400, "INVALID_DRAFT_LIMIT", "limit 必须为 1 至 50")
 		}
 	}
 	before := uint64(draftVersionLimit + 1)
 	if raw := r.URL.Query().Get("before_revision"); raw != "" {
 		before, err = strconv.ParseUint(raw, 10, 63)
 		if err != nil || before < 1 {
-			writeError(w, failure(400, "INVALID_DRAFT_CURSOR", "before_revision 必须为正整数"))
-			return
+			return 0, 0, failure(400, "INVALID_DRAFT_CURSOR", "before_revision 必须为正整数")
 		}
 	}
+	return before, limit, nil
+}
+
+func draftHistorySQL(ctx context.Context, q interface {
+	Query(context.Context, string, ...any) (pgx.Rows, error)
+}, workspaceID, projectID string, before uint64, limit int) (draftRevisionPage, error) {
 	page := draftRevisionPage{Items: []draftRevisionSummary{}}
-	err = a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
-		rows, err := conn.Query(ctx, `SELECT revision,created_at,node_count FROM studio_draft_revisions WHERE workspace_id=$1 AND project_id=$2 AND revision<$3 ORDER BY revision DESC LIMIT $4`, workspaceID, projectID, before, limit+1)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var item draftRevisionSummary
-			if err := rows.Scan(&item.Revision, &item.UpdatedAt, &item.NodeCount); err != nil {
-				return err
-			}
-			page.Items = append(page.Items, item)
-		}
-		return rows.Err()
-	})
+	rows, err := q.Query(ctx, `SELECT revision,created_at,node_count FROM studio_draft_revisions WHERE workspace_id=$1 AND project_id=$2 AND revision<$3 ORDER BY revision DESC LIMIT $4`, workspaceID, projectID, before, limit+1)
 	if err != nil {
-		writeError(w, err)
-		return
+		return page, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var item draftRevisionSummary
+		if err := rows.Scan(&item.Revision, &item.UpdatedAt, &item.NodeCount); err != nil {
+			return page, err
+		}
+		page.Items = append(page.Items, item)
+	}
+	if err = rows.Err(); err != nil {
+		return page, err
 	}
 	if len(page.Items) > limit {
 		page.HasMore = true
@@ -336,5 +386,5 @@ func (a *App) listProjectDraftRevisions(w http.ResponseWriter, r *http.Request) 
 		cursor := page.Items[limit-1].Revision
 		page.NextBeforeRevision = &cursor
 	}
-	writeJSON(w, 200, page)
+	return page, nil
 }

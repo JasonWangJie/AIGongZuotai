@@ -1,0 +1,163 @@
+{
+  "measured_at": "2026-11-21T19:06:26.507Z",
+  "build": {
+    "version": "0.20.0",
+    "binary_sha256": "e138c11a2cf2f1d1d3779e0504244801251a478f4c493dc1575c4dc073d24f0f",
+    "go": "go version go1.26.11 windows/amd64"
+  },
+  "scope": "Isolated loopback HTTP/1.1, memory storage, authentication disabled, demo providers; server and load client share this machine.",
+  "limitations": [
+    "Not a gateway, database, TLS, cluster, 10000-stream, 24-hour or production SLO test.",
+    "Latency includes Node fetch and same-machine client scheduling. GC, database waits and slow subscribers are not measured.",
+    "Task case measures create plus cancel; demo stream duration is deliberately paced.",
+    "All demo chat requests share one workspace. First delta includes execution queue wait; workspace concurrency is now 2 while client concurrency is 4, so this is not comparable with the previous 4-active-chat baseline."
+  ],
+  "resource_monitor": {
+    "source": "windows_process",
+    "target_interval_ms": 100,
+    "scope": "The same owned server process throughout all three workloads. Excludes the client and sampler.",
+    "timing": "Boundary observations surround each timed phase. Periodic samples target the indicated interval; a busy loop or reader can delay observations. Maxima are sampled, not all-time high-water marks.",
+    "cpu": "User plus kernel process CPU time. 100% represents one logical core. Peak CPU is the largest interval average; short phases are sensitive to OS CPU clock precision.",
+    "memory": "Windows WorkingSet64 or Linux /proc VmRSS. Windows native handles and Linux open file descriptors are separate counters. Unavailable or inapplicable quantities are null.",
+    "machine_profile_sha256": "b42c910fa3ed4006fefdd5cf074c1a65fcd6889c6244d860cdb87c939f27332e"
+  },
+  "chat_scheduler": {
+    "workers": 4,
+    "queue_size": 32,
+    "workspace_concurrency": 2,
+    "model_concurrency": 4,
+    "workspace_queue_size": 8
+  },
+  "media_lanes": {
+    "submit_workers": 2,
+    "query_workers": 2,
+    "delivery_workers": 2,
+    "review_workers": 2,
+    "workspace_concurrency_per_lane": 1,
+    "channel_concurrency_per_lane": 2,
+    "query_includes": "native phased providers: status and manifest transaction; legacy demo has no real download",
+    "delivery_includes": "private download, import and candidate handoff",
+    "review_includes": "first review only, shared engine permits and final persistence",
+    "measurement": "create plus cancel only; not media execution, queue fairness or moderation throughput"
+  },
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "logical_cpus": 14,
+    "cpu": "Intel(R) Core(TM) Ultra 7 155U",
+    "memory_bytes": 33849176064,
+    "node": "v22.22.2"
+  },
+  "results": [
+    {
+      "name": "bootstrap-http",
+      "concurrency": 32,
+      "elapsed_ms": 435.06,
+      "operations_per_second": 2298.51,
+      "samples": 1000,
+      "min_ms": 2.78,
+      "p50_ms": 13.33,
+      "p95_ms": 19.77,
+      "p99_ms": 25.17,
+      "max_ms": 31.12,
+      "resource_phase": "bootstrap-http",
+      "resources": {
+        "status": "observed",
+        "started_at": "2026-11-21T19:06:15.650Z",
+        "ended_at": "2026-11-21T19:06:16.115Z",
+        "samples": 6,
+        "metric_samples": {
+          "cpu": 6,
+          "rss": 6,
+          "windows_handles": 6,
+          "linux_fds": 0
+        },
+        "busy_ticks_skipped": 0,
+        "sample_span_ms": 450.62,
+        "cpu_time_delta_ms": 328.13,
+        "cpu_pct_one_core_mean": 72.82,
+        "cpu_pct_one_core_peak_interval": 148.22,
+        "peak_rss_bytes_observed": 22867968,
+        "peak_windows_handles_observed": 287,
+        "peak_linux_fds_observed": null
+      }
+    },
+    {
+      "name": "task-create-and-cancel",
+      "concurrency": 8,
+      "elapsed_ms": 100.05,
+      "operations_per_second": 999.5,
+      "samples": 100,
+      "min_ms": 4.58,
+      "p50_ms": 7.54,
+      "p95_ms": 10.67,
+      "p99_ms": 12.78,
+      "max_ms": 12.82,
+      "resource_phase": "task-create-and-cancel",
+      "resources": {
+        "status": "observed",
+        "started_at": "2026-11-21T19:06:16.116Z",
+        "ended_at": "2026-11-21T19:06:16.238Z",
+        "samples": 3,
+        "metric_samples": {
+          "cpu": 3,
+          "rss": 3,
+          "windows_handles": 3,
+          "linux_fds": 0
+        },
+        "busy_ticks_skipped": 0,
+        "sample_span_ms": 113.95,
+        "cpu_time_delta_ms": 78.13,
+        "cpu_pct_one_core_mean": 68.56,
+        "cpu_pct_one_core_peak_interval": 72.6,
+        "peak_rss_bytes_observed": 23134208,
+        "peak_windows_handles_observed": 287,
+        "peak_linux_fds_observed": null
+      }
+    },
+    {
+      "name": "llm-full-demo-stream",
+      "concurrency": 4,
+      "elapsed_ms": 10233.82,
+      "operations_per_second": 1.17,
+      "samples": 12,
+      "min_ms": 1706.95,
+      "p50_ms": 3410.53,
+      "p95_ms": 3412.07,
+      "p99_ms": 3412.07,
+      "max_ms": 3412.07,
+      "resource_phase": "llm-full-demo-stream",
+      "resources": {
+        "status": "observed",
+        "started_at": "2026-11-21T19:06:16.238Z",
+        "ended_at": "2026-11-21T19:06:26.486Z",
+        "samples": 97,
+        "metric_samples": {
+          "cpu": 97,
+          "rss": 97,
+          "windows_handles": 97,
+          "linux_fds": 0
+        },
+        "busy_ticks_skipped": 0,
+        "sample_span_ms": 10240.42,
+        "cpu_time_delta_ms": 78.13,
+        "cpu_pct_one_core_mean": 0.76,
+        "cpu_pct_one_core_peak_interval": 44.43,
+        "peak_rss_bytes_observed": 23560192,
+        "peak_windows_handles_observed": 287,
+        "peak_linux_fds_observed": null
+      }
+    },
+    {
+      "name": "llm-first-delta-including-submit",
+      "resource_phase": "llm-full-demo-stream",
+      "samples": 12,
+      "min_ms": 56.53,
+      "p50_ms": 1760.22,
+      "p95_ms": 1761.69,
+      "p99_ms": 1761.69,
+      "max_ms": 1761.69
+    }
+  ]
+}

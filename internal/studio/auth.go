@@ -26,6 +26,7 @@ const sessionTTL = 7 * 24 * time.Hour
 
 type principalKey struct{}
 type principal struct {
+	AccountRestricted bool
 	User              *User
 	Workspace         Workspace
 	Project           Project
@@ -40,10 +41,34 @@ func principalFrom(r *http.Request) *principal {
 	return p
 }
 
-func (a *App) projectsFor(workspaceID string) []Project {
+const maxWorkspaceProjects = 100
+
+func accountProjectsSQL(ctx context.Context, q interface {
+	Query(context.Context, string, ...any) (pgx.Rows, error)
+}, workspace string) ([]Project, error) {
+	rows, err := q.Query(ctx, "SELECT id,workspace_id,name,created_at FROM studio_projects WHERE workspace_id=$1 ORDER BY created_at,id", workspace)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Project, error) {
+		var p Project
+		e := row.Scan(&p.ID, &p.WorkspaceID, &p.Name, &p.CreatedAt)
+		return p, e
+	})
+}
+
+func (a *App) projectsFor(workspaceID string) ([]Project, error) {
+	items := make([]Project, 0)
+	if a.store != nil {
+		err := a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
+			var e error
+			items, e = accountProjectsSQL(ctx, conn, workspaceID)
+			return e
+		})
+		return items, err
+	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	items := make([]Project, 0)
 	for _, p := range a.projects {
 		if p.WorkspaceID == workspaceID {
 			items = append(items, p)
@@ -55,8 +80,26 @@ func (a *App) projectsFor(workspaceID string) []Project {
 		}
 		return items[i].CreatedAt.Before(items[j].CreatedAt)
 	})
-	return items
+	return items, nil
 }
+
+// Internal generation and upload paths also check the persistent identity on
+// re-entry after preparing inputs. Only memory mode owns a project map.
+func (a *App) projectLocked(id string) (Project, bool, error) {
+	if a.store == nil {
+		project, found := a.projects[id]
+		return project, found, nil
+	}
+	var p Project
+	err := a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
+		return conn.QueryRow(ctx, "SELECT id,workspace_id,name,created_at FROM studio_projects WHERE id=$1", id).Scan(&p.ID, &p.WorkspaceID, &p.Name, &p.CreatedAt)
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Project{}, false, nil
+	}
+	return p, err == nil, err
+}
+
 func (a *App) currentPrincipal(r *http.Request) (*principal, error) {
 	p := &principal{Workspace: Workspace{ID: "ws_demo", Name: "本地开发工作区"}}
 	if a.config.AuthMode == "required" {
@@ -71,7 +114,7 @@ func (a *App) currentPrincipal(r *http.Request) (*principal, error) {
 		p.SessionHash = digest[:]
 		err = a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
 			var user User
-			if err := conn.QueryRow(ctx, `SELECT u.id,u.email,u.name,u.email_verified_at,w.id,w.name,s.id,u.credential_version FROM studio_sessions s JOIN studio_users u ON u.id=s.user_id JOIN studio_workspaces w ON w.id=s.workspace_id WHERE s.token_hash=$1 AND s.expires_at>now() AND s.credential_version=u.credential_version`, p.SessionHash).Scan(&user.ID, &user.Email, &user.Name, &user.EmailVerifiedAt, &p.Workspace.ID, &p.Workspace.Name, &p.SessionID, &p.CredentialVersion); err != nil {
+			if err := conn.QueryRow(ctx, `SELECT u.id,u.email,u.name,u.email_verified_at,w.id,w.name,s.id,u.credential_version,COALESCE(ac.state,'OPEN')<>'OPEN' FROM studio_sessions s JOIN studio_users u ON u.id=s.user_id JOIN studio_workspaces w ON w.id=s.workspace_id LEFT JOIN studio_account_controls ac ON ac.user_id=u.id WHERE s.token_hash=$1 AND s.expires_at>now() AND s.credential_version=u.credential_version`, p.SessionHash).Scan(&user.ID, &user.Email, &user.Name, &user.EmailVerifiedAt, &p.Workspace.ID, &p.Workspace.Name, &p.SessionID, &p.CredentialVersion, &p.AccountRestricted); err != nil {
 				return err
 			}
 			user.EmailVerified = user.EmailVerifiedAt != nil
@@ -85,7 +128,14 @@ func (a *App) currentPrincipal(r *http.Request) (*principal, error) {
 			return nil, err
 		}
 	}
-	p.Projects = a.projectsFor(p.Workspace.ID)
+	if p.AccountRestricted {
+		return p, nil
+	}
+	var err error
+	p.Projects, err = a.projectsFor(p.Workspace.ID)
+	if err != nil {
+		return nil, err
+	}
 	if len(p.Projects) == 0 {
 		return nil, failure(503, "PROJECTS_UNAVAILABLE", "工作区没有可用项目")
 	}
@@ -126,16 +176,11 @@ func (a *App) authorizeProject(p *principal, projectID string) bool {
 	return false
 }
 
-func (a *App) sessionStillValid(r *http.Request) bool {
-	if a.config.AuthMode != "required" {
-		return a.ctx.Err() == nil
-	}
-	p, err := a.currentPrincipal(r)
-	return err == nil && p != nil
-}
-
 func (a *App) identityJSON(p *principal) map[string]any {
-	result := map[string]any{"auth_enabled": a.config.AuthMode == "required", "user": nil, "account_security": a.accountSecurityCapabilities(), "operations": a.operationsCapabilities(p)}
+	if p != nil && p.AccountRestricted {
+		return map[string]any{"auth_enabled": true, "account_restricted": true, "user": p.User, "account_security": a.accountSecurityCapabilities()}
+	}
+	result := map[string]any{"account_restricted": false, "auth_enabled": a.config.AuthMode == "required", "user": nil, "account_security": a.accountSecurityCapabilities(), "operations": a.operationsCapabilities(p)}
 	if p != nil {
 		result["user"] = p.User
 		result["workspace"] = p.Workspace
@@ -260,9 +305,6 @@ func (a *App) authRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	a.mu.Lock()
-	a.projects[project.ID] = project
-	a.mu.Unlock()
 	setSession(w, r, token)
 	writeJSON(w, 201, a.identityJSON(&principal{User: &user, Workspace: workspace, Project: project, Projects: []Project{project}}))
 }
@@ -316,11 +358,13 @@ func (a *App) authLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user.EmailVerified = user.EmailVerifiedAt != nil
+	var projects []Project
 	token, digest, err := tokenPair()
 	if err != nil {
 		writeError(w, err)
 		return
 	}
+	var restricted bool
 	err = a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
 		tx, err := conn.Begin(ctx)
 		if err != nil {
@@ -330,19 +374,30 @@ func (a *App) authLogin(w http.ResponseWriter, r *http.Request) {
 		if err = insertLoginSessionSQL(ctx, tx, user.ID, workspace.ID, hash, version, digest); err != nil {
 			return err
 		}
+		if err = tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM studio_account_controls WHERE user_id=$1 AND state<>'OPEN')", user.ID).Scan(&restricted); err != nil {
+			return err
+		}
+		if !restricted {
+			projects, err = accountProjectsSQL(ctx, tx, workspace.ID)
+			if err != nil {
+				return err
+			}
+			if len(projects) == 0 {
+				return failure(503, "PROJECTS_UNAVAILABLE", "工作区项目不可用")
+			}
+		}
 		return tx.Commit(ctx)
 	})
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	projects := a.projectsFor(workspace.ID)
-	if len(projects) == 0 {
-		writeError(w, failure(503, "PROJECTS_UNAVAILABLE", "工作区项目不可用"))
-		return
-	}
 	setSession(w, r, token)
-	writeJSON(w, 200, a.identityJSON(&principal{User: &user, Workspace: workspace, Project: projects[0], Projects: projects}))
+	p := &principal{AccountRestricted: restricted, User: &user, Workspace: workspace, Projects: projects}
+	if len(projects) > 0 {
+		p.Project = projects[0]
+	}
+	writeJSON(w, 200, a.identityJSON(p))
 }
 
 // The user row serializes password changes with session creation. Expensive bcrypt
@@ -421,6 +476,18 @@ func (a *App) postProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p := principalFrom(r)
+	project := Project{ID: newID("prj"), WorkspaceID: p.Workspace.ID, Name: in.Name, CreatedAt: time.Now().UTC()}
+	audit := newAuditEvent(project.WorkspaceID, project.ID, auditActorID(r), "project.created", "project", project.ID, AuditDetails{})
+	if a.store != nil {
+		if err := a.store.saveWithAudit(func(ctx context.Context, tx pgx.Tx) error {
+			return insertWorkspaceProjectSQL(ctx, tx, project)
+		}, []AuditEvent{audit}); err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, 201, project)
+		return
+	}
 	a.mu.Lock()
 	count := 0
 	for _, project := range a.projects {
@@ -428,27 +495,33 @@ func (a *App) postProject(w http.ResponseWriter, r *http.Request) {
 			count++
 		}
 	}
-	if count >= 100 {
+	if count >= maxWorkspaceProjects {
 		a.mu.Unlock()
 		writeError(w, failure(409, "PROJECT_LIMIT", "当前工作区最多100个项目"))
 		return
-	}
-	project := Project{ID: newID("prj"), WorkspaceID: p.Workspace.ID, Name: in.Name, CreatedAt: time.Now().UTC()}
-	audit := newAuditEvent(project.WorkspaceID, project.ID, auditActorID(r), "project.created", "project", project.ID, AuditDetails{})
-	if a.store != nil {
-		if err := a.store.saveWithAudit(func(ctx context.Context, tx pgx.Tx) error {
-			_, err := tx.Exec(ctx, "INSERT INTO studio_projects(id,workspace_id,name,created_at) VALUES($1,$2,$3,$4)", project.ID, project.WorkspaceID, project.Name, project.CreatedAt)
-			return err
-		}, []AuditEvent{audit}); err != nil {
-			a.mu.Unlock()
-			writeError(w, err)
-			return
-		}
 	}
 	a.projects[project.ID] = project
 	a.appendMemoryAuditLocked(audit)
 	a.mu.Unlock()
 	writeJSON(w, 201, project)
+}
+
+func insertWorkspaceProjectSQL(ctx context.Context, tx pgx.Tx, p Project) error {
+	// Lock the stable parent before counting under READ COMMITTED. Competing
+	// inserts see the winner's project once they acquire the same lock.
+	var workspace string
+	if err := tx.QueryRow(ctx, "SELECT id FROM studio_workspaces WHERE id=$1 FOR NO KEY UPDATE", p.WorkspaceID).Scan(&workspace); err != nil {
+		return err
+	}
+	var full bool
+	if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM studio_projects WHERE workspace_id=$1 OFFSET $2)", workspace, maxWorkspaceProjects-1).Scan(&full); err != nil {
+		return err
+	}
+	if full {
+		return failure(409, "PROJECT_LIMIT", "当前工作区最多100个项目")
+	}
+	_, err := tx.Exec(ctx, "INSERT INTO studio_projects(id,workspace_id,name,created_at) VALUES($1,$2,$3,$4)", p.ID, workspace, p.Name, p.CreatedAt)
+	return err
 }
 
 type loginWindow struct {

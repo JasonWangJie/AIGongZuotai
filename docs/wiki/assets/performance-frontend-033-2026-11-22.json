@@ -1,0 +1,877 @@
+{
+  "format": "studio.workbench-frontend-benchmark.v1",
+  "started_at": "2026-11-21T19:43:08.958Z",
+  "finished_at": "2026-11-21T19:45:20.316Z",
+  "host": {
+    "os": "win32",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "logical_cpus": 14,
+    "cpu": "Intel(R) Core(TM) Ultra 7 155U",
+    "memory_mib": 32281,
+    "node": "v22.22.2"
+  },
+  "artifact": {
+    "server_sha256": "8e322e35a8f021e5cd5c9e489949b7faf793b0e215e4e1646ceacfab91423965",
+    "dist_sha256": "b42a50595b17bf31768faf3412a5d0c5b190673057799b6682aa1b4da1a62947",
+    "dist_files": 31,
+    "index_sha256": "abb39c2e95576c754350751565c06278a855fc2ee6e2cd52fc2b12c2cda1c03d"
+  },
+  "browser": {
+    "product": "Chrome/157.0.8103.79",
+    "protocol": "1.3",
+    "js_engine": "15.7.112.43"
+  },
+  "conditions": {
+    "backend": "loopback memory/demo",
+    "headless": true,
+    "gpu_disabled": true,
+    "network_throttling": "none",
+    "viewport_mode": "CSS pixels; deviceScaleFactor 1; desktop pointer for both widths",
+    "browser_profile": "new Chromium process, profile, isolated context and demo server per sample",
+    "cache": "fresh = first navigation; primed = homepage ready, about:blank, then same-origin navigation; asset counts recorded",
+    "workload": "empty conversation list; trusted click to open chat; create one empty conversation and verify by GET",
+    "ready_control": "visible enabled refresh-history button after bootstrap; renderer animation-frame hit test",
+    "click_time": "trusted click capture to first matching animation-frame hit test; scrolling and mobile menu preparation excluded",
+    "percentile": "nearest rank; round-robin interleaved strata",
+    "samples_per_group": 20
+  },
+  "groups": [
+    {
+      "width": 1440,
+      "height": 900,
+      "cache": "fresh",
+      "samples": [
+        {
+          "dom_content_loaded_ms": 68.4,
+          "first_contentful_paint_ms": 148,
+          "ready_control_ms": 214.2,
+          "open_chat_ms": 18.4,
+          "create_to_visible_ms": 32.4,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 82.2,
+          "first_contentful_paint_ms": 192,
+          "ready_control_ms": 289.3,
+          "open_chat_ms": 27,
+          "create_to_visible_ms": 37.2,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 79.3,
+          "first_contentful_paint_ms": 188,
+          "ready_control_ms": 295.2,
+          "open_chat_ms": 28.4,
+          "create_to_visible_ms": 37.5,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 88.4,
+          "first_contentful_paint_ms": 192,
+          "ready_control_ms": 300.1,
+          "open_chat_ms": 21.9,
+          "create_to_visible_ms": 32,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 77.1,
+          "first_contentful_paint_ms": 176,
+          "ready_control_ms": 282.4,
+          "open_chat_ms": 21.2,
+          "create_to_visible_ms": 28.7,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 86.1,
+          "first_contentful_paint_ms": 188,
+          "ready_control_ms": 298,
+          "open_chat_ms": 22.3,
+          "create_to_visible_ms": 36.9,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 93,
+          "first_contentful_paint_ms": 224,
+          "ready_control_ms": 328.6,
+          "open_chat_ms": 27,
+          "create_to_visible_ms": 36.7,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 80.7,
+          "first_contentful_paint_ms": 184,
+          "ready_control_ms": 283.1,
+          "open_chat_ms": 23.1,
+          "create_to_visible_ms": 30.4,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 86.7,
+          "first_contentful_paint_ms": 184,
+          "ready_control_ms": 278.2,
+          "open_chat_ms": 20.8,
+          "create_to_visible_ms": 36.1,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 86.6,
+          "first_contentful_paint_ms": 188,
+          "ready_control_ms": 295.8,
+          "open_chat_ms": 21.6,
+          "create_to_visible_ms": 41.9,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 87,
+          "first_contentful_paint_ms": 184,
+          "ready_control_ms": 282.7,
+          "open_chat_ms": 23.2,
+          "create_to_visible_ms": 36,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 80.7,
+          "first_contentful_paint_ms": 184,
+          "ready_control_ms": 292.7,
+          "open_chat_ms": 27.3,
+          "create_to_visible_ms": 31,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 95.5,
+          "first_contentful_paint_ms": 192,
+          "ready_control_ms": 287.1,
+          "open_chat_ms": 24.8,
+          "create_to_visible_ms": 35.4,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 84.5,
+          "first_contentful_paint_ms": 192,
+          "ready_control_ms": 290.2,
+          "open_chat_ms": 23.9,
+          "create_to_visible_ms": 32.7,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 77.7,
+          "first_contentful_paint_ms": 184,
+          "ready_control_ms": 285.2,
+          "open_chat_ms": 22.6,
+          "create_to_visible_ms": 33.7,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 81.6,
+          "first_contentful_paint_ms": 188,
+          "ready_control_ms": 286.5,
+          "open_chat_ms": 23,
+          "create_to_visible_ms": 35.2,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 89,
+          "first_contentful_paint_ms": 208,
+          "ready_control_ms": 319.8,
+          "open_chat_ms": 23.3,
+          "create_to_visible_ms": 33.4,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 77.9,
+          "first_contentful_paint_ms": 180,
+          "ready_control_ms": 279.1,
+          "open_chat_ms": 22.8,
+          "create_to_visible_ms": 36,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 81.4,
+          "first_contentful_paint_ms": 184,
+          "ready_control_ms": 282.2,
+          "open_chat_ms": 22.2,
+          "create_to_visible_ms": 38.6,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 82.7,
+          "first_contentful_paint_ms": 188,
+          "ready_control_ms": 300.6,
+          "open_chat_ms": 24.5,
+          "create_to_visible_ms": 34.8,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        }
+      ],
+      "percentiles_ms": {
+        "dom_content_loaded_ms": {
+          "p50": 82.2,
+          "p95": 93
+        },
+        "first_contentful_paint_ms": {
+          "p50": 188,
+          "p95": 208
+        },
+        "ready_control_ms": {
+          "p50": 287.1,
+          "p95": 319.8
+        },
+        "open_chat_ms": {
+          "p50": 23,
+          "p95": 27.3
+        },
+        "create_to_visible_ms": {
+          "p50": 35.2,
+          "p95": 38.6
+        }
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "cache": "primed",
+      "samples": [
+        {
+          "dom_content_loaded_ms": 41.8,
+          "first_contentful_paint_ms": 108,
+          "ready_control_ms": 164.6,
+          "open_chat_ms": 17.8,
+          "create_to_visible_ms": 21.9,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 51.4,
+          "first_contentful_paint_ms": 136,
+          "ready_control_ms": 201.6,
+          "open_chat_ms": 23,
+          "create_to_visible_ms": 28.5,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 47.6,
+          "first_contentful_paint_ms": 128,
+          "ready_control_ms": 202.8,
+          "open_chat_ms": 21.7,
+          "create_to_visible_ms": 38.8,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 46.9,
+          "first_contentful_paint_ms": 128,
+          "ready_control_ms": 202.5,
+          "open_chat_ms": 23.9,
+          "create_to_visible_ms": 33.4,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 55.9,
+          "first_contentful_paint_ms": 140,
+          "ready_control_ms": 203,
+          "open_chat_ms": 22.8,
+          "create_to_visible_ms": 35.7,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 49.5,
+          "first_contentful_paint_ms": 128,
+          "ready_control_ms": 189,
+          "open_chat_ms": 21,
+          "create_to_visible_ms": 31,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 65.2,
+          "first_contentful_paint_ms": 172,
+          "ready_control_ms": 260.7,
+          "open_chat_ms": 25.6,
+          "create_to_visible_ms": 38.5,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 47.5,
+          "first_contentful_paint_ms": 132,
+          "ready_control_ms": 206.2,
+          "open_chat_ms": 22.9,
+          "create_to_visible_ms": 33,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 58.1,
+          "first_contentful_paint_ms": 152,
+          "ready_control_ms": 232.7,
+          "open_chat_ms": 25.5,
+          "create_to_visible_ms": 38.8,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 47.3,
+          "first_contentful_paint_ms": 124,
+          "ready_control_ms": 192,
+          "open_chat_ms": 21.9,
+          "create_to_visible_ms": 26.9,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 48.6,
+          "first_contentful_paint_ms": 132,
+          "ready_control_ms": 204.4,
+          "open_chat_ms": 21.9,
+          "create_to_visible_ms": 36.2,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 45.6,
+          "first_contentful_paint_ms": 124,
+          "ready_control_ms": 187.5,
+          "open_chat_ms": 22.9,
+          "create_to_visible_ms": 28.3,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 49.9,
+          "first_contentful_paint_ms": 132,
+          "ready_control_ms": 201.4,
+          "open_chat_ms": 22.6,
+          "create_to_visible_ms": 31.1,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 47.4,
+          "first_contentful_paint_ms": 124,
+          "ready_control_ms": 186.1,
+          "open_chat_ms": 21.6,
+          "create_to_visible_ms": 30.2,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 51.6,
+          "first_contentful_paint_ms": 132,
+          "ready_control_ms": 205.9,
+          "open_chat_ms": 22.3,
+          "create_to_visible_ms": 27.8,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 47.5,
+          "first_contentful_paint_ms": 128,
+          "ready_control_ms": 202,
+          "open_chat_ms": 21.6,
+          "create_to_visible_ms": 26.3,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 52.1,
+          "first_contentful_paint_ms": 136,
+          "ready_control_ms": 213.1,
+          "open_chat_ms": 21.8,
+          "create_to_visible_ms": 32,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 47,
+          "first_contentful_paint_ms": 124,
+          "ready_control_ms": 200.8,
+          "open_chat_ms": 23,
+          "create_to_visible_ms": 26.8,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 49,
+          "first_contentful_paint_ms": 128,
+          "ready_control_ms": 190,
+          "open_chat_ms": 21.1,
+          "create_to_visible_ms": 36.6,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 48.1,
+          "first_contentful_paint_ms": 132,
+          "ready_control_ms": 195.4,
+          "open_chat_ms": 21.9,
+          "create_to_visible_ms": 26.6,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        }
+      ],
+      "percentiles_ms": {
+        "dom_content_loaded_ms": {
+          "p50": 48.1,
+          "p95": 58.1
+        },
+        "first_contentful_paint_ms": {
+          "p50": 128,
+          "p95": 152
+        },
+        "ready_control_ms": {
+          "p50": 201.6,
+          "p95": 232.7
+        },
+        "open_chat_ms": {
+          "p50": 21.9,
+          "p95": 25.5
+        },
+        "create_to_visible_ms": {
+          "p50": 31,
+          "p95": 38.8
+        }
+      }
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "cache": "primed",
+      "samples": [
+        {
+          "dom_content_loaded_ms": 38,
+          "first_contentful_paint_ms": 116,
+          "ready_control_ms": 191.1,
+          "open_chat_ms": 17.3,
+          "create_to_visible_ms": 34.1,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 49.7,
+          "first_contentful_paint_ms": 152,
+          "ready_control_ms": 250.9,
+          "open_chat_ms": 22.4,
+          "create_to_visible_ms": 35.6,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 47.6,
+          "first_contentful_paint_ms": 144,
+          "ready_control_ms": 225.4,
+          "open_chat_ms": 21.5,
+          "create_to_visible_ms": 30.1,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 51.9,
+          "first_contentful_paint_ms": 148,
+          "ready_control_ms": 241.5,
+          "open_chat_ms": 26.6,
+          "create_to_visible_ms": 40.8,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 68.8,
+          "first_contentful_paint_ms": 188,
+          "ready_control_ms": 326.2,
+          "open_chat_ms": 47.2,
+          "create_to_visible_ms": 55.6,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 47.2,
+          "first_contentful_paint_ms": 144,
+          "ready_control_ms": 236.4,
+          "open_chat_ms": 22.8,
+          "create_to_visible_ms": 36.4,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 48.6,
+          "first_contentful_paint_ms": 144,
+          "ready_control_ms": 233.4,
+          "open_chat_ms": 26.2,
+          "create_to_visible_ms": 31.2,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 49.7,
+          "first_contentful_paint_ms": 144,
+          "ready_control_ms": 241.5,
+          "open_chat_ms": 20.6,
+          "create_to_visible_ms": 33.2,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 45.5,
+          "first_contentful_paint_ms": 144,
+          "ready_control_ms": 225.2,
+          "open_chat_ms": 22.9,
+          "create_to_visible_ms": 32.4,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 49.1,
+          "first_contentful_paint_ms": 148,
+          "ready_control_ms": 245.5,
+          "open_chat_ms": 22.5,
+          "create_to_visible_ms": 33,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 50.1,
+          "first_contentful_paint_ms": 148,
+          "ready_control_ms": 236.4,
+          "open_chat_ms": 24,
+          "create_to_visible_ms": 44.5,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 48,
+          "first_contentful_paint_ms": 140,
+          "ready_control_ms": 221.2,
+          "open_chat_ms": 23,
+          "create_to_visible_ms": 30.3,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 48,
+          "first_contentful_paint_ms": 144,
+          "ready_control_ms": 236.2,
+          "open_chat_ms": 21.2,
+          "create_to_visible_ms": 30.7,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 46.9,
+          "first_contentful_paint_ms": 144,
+          "ready_control_ms": 225.1,
+          "open_chat_ms": 21.8,
+          "create_to_visible_ms": 31,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 46.2,
+          "first_contentful_paint_ms": 136,
+          "ready_control_ms": 226.8,
+          "open_chat_ms": 20.8,
+          "create_to_visible_ms": 33.3,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 57.8,
+          "first_contentful_paint_ms": 160,
+          "ready_control_ms": 274,
+          "open_chat_ms": 24.9,
+          "create_to_visible_ms": 39.4,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 43.1,
+          "first_contentful_paint_ms": 132,
+          "ready_control_ms": 230.8,
+          "open_chat_ms": 20.8,
+          "create_to_visible_ms": 29.4,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 45.4,
+          "first_contentful_paint_ms": 140,
+          "ready_control_ms": 238.9,
+          "open_chat_ms": 19.9,
+          "create_to_visible_ms": 38.8,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 45.7,
+          "first_contentful_paint_ms": 144,
+          "ready_control_ms": 223.8,
+          "open_chat_ms": 22.3,
+          "create_to_visible_ms": 31.9,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        },
+        {
+          "dom_content_loaded_ms": 47.9,
+          "first_contentful_paint_ms": 136,
+          "ready_control_ms": 218.1,
+          "open_chat_ms": 22.7,
+          "create_to_visible_ms": 29.9,
+          "asset_requests": 2,
+          "cached_asset_requests": 2
+        }
+      ],
+      "percentiles_ms": {
+        "dom_content_loaded_ms": {
+          "p50": 47.9,
+          "p95": 57.8
+        },
+        "first_contentful_paint_ms": {
+          "p50": 144,
+          "p95": 160
+        },
+        "ready_control_ms": {
+          "p50": 233.4,
+          "p95": 274
+        },
+        "open_chat_ms": {
+          "p50": 22.4,
+          "p95": 26.6
+        },
+        "create_to_visible_ms": {
+          "p50": 33,
+          "p95": 44.5
+        }
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "cache": "fresh",
+      "samples": [
+        {
+          "dom_content_loaded_ms": 73,
+          "first_contentful_paint_ms": 148,
+          "ready_control_ms": 212.4,
+          "open_chat_ms": 20.9,
+          "create_to_visible_ms": 27.8,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 86.9,
+          "first_contentful_paint_ms": 180,
+          "ready_control_ms": 260.3,
+          "open_chat_ms": 23.5,
+          "create_to_visible_ms": 28.6,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 89.5,
+          "first_contentful_paint_ms": 200,
+          "ready_control_ms": 291,
+          "open_chat_ms": 24.3,
+          "create_to_visible_ms": 38,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 78.5,
+          "first_contentful_paint_ms": 164,
+          "ready_control_ms": 225.8,
+          "open_chat_ms": 25.9,
+          "create_to_visible_ms": 30.9,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 84.9,
+          "first_contentful_paint_ms": 192,
+          "ready_control_ms": 292.1,
+          "open_chat_ms": 24.4,
+          "create_to_visible_ms": 36.7,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 78,
+          "first_contentful_paint_ms": 180,
+          "ready_control_ms": 258.9,
+          "open_chat_ms": 27.3,
+          "create_to_visible_ms": 29.1,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 76.3,
+          "first_contentful_paint_ms": 164,
+          "ready_control_ms": 243.4,
+          "open_chat_ms": 23,
+          "create_to_visible_ms": 29.8,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 89.3,
+          "first_contentful_paint_ms": 176,
+          "ready_control_ms": 250.8,
+          "open_chat_ms": 25.7,
+          "create_to_visible_ms": 33.6,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 85.2,
+          "first_contentful_paint_ms": 180,
+          "ready_control_ms": 253.1,
+          "open_chat_ms": 25.6,
+          "create_to_visible_ms": 26.3,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 81.8,
+          "first_contentful_paint_ms": 176,
+          "ready_control_ms": 255.3,
+          "open_chat_ms": 26.2,
+          "create_to_visible_ms": 45.1,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 84.5,
+          "first_contentful_paint_ms": 180,
+          "ready_control_ms": 245.2,
+          "open_chat_ms": 23.4,
+          "create_to_visible_ms": 29.8,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 87.6,
+          "first_contentful_paint_ms": 176,
+          "ready_control_ms": 241,
+          "open_chat_ms": 23.3,
+          "create_to_visible_ms": 33.8,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 80,
+          "first_contentful_paint_ms": 168,
+          "ready_control_ms": 232.2,
+          "open_chat_ms": 23,
+          "create_to_visible_ms": 29.1,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 81.4,
+          "first_contentful_paint_ms": 172,
+          "ready_control_ms": 256.2,
+          "open_chat_ms": 21.4,
+          "create_to_visible_ms": 29,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 78.9,
+          "first_contentful_paint_ms": 176,
+          "ready_control_ms": 239.3,
+          "open_chat_ms": 22.7,
+          "create_to_visible_ms": 37.3,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 82.5,
+          "first_contentful_paint_ms": 168,
+          "ready_control_ms": 246.2,
+          "open_chat_ms": 23.4,
+          "create_to_visible_ms": 27.1,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 78.1,
+          "first_contentful_paint_ms": 164,
+          "ready_control_ms": 228.4,
+          "open_chat_ms": 23.5,
+          "create_to_visible_ms": 31.5,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 97.3,
+          "first_contentful_paint_ms": 188,
+          "ready_control_ms": 263.1,
+          "open_chat_ms": 24.3,
+          "create_to_visible_ms": 25.2,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 75.5,
+          "first_contentful_paint_ms": 160,
+          "ready_control_ms": 238,
+          "open_chat_ms": 22.4,
+          "create_to_visible_ms": 32.4,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        },
+        {
+          "dom_content_loaded_ms": 83.3,
+          "first_contentful_paint_ms": 184,
+          "ready_control_ms": 266.3,
+          "open_chat_ms": 26.1,
+          "create_to_visible_ms": 36.4,
+          "asset_requests": 2,
+          "cached_asset_requests": 0
+        }
+      ],
+      "percentiles_ms": {
+        "dom_content_loaded_ms": {
+          "p50": 81.8,
+          "p95": 89.5
+        },
+        "first_contentful_paint_ms": {
+          "p50": 176,
+          "p95": 192
+        },
+        "ready_control_ms": {
+          "p50": 246.2,
+          "p95": 291
+        },
+        "open_chat_ms": {
+          "p50": 23.5,
+          "p95": 26.2
+        },
+        "create_to_visible_ms": {
+          "p50": 29.8,
+          "p95": 38
+        }
+      }
+    }
+  ]
+}

@@ -22,6 +22,8 @@
 
 权限快照绑定 `grant_id/version/role/workspace_id/user_id/session_id/credential_version`，供操作预演摘要使用。角色撤销和再次授予递增版本，旧计划不因重新授予同名角色自动恢复。
 
+独立工作区角色 `risk_reviewer` 可查看、预演及审议原报价的单次额度风控复核。授权命令中的角色名为 `risk_reviewer`。跨工作区的账户限制另按操作人与目标用户各自授权。[额度风控](decisions/0028-credit-risk.md) · [账户限制](decisions/0027-account-governance.md)
+
 ## 敏感执行
 
 敏感执行请求携带当前密码，浏览器不会获得可转交的认证令牌。密码只在当前请求内处理，不存入计划、审计、幂等正文、日志或数据库。密码长度限制为10—72 UTF-8字节并拒绝NUL；复用账户认证的IP及用户限速和最多4个并行bcrypt槽位。
@@ -68,3 +70,7 @@ finance核实账务、operator核对原任务或关闭工单，都不能把隔�
 ## V14-C1新增角色及当前格式
 
 017扩展显式moderator角色与固定审计动作；角色、账本和存储维护CLI现要求精确001—017。既有角色不自动扩权，新角色也没有在线角色授予、资金退款或隔离内容放行能力。工作区生成限制是持久事实，关闭OPERATIONS_ENABLED不解除限制，普通用户仍可读取自己的状态和复核。详见[生成限制](generation-controls.md)、[准入边界](generation-admission.md)及[062集成记录](../changes/2026-11-14-062-generation-controls-integration.md)。
+
+## 026 内容申诉
+
+显式 moderator 才能看到私有申诉详情并预演、确认独立意见。finance 仅查看去敏财务队列，需要单独核实原工单。申请与复核不会改变账务，读取真实收据后才向本人展示释放金额。[权限与处置](decisions/0026-content-appeal.md)

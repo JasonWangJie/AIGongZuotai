@@ -15,9 +15,16 @@ import (
 	"time"
 
 	"aigongzuotai/internal/studio"
+	"aigongzuotai/internal/videoexport"
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "chat-execution-child" {
+		if len(os.Args) != 2 || studio.RunChatExecutionChild(os.Stdin, os.Stdout) != nil {
+			os.Exit(1)
+		}
+		return
+	}
 	address := os.Getenv("APP_ADDR")
 	if address == "" {
 		address = "127.0.0.1:8080"
@@ -51,6 +58,21 @@ func main() {
 		slog.Error("configuration rejected", "error", err)
 		os.Exit(1)
 	}
+	chatChildren, err := chatChildrenFromEnv(os.LookupEnv)
+	if err != nil {
+		slog.Error("configuration rejected", "error", err)
+		os.Exit(1)
+	}
+	deltaBatching, err := enabledFromEnv("RUN_DELTA_BATCHING_ENABLED", os.LookupEnv)
+	if err != nil {
+		slog.Error("configuration rejected", "error", err)
+		os.Exit(1)
+	}
+	runTimeout, err := chatRunTimeoutFromEnv(os.LookupEnv)
+	if err != nil {
+		slog.Error("configuration rejected", "error", err)
+		os.Exit(1)
+	}
 	mediaScheduling, err := mediaSchedulingFromEnv(os.LookupEnv)
 	if err != nil {
 		slog.Error("configuration rejected", "error", err)
@@ -71,7 +93,17 @@ func main() {
 		slog.Error("configuration rejected", "error", err)
 		os.Exit(1)
 	}
-	operations, err := operationsFromEnv(os.LookupEnv)
+	longHistory, err := enabledFromEnv("LONG_CONVERSATION_HISTORY_ENABLED", os.LookupEnv)
+	if err != nil {
+		slog.Error("configuration rejected", "error", err)
+		os.Exit(1)
+	}
+	replayConnections, err := replayConnectionsFromEnv(os.LookupEnv)
+	if err != nil {
+		slog.Error("configuration rejected", "error", err)
+		os.Exit(1)
+	}
+	operations, err := enabledFromEnv("OPERATIONS_ENABLED", os.LookupEnv)
 	if err != nil {
 		slog.Error("configuration rejected", "error", err)
 		os.Exit(1)
@@ -87,13 +119,21 @@ func main() {
 		os.Exit(1)
 	}
 	app, err := studio.New(studio.Config{Mode: os.Getenv("PROVIDER_MODE"), BaseURL: os.Getenv("NEWAPI_BASE_URL"), APIKey: os.Getenv("NEWAPI_API_KEY"), ChatModel: os.Getenv("NEWAPI_CHAT_MODEL"), WebDir: os.Getenv("APP_WEB_DIR"),
-		ChatScheduling:    chatScheduling,
-		MediaScheduling:   mediaScheduling,
-		MediaDelivery:     studio.MediaDeliveryConfig{EncryptionKey: os.Getenv("MEDIA_DELIVERY_KEY")},
-		MediaModeration:   mediaModeration,
-		Moderation:        moderation,
-		OperationsEnabled: operations,
-		BillingMode:       os.Getenv("BILLING_MODE"), BillingPriceFile: os.Getenv("BILLING_PRICE_FILE"), Mail: mail, Admission: admission, AssetStorage: assetStorage, TaskLeaseDuration: taskLease, MetricsToken: os.Getenv("METRICS_TOKEN"), ModelCatalogFile: os.Getenv("MODEL_CATALOG_FILE"), ReferenceDir: os.Getenv("REFERENCE_DIR"),
+		ChatScheduling:           chatScheduling,
+		LocaleTrustedProxies:     os.Getenv("LOCALE_TRUSTED_PROXIES"),
+		ChatChildren:             chatChildren,
+		RunDeltaBatching:         deltaBatching,
+		RunTimeout:               runTimeout,
+		MediaScheduling:          mediaScheduling,
+		MediaDelivery:            studio.MediaDeliveryConfig{EncryptionKey: os.Getenv("MEDIA_DELIVERY_KEY")},
+		MediaModeration:          mediaModeration,
+		Moderation:               moderation,
+		OperationsEnabled:        operations,
+		LongConversationHistory:  longHistory,
+		RunReplayReadConnections: replayConnections,
+		VideoExport:              videoexport.Config{FFmpegPath: os.Getenv("VIDEO_EXPORT_FFMPEG"), FFprobePath: os.Getenv("VIDEO_EXPORT_FFPROBE"), TempDir: os.Getenv("VIDEO_EXPORT_TEMP_DIR")},
+		OrderCatalogFile:         os.Getenv("ORDER_CATALOG_FILE"),
+		BillingMode:              os.Getenv("BILLING_MODE"), BillingPriceFile: os.Getenv("BILLING_PRICE_FILE"), Mail: mail, Admission: admission, AssetStorage: assetStorage, TaskLeaseDuration: taskLease, MetricsToken: os.Getenv("METRICS_TOKEN"), ModelCatalogFile: os.Getenv("MODEL_CATALOG_FILE"), ReferenceDir: os.Getenv("REFERENCE_DIR"),
 		DatabaseURL: os.Getenv("DATABASE_URL"), AuthMode: os.Getenv("AUTH_MODE"), AsyncImageBaseURL: os.Getenv("ASYNC_IMAGE_BASE_URL"), AsyncImageAPIKey: os.Getenv("ASYNC_IMAGE_API_KEY"), AsyncImageModel: os.Getenv("ASYNC_IMAGE_MODEL"), AsyncVideoModel: os.Getenv("ASYNC_VIDEO_MODEL"), AsyncImageCredentialID: os.Getenv("ASYNC_IMAGE_CREDENTIAL_ID"), AssetDir: os.Getenv("ASSET_DIR"), AllowedAssetHosts: assetHosts, AsyncVideoSeconds: videoSeconds, AsyncVideoResolution: os.Getenv("ASYNC_VIDEO_RESOLUTION")})
 	if err != nil {
 		slog.Error("configuration rejected", "error", err)
@@ -183,15 +223,26 @@ func mediaModerationFromEnv(lookup func(string) (string, bool)) (studio.MediaMod
 	return studio.MediaModerationConfig{Mode: mode, PolicyFile: get("MEDIA_MODERATION_POLICY_FILE"), Endpoint: get("MEDIA_MODERATION_ENDPOINT"), APIKey: get("MEDIA_MODERATION_API_KEY"), CredentialID: get("MEDIA_MODERATION_CREDENTIAL_ID")}, nil
 }
 
-func operationsFromEnv(lookup func(string) (string, bool)) (bool, error) {
-	raw, present := lookup("OPERATIONS_ENABLED")
+func enabledFromEnv(name string, lookup func(string) (string, bool)) (bool, error) {
+	raw, present := lookup(name)
 	if !present || raw == "false" {
 		return false, nil
 	}
 	if raw == "true" {
 		return true, nil
 	}
-	return false, errors.New("OPERATIONS_ENABLED must be true or false")
+	return false, fmt.Errorf("%s must be true or false", name)
+}
+
+func replayConnectionsFromEnv(lookup func(string) (string, bool)) (int, error) {
+	value, present := lookup("RUN_REPLAY_READ_CONNECTIONS")
+	if !present {
+		return 0, nil
+	}
+	if len(value) != 1 || value[0] < '0' || value[0] > '4' {
+		return 0, errors.New("RUN_REPLAY_READ_CONNECTIONS must be a decimal digit between 0 and 4")
+	}
+	return int(value[0] - '0'), nil
 }
 
 func taskLeaseFromEnv(lookup func(string) (string, bool)) (time.Duration, error) {
@@ -206,6 +257,18 @@ func taskLeaseFromEnv(lookup func(string) (string, bool)) (time.Duration, error)
 	seconds, err := strconv.Atoi(raw)
 	if !valid || err != nil || seconds < 5 || seconds > 300 {
 		return 0, errors.New("TASK_LEASE_SECONDS must be decimal seconds between 5 and 300")
+	}
+	return time.Duration(seconds) * time.Second, nil
+}
+
+func chatRunTimeoutFromEnv(lookup func(string) (string, bool)) (time.Duration, error) {
+	raw, present := lookup("CHAT_RUN_TIMEOUT_SECONDS")
+	if !present {
+		return 0, nil // RunTimeout defaults to ten minutes in studio.Config.
+	}
+	seconds, err := strconv.ParseUint(raw, 10, 16)
+	if err != nil || len(raw) > 4 || seconds < 1 || seconds > 3600 {
+		return 0, errors.New("CHAT_RUN_TIMEOUT_SECONDS must be decimal seconds between 1 and 3600")
 	}
 	return time.Duration(seconds) * time.Second, nil
 }
@@ -236,6 +299,7 @@ func admissionFromEnv(lookup func(string) (string, bool)) (studio.AdmissionLimit
 		{"ADMISSION_WORKSPACE_TASKS", &limits.WorkspaceTasks, 4096},
 		{"ADMISSION_MODEL_TASKS", &limits.ModelTasks, 4096},
 		{"ADMISSION_WORKSPACE_STREAMS", &limits.WorkspaceStreams, 128},
+		{"ADMISSION_GLOBAL_STREAMS", &limits.GlobalStreams, 256},
 	} {
 		if raw, present := lookup(setting.name); present {
 			value, err := strconv.Atoi(raw)

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -21,6 +22,8 @@ type OperationsAdminConfig struct {
 	Action       string
 	WorkspaceID  string
 	UserID       string
+	TargetUserID string
+	RiskPolicy   *CreditRiskPolicyLimits
 	Role         string
 	OperationKey string
 	Reason       string
@@ -47,12 +50,16 @@ type OperationsRoleMutation struct {
 }
 
 type OperationsAdminReport struct {
-	Action        string                  `json:"action"`
-	SchemaVersion int                     `json:"schema_version"`
-	Grants        []OperationsRoleGrant   `json:"grants"`
-	Result        *OperationsRoleMutation `json:"result,omitempty"`
-	PlanDigest    string                  `json:"plan_digest,omitempty"`
-	Applied       bool                    `json:"applied"`
+	Action        string                    `json:"action"`
+	SchemaVersion int                       `json:"schema_version"`
+	TargetGrant   *AccountGovernanceGrant   `json:"target_grant,omitempty"`
+	TargetResult  *AccountGrantMutation     `json:"target_result,omitempty"`
+	Policy        *CreditRiskPolicy         `json:"policy,omitempty"`
+	PolicyChange  *CreditRiskPolicyMutation `json:"policy_change,omitempty"`
+	Grants        []OperationsRoleGrant     `json:"grants"`
+	Result        *OperationsRoleMutation   `json:"result,omitempty"`
+	PlanDigest    string                    `json:"plan_digest,omitempty"`
+	Applied       bool                      `json:"applied"`
 }
 
 type operationsRoleRequest struct {
@@ -72,10 +79,17 @@ func validOperationsOpaque(s string) bool {
 }
 
 func validateOperationsAdmin(c OperationsAdminConfig) error {
+	if c.RiskPolicy != nil {
+		return validateCreditRiskPolicyChange(c)
+	}
 	if c.Action != "inspect" && c.Action != "grant" && c.Action != "revoke" {
 		return errors.New("action must be inspect, grant or revoke")
 	}
-	if !validOperationsID(c.WorkspaceID, "ws") || !validOperationsID(c.UserID, "usr") {
+	if c.TargetUserID != "" {
+		if c.WorkspaceID != "" || c.Role != "" || !validOperationsID(c.TargetUserID, "usr") || !validOperationsID(c.UserID, "usr") || c.UserID == c.TargetUserID {
+			return errors.New("account governance requires distinct canonical operator and target users without a workspace role")
+		}
+	} else if !validOperationsID(c.WorkspaceID, "ws") || !validOperationsID(c.UserID, "usr") {
 		return errors.New("operations administration requires canonical workspace and user IDs")
 	}
 	if c.Action == "inspect" {
@@ -84,8 +98,8 @@ func validateOperationsAdmin(c OperationsAdminConfig) error {
 		}
 		return nil
 	}
-	if len(operationsRolePermissions(c.Role)) == 0 {
-		return errors.New("role must be observer, operator, finance or moderator")
+	if c.TargetUserID == "" && len(operationsRolePermissions(c.Role)) == 0 {
+		return errors.New("role must be observer, operator, finance, moderator, risk_reviewer or support")
 	}
 	if !validOperationsOpaque(c.OperationKey) || !validOperationsOpaque(c.Reason) || !validOperationsOpaque(c.EvidenceRef) {
 		return errors.New("role changes require bounded opaque operation-key, reason and evidence; no URLs or private content")
@@ -100,7 +114,7 @@ func validateOperationsAdmin(c OperationsAdminConfig) error {
 }
 
 func AdministerOperations(ctx context.Context, c OperationsAdminConfig) (OperationsAdminReport, error) {
-	report := OperationsAdminReport{Action: c.Action, SchemaVersion: 20, Grants: []OperationsRoleGrant{}}
+	report := OperationsAdminReport{Action: c.Action, SchemaVersion: maintenanceSchemaVersion, Grants: []OperationsRoleGrant{}}
 	if err := validateOperationsAdmin(c); err != nil {
 		return report, err
 	}
@@ -121,8 +135,8 @@ func AdministerOperations(ctx context.Context, c OperationsAdminConfig) (Operati
 		return report, errors.New("stop the workbench before operations administration; writer lock unavailable")
 	}
 	var versions []int32
-	if err = conn.QueryRow(ctx, "SELECT array_agg(version ORDER BY version) FROM studio_schema_versions").Scan(&versions); err != nil || len(versions) != 20 {
-		return report, errors.New("operations administration requires exactly schema versions 001..020; it does not migrate")
+	if err = conn.QueryRow(ctx, "SELECT array_agg(version ORDER BY version) FROM studio_schema_versions").Scan(&versions); err != nil || len(versions) != maintenanceSchemaVersion {
+		return report, fmt.Errorf("operations administration requires exactly schema versions 001..%03d; it does not migrate", maintenanceSchemaVersion)
 	}
 	for i, v := range versions {
 		if int(v) != i+1 {
@@ -142,6 +156,12 @@ func AdministerOperations(ctx context.Context, c OperationsAdminConfig) (Operati
 		defer cancel()
 		_ = tx.Rollback(cleanup)
 	}()
+	if c.RiskPolicy != nil {
+		return administerCreditRiskPolicy(ctx, tx, identity, c, report)
+	}
+	if c.TargetUserID != "" {
+		return administerAccountGrant(ctx, tx, identity, c, report)
+	}
 	request := operationsRoleRequest{c.Action, c.WorkspaceID, c.UserID, c.Role, c.OperationKey, c.Reason, c.EvidenceRef}
 	raw, _ := json.Marshal(request)
 	requestHash := sha256.Sum256(raw)

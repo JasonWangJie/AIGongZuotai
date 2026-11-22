@@ -37,6 +37,9 @@ var ErrMediaCancelUnsupported = errors.New("the documented asynchronous media AP
 // MediaSubmission is immutable once saved. JSON media idempotency is defined over
 // the original bytes, submission path and API key, not equivalent JSON values.
 type MediaSubmission struct {
+	// Empty for existing JSON submissions and image edits. File-backed video
+	// submissions require an explicit input type before the network is used.
+	InputType        string    `json:"input_type,omitempty"`
 	Body             []byte    `json:"body,omitempty"`
 	BodyFileID       string    `json:"body_file_id,omitempty"`
 	BodySize         int64     `json:"body_size,omitempty"`
@@ -208,6 +211,13 @@ func (p *AsyncMediaProvider) Prepare(input TaskInput) (MediaSubmission, error) {
 // fills parameters from mutable provider defaults or consults the catalog.
 // Persist the returned bytes with the task before calling SubmitPrepared.
 func (p *AsyncMediaProvider) PrepareModel(input TaskInput, upstreamModel string) (MediaSubmission, error) {
+	if input.Operation == "first_frame" || input.Inputs.FirstFrame != nil || input.Inputs.WorkflowID != "" {
+		return MediaSubmission{}, &MediaProviderError{Code: "MEDIA_CAPABILITY_UNAVAILABLE", Message: "first-frame video requires an immutable file submission"}
+	}
+	return p.prepareMediaModel(input, upstreamModel)
+}
+
+func (p *AsyncMediaProvider) prepareMediaModel(input TaskInput, upstreamModel string) (MediaSubmission, error) {
 	count := input.Parameters.Count
 	prompt := strings.TrimSpace(input.Inputs.Prompt)
 	if prompt == "" || len(prompt) > 64<<10 || !utf8.ValidString(prompt) {

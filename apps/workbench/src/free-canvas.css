@@ -1,0 +1,325 @@
+.free-canvas {
+  --fc-line: #494452;
+  --fc-ink: #eeeaf1;
+  --fc-muted: #b9b3c0;
+  --fc-paper: #211f28;
+  --fc-accent: var(--accent, #b6a3eb);
+  min-width: 0;
+  color: var(--fc-ink);
+  background: #1a181f;
+  border: 1px solid #3b3742;
+  border-radius: 14px;
+  padding: clamp(12px, 2vw, 24px);
+  font: inherit;
+  color-scheme: dark;
+}
+.free-canvas * {
+  box-sizing: border-box;
+}
+.free-canvas button,
+.free-canvas input,
+.free-canvas textarea,
+.free-canvas select {
+  font: inherit;
+}
+.free-canvas button {
+  border: 1px solid var(--fc-line);
+  border-radius: 7px;
+  background: #302d37;
+  color: var(--fc-ink);
+  padding: 7px 10px;
+  cursor: pointer;
+}
+.free-canvas button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.free-canvas :focus-visible {
+  outline: 2px solid var(--fc-accent);
+  outline-offset: 2px;
+}
+.free-canvas button:not(:disabled):hover {
+  border-color: #918b9c;
+}
+.free-canvas .free-primary {
+  background: var(--fc-accent);
+  color: #211b2d;
+  border-color: var(--fc-accent);
+  font-weight: 700;
+}
+.free-heading,
+.free-command,
+.free-command > div,
+.free-actions,
+.free-history,
+.free-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.free-heading,
+.free-command {
+  justify-content: space-between;
+}
+.free-heading {
+  margin-bottom: 16px;
+}
+.free-heading h2 {
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-size: clamp(22px, 3vw, 32px);
+  line-height: 1.15;
+}
+.free-heading p {
+  font-size: 12px;
+  margin: 0 0 5px;
+  color: var(--fc-accent);
+}
+.free-command {
+  font-size: 13px;
+  padding: 12px 0;
+  border-block: 1px solid var(--fc-line);
+}
+.free-command span,
+.free-instructions {
+  color: var(--fc-muted);
+}
+.free-command b {
+  font-weight: 500;
+  color: var(--fc-accent);
+}
+.free-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(190px, 24%, 270px);
+  gap: 12px;
+}
+.free-workspace,
+.free-canvas-stage,
+.free-inspector {
+  min-width: 0;
+}
+.free-canvas-stage {
+  position: relative;
+}
+.free-canvas-viewport {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  height: clamp(390px, 62vh, 760px);
+  width: 100%;
+  touch-action: none;
+  cursor: grab;
+  border: 1px solid var(--fc-line);
+  border-radius: 10px;
+  background-color: #19181d;
+  background-image: radial-gradient(#48434e 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+.free-canvas-viewport:active {
+  cursor: grabbing;
+}
+.free-canvas-lines,
+.free-canvas-world {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.free-canvas-lines {
+  height: 100%;
+  width: 100%;
+}
+.free-canvas-world {
+  transform-origin: 0 0;
+}
+.free-canvas .free-canvas-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  overflow: hidden;
+  pointer-events: auto;
+  user-select: none;
+  cursor: grab;
+  border: 1px solid #65606e;
+  border-left: 3px solid #a994c5;
+  background: #302c37;
+  padding: 9px 12px;
+  border-radius: 8px;
+}
+.free-canvas .free-canvas-card.is-selected {
+  border-color: var(--fc-accent);
+  outline: 1px solid var(--fc-accent);
+}
+.free-canvas .free-canvas-card.is-group {
+  border-style: dashed;
+  background: #37303e;
+}
+.free-canvas-card .free-card-kind {
+  color: #cbb7d9;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+.free-canvas-card strong,
+.free-canvas-card small {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.free-canvas-card small {
+  color: #d2cad7;
+  font-size: 11px;
+}
+.free-canvas-card img {
+  width: 48px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 3px;
+}
+.free-canvas-tools {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  bottom: 10px;
+  left: 10px;
+  background: #211e27;
+  padding: 4px;
+  border: 1px solid var(--fc-line);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.free-canvas-tools output {
+  min-width: 42px;
+  text-align: center;
+}
+.free-canvas-empty {
+  position: absolute;
+  inset: 42% 12px auto;
+  text-align: center;
+  color: var(--fc-muted);
+  pointer-events: none;
+}
+.free-instructions,
+.free-status,
+.free-section p,
+.free-notice {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.free-status {
+  margin: 8px 0;
+  min-height: 4px;
+  color: var(--fc-accent);
+}
+.free-inspector {
+  font-size: 13px;
+}
+.free-section {
+  padding: 10px 12px;
+  margin: 0 0 10px;
+  border: 1px solid var(--fc-line);
+  border-radius: 8px;
+  background: var(--fc-paper);
+  min-width: 0;
+}
+.free-inspector legend,
+.free-canvas summary {
+  font-weight: 600;
+}
+.free-canvas summary {
+  cursor: pointer;
+}
+.free-inspector input,
+.free-inspector textarea,
+.free-inspector select,
+.free-title-edit input {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  margin: 4px 0 8px;
+  background: #18161c;
+  color: var(--fc-ink);
+  border: 1px solid var(--fc-line);
+  border-radius: 5px;
+}
+.free-inspector textarea {
+  resize: vertical;
+}
+.free-inspector label {
+  display: block;
+  color: var(--fc-muted);
+}
+.free-inspector details {
+  padding-block: 8px;
+}
+.free-coords {
+  display: flex;
+  gap: 8px;
+}
+.free-coords label {
+  flex: 1;
+  min-width: 0;
+}
+.free-canvas ul {
+  padding: 0;
+  margin: 6px 0;
+  list-style: none;
+}
+.free-inspector li {
+  overflow-wrap: anywhere;
+  margin: 4px 0;
+}
+.free-picker li button {
+  width: 100%;
+  text-align: left;
+}
+.free-picker li small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  color: var(--fc-muted);
+}
+.free-notice,
+.free-history {
+  margin: 8px 0;
+  padding: 10px;
+  background: #322f34;
+  border-radius: 6px;
+}
+.free-history h3 {
+  width: 100%;
+  margin: 0;
+}
+@media (max-width: 850px) {
+  .free-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .free-canvas-viewport {
+    height: clamp(320px, 47vh, 520px);
+  }
+  .free-inspector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+    gap: 8px;
+    align-items: start;
+  }
+  .free-section {
+    margin: 0;
+  }
+  .free-command {
+    align-items: flex-start;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .free-canvas * {
+    scroll-behavior: auto;
+  }
+}

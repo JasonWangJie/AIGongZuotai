@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "go_version": "go1.26.11",
+  "runs": 6001,
+  "tasks": 6001,
+  "initial_pending": 9999,
+  "projected_events": 22001,
+  "fixture_load_ms": 9446.7757,
+  "current_format_migration_only_ms": 33.8898,
+  "complete_new_ms": 36198.2391,
+  "second_new_ms": 686.5996,
+  "run_pages": 47,
+  "task_pages": 47,
+  "max_page_records": 128,
+  "max_page_encoded_bytes": 74595,
+  "cached_projects_peak": 0,
+  "cached_runs_peak": 512,
+  "cached_tasks_peak": 512,
+  "leases_cleared": 6001,
+  "second_new_business_unchanged": true,
+  "external_calls": 0,
+  "scope": "single local complete New; bounded startup caches; no production capacity claim"
+}

@@ -224,8 +224,8 @@ func TestPostgresMediaSchedulerUpgrade019PreservesEvidenceAndMaintenance(t *test
 		t.Fatal("020 migration changed original019 business/private/ledger/idempotency evidence")
 	}
 	var count, maximum int
-	if err = conn.QueryRow(ctx, `SELECT count(*),max(version) FROM studio_schema_versions`).Scan(&count, &maximum); err != nil || count != 20 || maximum != 20 {
-		t.Fatal("upgrade not exact020", err)
+	if err = conn.QueryRow(ctx, `SELECT count(*),max(version) FROM studio_schema_versions`).Scan(&count, &maximum); err != nil || count != maintenanceSchemaVersion || maximum != maintenanceSchemaVersion {
+		t.Fatal("upgrade did not apply all current migrations", err)
 	}
 	for phase, id := range ids {
 		var lane string
@@ -267,7 +267,7 @@ func TestPostgresMediaSchedulerUpgrade019PreservesEvidenceAndMaintenance(t *test
 	}
 	maintenance := StorageMaintenanceConfig{DatabaseURL: database, ReferenceDir: referenceDir, AssetDir: assetDir}
 	plan, err := MaintainPrivateStorage(ctx, maintenance)
-	if err != nil || plan.SchemaVersion != 20 || plan.ProtectedFiles != 3 || len(plan.Candidates) != 0 {
+	if err != nil || plan.SchemaVersion != maintenanceSchemaVersion || plan.ProtectedFiles != 3 || len(plan.Candidates) != 0 {
 		t.Fatal("020 upgrade lost candidate reachability", err, plan)
 	}
 	// Corrupt only the derived scheduling view in this isolated fixture. No

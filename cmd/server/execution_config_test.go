@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestChatSchedulingEnvironmentStrictBoundsAndMissingDefaults(t *testing.T) {
@@ -37,5 +38,31 @@ func TestChatSchedulingEnvironmentStrictBoundsAndMissingDefaults(t *testing.T) {
 	_, err = chatSchedulingFromEnv(func(key string) (string, bool) { return "secret-misconfigured-value", key == "CHAT_WORKERS" })
 	if err == nil || strings.Contains(err.Error(), "secret-misconfigured-value") {
 		t.Fatal("configuration error leaked raw value")
+	}
+}
+
+func TestChatRunTimeoutEnvironment(t *testing.T) {
+	parse := func(raw string, present bool) (time.Duration, error) {
+		return chatRunTimeoutFromEnv(func(name string) (string, bool) {
+			if name != "CHAT_RUN_TIMEOUT_SECONDS" {
+				t.Fatalf("unexpected setting %q", name)
+			}
+			return raw, present
+		})
+	}
+	if v, err := parse("", false); err != nil || v != 0 {
+		t.Fatal("unset deadline must preserve the application default", v, err)
+	}
+	for _, seconds := range []int{1, 600, 1860, 2100, 3600} {
+		v, err := parse(fmt.Sprint(seconds), true)
+		if err != nil || v != time.Duration(seconds)*time.Second {
+			t.Fatalf("valid deadline %d: %v, %v", seconds, v, err)
+		}
+	}
+	for _, raw := range []string{"", "0", "-1", "+1", "0x10", "１", "1.5", "1_000", "1e3", "35m", " 60", "60 ", "3601", "100000000000000000000", "private-value"} {
+		v, err := parse(raw, true)
+		if err == nil || v != 0 || strings.Contains(err.Error(), "private-value") {
+			t.Fatal("invalid deadline was accepted or echoed")
+		}
 	}
 }

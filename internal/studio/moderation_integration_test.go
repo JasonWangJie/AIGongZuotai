@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func newModeratedBillingFixture(t *testing.T) (*App, *httptest.Server, *http.Client, testIdentity, string) {
+func newModeratedBillingFixture(t *testing.T, operations ...bool) (*App, *httptest.Server, *http.Client, testIdentity, string) {
 	t.Helper()
 	database := testDatabase(t)
 	pricePath := filepath.Join(t.TempDir(), "prices.json")
@@ -21,7 +21,7 @@ func newModeratedBillingFixture(t *testing.T) (*App, *httptest.Server, *http.Cli
 		t.Fatal(err)
 	}
 	policy := executionModerationConfig(t, []ModerationRule{{Phase: "input", Contains: "DENY-INPUT", Decision: "block"}, {Phase: "output", Contains: "BLOCK-OUTPUT", Decision: "block"}, {Phase: "output", Contains: "UNKNOWN-OUTPUT", Decision: "review"}})
-	a, s := testApp(t, Config{DatabaseURL: database, AuthMode: "required", Moderation: policy, BillingMode: "credits", BillingPriceFile: pricePath})
+	a, s := testApp(t, Config{DatabaseURL: database, AuthMode: "required", OperationsEnabled: len(operations) > 0 && operations[0], Moderation: policy, BillingMode: "credits", BillingPriceFile: pricePath})
 	c := authClient(t)
 	identity := registerFixture(t, c, s.URL, "moderation-billing@example.test")
 	if err := ledgerTx(a.store, func(ctx context.Context, tx pgx.Tx) error {
@@ -178,10 +178,7 @@ func TestPostgresModeratedRestartKeepsQuarantineAndOriginalReplay(t *testing.T) 
 	if err := a.store.createRunCandidate(&run, identity.Workspace.ID+":runs:"+key, payloadHash(input)); err != nil {
 		t.Fatal(err)
 	}
-	run.Status = "RUNNING"
-	if err := a.store.saveRun(run); err != nil {
-		t.Fatal(err)
-	}
+	claimFixtureRun(t, a.store, &run)
 	cfg := a.config
 	a.Close()
 	cfg.Moderation = ModerationConfig{} // Turning off current checks never releases prior private candidates.

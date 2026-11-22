@@ -24,24 +24,26 @@ type ParameterPreset struct {
 	Seconds     int    `json:"seconds,omitempty"`
 }
 type ModelCapabilities struct {
-	ContextWindowTokens int               `json:"context_window_tokens,omitempty"`
-	MaxOutputTokens     int               `json:"max_output_tokens,omitempty"`
-	ImageEditSupported  bool              `json:"image_edit_supported"`
-	MaxReferenceImages  int               `json:"max_reference_images"`
-	CancelSupported     bool              `json:"cancel_supported"`
-	MaxCount            int               `json:"max_count"`
-	MaxPromptBytes      int               `json:"max_prompt_bytes"`
-	ParameterPresets    []ParameterPreset `json:"parameter_presets"`
+	ContextWindowTokens      int               `json:"context_window_tokens,omitempty"`
+	MaxOutputTokens          int               `json:"max_output_tokens,omitempty"`
+	ImageEditSupported       bool              `json:"image_edit_supported"`
+	VideoFirstFrameSupported bool              `json:"video_first_frame_supported,omitempty"`
+	MaxReferenceImages       int               `json:"max_reference_images"`
+	CancelSupported          bool              `json:"cancel_supported"`
+	MaxCount                 int               `json:"max_count"`
+	MaxPromptBytes           int               `json:"max_prompt_bytes"`
+	ParameterPresets         []ParameterPreset `json:"parameter_presets"`
 }
 type Model struct {
-	ID           string            `json:"id"`
-	Name         string            `json:"name"`
-	Kind         string            `json:"kind"`
-	Description  string            `json:"description"`
-	Enabled      bool              `json:"enabled"`
-	Reason       string            `json:"reason,omitempty"`
-	Version      string            `json:"version"`
-	Capabilities ModelCapabilities `json:"capabilities"`
+	ID                 string            `json:"id"`
+	Name               string            `json:"name"`
+	Kind               string            `json:"kind"`
+	Description        string            `json:"description"`
+	BuiltinDescription bool              `json:"builtin_description,omitempty"`
+	Enabled            bool              `json:"enabled"`
+	Reason             string            `json:"reason,omitempty"`
+	Version            string            `json:"version"`
+	Capabilities       ModelCapabilities `json:"capabilities"`
 }
 type Catalog struct {
 	Version string  `json:"version"`
@@ -72,13 +74,14 @@ type catalogConfigModel struct {
 	Capabilities         catalogConfigCapabilities `json:"capabilities"`
 }
 type catalogConfigCapabilities struct {
-	ContextWindowTokens int               `json:"context_window_tokens,omitempty"`
-	MaxOutputTokens     int               `json:"max_output_tokens,omitempty"`
-	ImageEditSupported  bool              `json:"image_edit_supported,omitempty"`
-	MaxReferenceImages  int               `json:"max_reference_images,omitempty"`
-	MaxCount            int               `json:"max_count"`
-	MaxPromptBytes      int               `json:"max_prompt_bytes"`
-	ParameterPresets    []ParameterPreset `json:"parameter_presets"`
+	ContextWindowTokens      int               `json:"context_window_tokens,omitempty"`
+	MaxOutputTokens          int               `json:"max_output_tokens,omitempty"`
+	ImageEditSupported       bool              `json:"image_edit_supported,omitempty"`
+	VideoFirstFrameSupported bool              `json:"video_first_frame_supported,omitempty"`
+	MaxReferenceImages       int               `json:"max_reference_images,omitempty"`
+	MaxCount                 int               `json:"max_count"`
+	MaxPromptBytes           int               `json:"max_prompt_bytes"`
+	ParameterPresets         []ParameterPreset `json:"parameter_presets"`
 }
 
 var catalogID = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,63}$`)
@@ -144,6 +147,7 @@ func loadModelCatalog(c Config) (*modelCatalog, error) {
 			model.Enabled = false
 			model.Reason = "provider_not_configured"
 		}
+		model.Capabilities.VideoFirstFrameSupported = raw.Capabilities.VideoFirstFrameSupported
 		// The private binding affects the opaque version but is never serialized
 		// in the public catalog. Credentials and provider URLs are not hashed here.
 		model.Version = contentVersion(struct {
@@ -151,8 +155,10 @@ func loadModelCatalog(c Config) (*modelCatalog, error) {
 			Binding              string
 			ChatOutputLimitField string `json:",omitempty"`
 		}{model, raw.UpstreamModel, raw.ChatOutputLimitField})
-		result.Public.Models = append(result.Public.Models, model)
 		result.Entries[model.ID] = catalogEntry{Model: model, UpstreamModel: raw.UpstreamModel, ChatOutputLimitField: raw.ChatOutputLimitField}
+		// Display provenance belongs to the public catalog, outside execution snapshots.
+		model.BuiltinDescription = c.ModelCatalogFile == ""
+		result.Public.Models = append(result.Public.Models, model)
 	}
 	result.Public.Version = contentVersion(result.Public.Models)
 	result.JSON, _ = json.Marshal(result.Public)
@@ -226,6 +232,9 @@ func validateCatalogModel(m catalogConfigModel) error {
 		return invalid("upstream_model must contain 1 to 128 safe bytes")
 	}
 	cap := m.Capabilities
+	if cap.VideoFirstFrameSupported && m.Kind != "video" {
+		return invalid("video_first_frame_supported requires a video model")
+	}
 	if m.Kind == "chat" {
 		if cap.ContextWindowTokens < minChatContextWindowTokens || cap.ContextWindowTokens > maxChatContextWindowTokens || cap.MaxOutputTokens < minChatOutputTokens || cap.MaxOutputTokens > maxChatOutputTokens || cap.MaxOutputTokens+ChatSafetyReserve+ChatMessageOverhead >= cap.ContextWindowTokens || !validChatOutputLimitField(m.ChatOutputLimitField) {
 			return invalid("chat window/output budget or output-limit field is invalid")

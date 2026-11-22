@@ -1,3 +1,4 @@
+import { uiText } from './locale';
 import { useEffect, useRef, useState } from 'react';
 import { api, ApiError } from './api';
 import { generationCanCreate, generationScope, mergeGenerationAccess, safeGenerationError, validGenerationAccess } from './generationControls';
@@ -18,7 +19,7 @@ export function useGenerationAccess({ owner, workspace, required, visible, onExp
       const waitUntil = Math.max(cooldown.current.scope === scope ? cooldown.current.until : 0, requestedAt.current.scope === scope ? requestedAt.current.at + 3000 : 0);
       if (Date.now() < waitUntil) { schedule(waitUntil - Date.now()); return; }
       busy = true; requestedAt.current = { scope, at: Date.now() }; abort = new AbortController(); setLoading(true);
-      try { const value = await api.generationAccess(abort.signal); if (!active()) return; if (!validGenerationAccess(value, workspace)) throw new ApiError('生成权限响应范围或内容无效。'); setSnapshot(old => ({ scope, value: mergeGenerationAccess(old?.scope === scope ? old.value : null, value), at: Date.now() })); setIssue(null); }
+      try { const value = await api.generationAccess(abort.signal); if (!active()) return; if (!validGenerationAccess(value, workspace)) throw new ApiError(uiText('生成权限响应范围或内容无效。')); setSnapshot(old => ({ scope, value: mergeGenerationAccess(old?.scope === scope ? old.value : null, value), at: Date.now() })); setIssue(null); }
       catch (cause) { if (!active() || abort.signal.aborted) return; const error = safeGenerationError(cause); cooldown.current = { scope, until: error.retryAt }; setIssue({ scope, value: error }); if (error.status === 401) expire.current(); }
       finally { busy = false; if (active()) { setLoading(false); schedule(GENERATION_POLL_MS); } }
     }

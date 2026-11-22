@@ -214,21 +214,15 @@ func TestPostgresAdmissionParkedEvictionRestartAndRecovery(t *testing.T) {
 	}
 	_, _, err = a.createTask(taskInput("image"), "blocked-before-restart")
 	assertAdmissionError(t, err, "ADMISSION_WORKSPACE_LIMIT")
-	run, _, err := a.createRun(runInput(), "interrupted-pg-run")
-	if err != nil {
+	// Persist a real authorized 022 execution outside the worker cache. Closing
+	// this fixture leaves the same open stream a killed process would leave.
+	run := outboxFixtureRun(newID("run"))
+	run.Output = ""
+	if err := a.store.createRun(run, "ws_demo:runs:interrupted-pg-run", payloadHash(runInput())); err != nil {
 		t.Fatal(err)
 	}
+	claimFixtureRun(t, a.store, &run)
 	a.Close()
-	// Simulate the persisted RUNNING checkpoint left by an abrupt process exit.
-	admin, err := pgx.Connect(context.Background(), db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = admin.Exec(context.Background(), "UPDATE studio_runs SET document=jsonb_set(document,'{status}','\"RUNNING\"'::jsonb) WHERE id=$1", run.ID)
-	_ = admin.Close(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
 	a, err = newIsolatedApp(t, cfg)
 	if err != nil {
 		t.Fatal(err)

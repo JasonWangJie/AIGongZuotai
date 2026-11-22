@@ -1,0 +1,25 @@
+{
+  "comic-v1.pptx": {
+    "slides": 2,
+    "embedded_pictures": 2
+  },
+  "comic-v2.pptx": {
+    "slides": 2,
+    "embedded_pictures": 2
+  },
+  "comic-v1-reopened.pptx": {
+    "slides": 2,
+    "embedded_pictures": 2
+  },
+  "comic-edited-check.pptx": {
+    "slides": 2,
+    "embedded_pictures": 2
+  },
+  "verified_pdf_count": 5,
+  "comic-dense.pptx": {
+    "slides": 6,
+    "native_body_characters": 1061,
+    "embedded_pictures": 1,
+    "independent_pdf": true
+  }
+}

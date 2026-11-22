@@ -182,7 +182,10 @@ func (a *App) acceptReferenceContext(ctx context.Context, workspaceID, projectID
 	if a.ctx.Err() != nil {
 		return ReferenceAsset{}, false, failure(503, "SHUTTING_DOWN", "服务正在停止")
 	}
-	project, ok := a.projects[projectID]
+	project, ok, err := a.projectLocked(projectID)
+	if err != nil {
+		return ReferenceAsset{}, false, err
+	}
 	if !ok || project.WorkspaceID != workspaceID {
 		return ReferenceAsset{}, false, failure(404, "PROJECT_NOT_FOUND", "项目不存在")
 	}
@@ -250,7 +253,10 @@ func (a *App) acceptReferenceContext(ctx context.Context, workspaceID, projectID
 		if a.ctx.Err() != nil || ctx.Err() != nil {
 			return ReferenceAsset{}, false, failure(503, "MEDIA_MODERATION_UNAVAILABLE", "本次素材尚未受理，请保留原文件核对")
 		}
-		project, ok = a.projects[projectID]
+		project, ok, err = a.projectLocked(projectID)
+		if err != nil {
+			return ReferenceAsset{}, false, err
+		}
 		if !ok || project.WorkspaceID != workspaceID {
 			return ReferenceAsset{}, false, failure(404, "PROJECT_NOT_FOUND", "项目不存在")
 		}

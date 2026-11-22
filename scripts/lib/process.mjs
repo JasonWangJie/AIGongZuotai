@@ -23,8 +23,14 @@ export const isolatedModerationEnvironment = Object.freeze({ MODERATION_MODE: 'd
 
 // Smoke/performance services must not inherit production scheduler tuning.
 export const isolatedExecutionEnvironment = Object.freeze({
+  ORDER_CATALOG_FILE: '',
+  VIDEO_EXPORT_FFMPEG: '', VIDEO_EXPORT_FFPROBE: '', VIDEO_EXPORT_TEMP_DIR: '',
   CHAT_WORKERS: '4', CHAT_QUEUE_SIZE: '32', CHAT_WORKSPACE_CONCURRENCY: '2',
-  CHAT_MODEL_CONCURRENCY: '4', CHAT_WORKSPACE_QUEUE_SIZE: '8',
+  RUN_REPLAY_READ_CONNECTIONS: '0', ADMISSION_GLOBAL_STREAMS: '128',
+  RUN_DELTA_BATCHING_ENABLED: 'false',
+  // Node omits undefined entries when spawning the isolated service.
+  CHAT_CHILD_PROCESSES: undefined, CHAT_CHILD_SLOTS: undefined,
+  CHAT_MODEL_CONCURRENCY: '4', CHAT_WORKSPACE_QUEUE_SIZE: '8', CHAT_RUN_TIMEOUT_SECONDS: '600', LONG_CONVERSATION_HISTORY_ENABLED: 'false',
   MEDIA_SUBMIT_WORKERS: '2', MEDIA_QUERY_WORKERS: '2', MEDIA_DELIVERY_WORKERS: '2', MEDIA_REVIEW_WORKERS: '2', MEDIA_DELIVERY_KEY: '',
   MEDIA_WORKSPACE_CONCURRENCY: '1', MEDIA_CHANNEL_CONCURRENCY: '2',
 });

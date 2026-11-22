@@ -1,0 +1,88 @@
+.account-export {
+  margin-block: 20px;
+}
+.account-export header h2 {
+  margin-top: 0;
+}
+.account-export form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 640px;
+  gap: 8px;
+}
+.account-export form > label {
+  font-size: 12px;
+  color: #c8c2d5;
+}
+.account-export :is(input, select) {
+  background: #171820;
+  color: #e2dfea;
+  border: 1px solid #53505f;
+  border-radius: 6px;
+  padding: 9px 11px;
+  font: inherit;
+  width: min(100%, 420px);
+}
+.account-export :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.account-export-range {
+  border-left: 2px solid #a399c1;
+  padding: 2px 0 2px 12px;
+  margin: 4px 0 9px;
+}
+.account-export-range strong,
+.account-export-result strong {
+  font-size: 13px;
+  color: #d9d5e4;
+}
+.account-export .account-export-range p {
+  margin: 3px 0;
+  color: #b5b0c0;
+}
+.account-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.account-export-result {
+  margin-top: 15px;
+  padding: 12px 14px;
+  display: grid;
+  justify-items: start;
+  gap: 7px;
+  border-radius: 5px;
+  background: #9bc5b509;
+  border: 1px solid #9bc5b537;
+  font-size: 12px;
+  color: #bdcfc8;
+}
+.account-export-result small,
+.account-export-range small {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #b8bac2;
+  overflow-wrap: anywhere;
+}
+.account-export-result code {
+  user-select: all;
+  overflow-wrap: anywhere;
+}
+.account-export p.account-export-error {
+  color: #e7bda6;
+  margin: 14px 0 0;
+}
+@media (max-width: 560px) {
+  .account-export form,
+  .account-export-actions,
+  .account-export-result {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .account-export .button {
+    max-width: 100%;
+    white-space: normal;
+  }
+}

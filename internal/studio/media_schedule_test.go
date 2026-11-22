@@ -60,7 +60,8 @@ func advanceMediaScheduleDue(t *testing.T, a *App, id string) {
 		if held || now.Before(q.ServerNotBefore) || c.Parked || now.Before(c.CooldownUntil) || c.ProbeID != "" {
 			return failure(409, "TEST_CLOCK_REFUSED", "test cannot bypass delay or lease")
 		}
-		if _, err = tx.Exec(ctx, `UPDATE studio_tasks SET next_poll=clock_timestamp()-interval '1 millisecond' WHERE id=$1`, id); err != nil {
+		// Explicit selection checks Go time and the claim checks PostgreSQL time.
+		if _, err = tx.Exec(ctx, `UPDATE studio_tasks SET next_poll=LEAST(clock_timestamp(),$2::timestamptz)-interval '1 millisecond' WHERE id=$1`, id, now); err != nil {
 			return err
 		}
 		return tx.Commit(ctx)

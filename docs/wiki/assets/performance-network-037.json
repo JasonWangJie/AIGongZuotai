@@ -1,0 +1,6510 @@
+{
+  "arch": "x64",
+  "artifact": {
+    "dist_files": 55,
+    "dist_sha256": "9d500caf860d05137c200bd695f80d1266c5c3a3e5e4864fc67d22f85a98c63c",
+    "index_sha256": "750a8b695b8d548349f134ba87abfb36a7591395b05d3a73384ad3695badac7e",
+    "test_binary_sha256": "cf5a174fdc5b9d448ab5883019679d38660fd5d3d377f1902be27aa76151951e"
+  },
+  "calibration": [
+    {
+      "after_measured_samples": 0,
+      "browser": "Chrome/157.0.8103.79",
+      "bytes": 4194304,
+      "down_ms": [
+        1813,
+        1806.8999999910593,
+        1805
+      ],
+      "download_mbps": [
+        19.64430185593179,
+        19.714707403227834,
+        19.73674019182262
+      ],
+      "download_receipts": [
+        {
+          "bytes": 4194304,
+          "identity_encoding": true,
+          "ms": 1813,
+          "sha256_ok": true,
+          "status": 200
+        },
+        {
+          "bytes": 4194304,
+          "identity_encoding": true,
+          "ms": 1806.8999999910593,
+          "sha256_ok": true,
+          "status": 200
+        },
+        {
+          "bytes": 4194304,
+          "identity_encoding": true,
+          "ms": 1805,
+          "sha256_ok": true,
+          "status": 200
+        }
+      ],
+      "median_rtt_ms": 104.90000000596046,
+      "passed": true,
+      "rtt_ms": [
+        99.70000000298023,
+        107.20000000298023,
+        104.59999999403954,
+        104.90000000596046,
+        107.90000000596046,
+        104.29999999701977,
+        106.59999999403954
+      ],
+      "up_ms": [
+        1821,
+        1815.7999999970198,
+        1826.6000000089407
+      ],
+      "upload_mbps": [
+        19.552725365722594,
+        19.61215266828882,
+        19.489128187223045
+      ],
+      "upload_receipts": [
+        {
+          "bytes": 4194304,
+          "ms": 1821,
+          "status": 204
+        },
+        {
+          "bytes": 4194304,
+          "ms": 1815.7999999970198,
+          "status": 204
+        },
+        {
+          "bytes": 4194304,
+          "ms": 1826.6000000089407,
+          "status": 204
+        }
+      ],
+      "warmup_ms": 104
+    },
+    {
+      "after_measured_samples": 20,
+      "browser": "Chrome/157.0.8103.79",
+      "bytes": 4194304,
+      "down_ms": [
+        1812.5,
+        1815.5,
+        1812.5999999940395
+      ],
+      "download_mbps": [
+        19.673095684699877,
+        19.638553201348717,
+        19.67194231104026
+      ],
+      "download_receipts": [
+        {
+          "bytes": 4194304,
+          "identity_encoding": true,
+          "ms": 1812.5,
+          "sha256_ok": true,
+          "status": 200
+        },
+        {
+          "bytes": 4194304,
+          "identity_encoding": true,
+          "ms": 1815.5,
+          "sha256_ok": true,
+          "status": 200
+        },
+        {
+          "bytes": 4194304,
+          "identity_encoding": true,
+          "ms": 1812.5999999940395,
+          "sha256_ok": true,
+          "status": 200
+        }
+      ],
+      "median_rtt_ms": 106.8999999910593,
+      "passed": true,
+      "rtt_ms": [
+        105.70000000298023,
+        106.8999999910593,
+        108.8999999910593,
+        107.5,
+        108.20000000298023,
+        106.6000000089407,
+        106.8999999910593
+      ],
+      "up_ms": [
+        1807.2000000029802,
+        1824.7999999970198,
+        1820.2999999970198
+      ],
+      "upload_mbps": [
+        19.734418631867758,
+        19.532238197731868,
+        19.58353682729268
+      ],
+      "upload_receipts": [
+        {
+          "bytes": 4194304,
+          "ms": 1807.2000000029802,
+          "status": 204
+        },
+        {
+          "bytes": 4194304,
+          "ms": 1824.7999999970198,
+          "status": 204
+        },
+        {
+          "bytes": 4194304,
+          "ms": 1820.2999999970198,
+          "status": 204
+        }
+      ],
+      "warmup_ms": 103.80000001192093
+    },
+    {
+      "after_measured_samples": 40,
+      "browser": "Chrome/157.0.8103.79",
+      "bytes": 4194304,
+      "down_ms": [
+        1821.2999999970198,
+        1809.7000000029802,
+        1809.9000000059605
+      ],
+      "download_mbps": [
+        19.5823939305515,
+        19.715865796981305,
+        19.713549145070058
+      ],
+      "download_receipts": [
+        {
+          "bytes": 4194304,
+          "identity_encoding": true,
+          "ms": 1821.2999999970198,
+          "sha256_ok": true,
+          "status": 200
+        },
+        {
+          "bytes": 4194304,
+          "identity_encoding": true,
+          "ms": 1809.7000000029802,
+          "sha256_ok": true,
+          "status": 200
+        },
+        {
+          "bytes": 4194304,
+          "identity_encoding": true,
+          "ms": 1809.9000000059605,
+          "sha256_ok": true,
+          "status": 200
+        }
+      ],
+      "median_rtt_ms": 107.79999999701977,
+      "passed": true,
+      "rtt_ms": [
+        105.70000000298023,
+        106.5,
+        108.79999999701977,
+        107.70000000298023,
+        107.79999999701977,
+        108.1000000089407,
+        107.79999999701977
+      ],
+      "up_ms": [
+        1820.5,
+        1817.4000000059605,
+        1817.4000000059605
+      ],
+      "upload_mbps": [
+        19.591540841911375,
+        19.627065980243636,
+        19.627065980243636
+      ],
+      "upload_receipts": [
+        {
+          "bytes": 4194304,
+          "ms": 1820.5,
+          "status": 204
+        },
+        {
+          "bytes": 4194304,
+          "ms": 1817.4000000059605,
+          "status": 204
+        },
+        {
+          "bytes": 4194304,
+          "ms": 1817.4000000059605,
+          "status": 204
+        }
+      ],
+      "warmup_ms": 104.70000000298023
+    }
+  ],
+  "cdp": {
+    "down_bytes_per_second": 2500000,
+    "dpr": 1,
+    "latency_ms": 80,
+    "up_bytes_per_second": 2500000,
+    "viewport": [
+      1920,
+      1080
+    ]
+  },
+  "cold": [
+    {
+      "chat_click_to_list_ms": 306,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 1,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 2,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 1,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 2,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 623.6999999880791,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 17.799999997019768,
+      "mounted": 8,
+      "project_click_to_history_ms": 512.2000000029802,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 1,
+      "select_click_to_messages_ms": 127.20000000298023,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 234.79999999701977,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 7,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 8,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 7,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 8,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 755.9000000059605,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 21.19999998807907,
+      "mounted": 8,
+      "project_click_to_history_ms": 390.90000000596046,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 4,
+      "select_click_to_messages_ms": 133.5,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 507.80000001192093,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 9,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 10,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 9,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 10,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 787.9000000059605,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 18.900000005960464,
+      "mounted": 8,
+      "project_click_to_history_ms": 648.4000000059605,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 5,
+      "select_click_to_messages_ms": 126.20000000298023,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 608.3999999910593,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 58212,
+            "encoded_body_bytes": 58212,
+            "requests": 6,
+            "transfer_bytes": 60012
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 15,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 16,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 15,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 16,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 880,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 25.399999991059303,
+      "mounted": 8,
+      "project_click_to_history_ms": 834.8999999910593,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 8,
+      "select_click_to_messages_ms": 144.3999999910593,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 589.3000000119209,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 17,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 18,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 17,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 18,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 849.2999999970198,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 24.100000008940697,
+      "mounted": 8,
+      "project_click_to_history_ms": 731.6000000089407,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 9,
+      "select_click_to_messages_ms": 127.29999999701977,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 387.5,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 23,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 24,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 23,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 24,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 771,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 27.600000008940697,
+      "mounted": 8,
+      "project_click_to_history_ms": 539.4000000059605,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 12,
+      "select_click_to_messages_ms": 138.29999999701977,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 486.29999999701977,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 25,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 26,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 25,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 26,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 866.3999999910593,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 21.19999998807907,
+      "mounted": 8,
+      "project_click_to_history_ms": 704.6000000089407,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 13,
+      "select_click_to_messages_ms": 130.6000000089407,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 338.30000001192093,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 31,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 32,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 31,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 32,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 785.2999999970198,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 26.299999997019768,
+      "mounted": 8,
+      "project_click_to_history_ms": 480,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 16,
+      "select_click_to_messages_ms": 132.3999999910593,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 336.29999999701977,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 33,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 34,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 33,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 34,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 818.4000000059605,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 18.899999991059303,
+      "mounted": 8,
+      "project_click_to_history_ms": 506.59999999403954,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 17,
+      "select_click_to_messages_ms": 159.20000000298023,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 567.3999999910593,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 39,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 40,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 39,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 40,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 793.7999999970198,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 25.900000005960464,
+      "mounted": 8,
+      "project_click_to_history_ms": 808,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 20,
+      "select_click_to_messages_ms": 126.5,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 327.69999998807907,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 41,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 42,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 41,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 42,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 682.5,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 14.5,
+      "mounted": 8,
+      "project_click_to_history_ms": 583.2999999970198,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 21,
+      "select_click_to_messages_ms": 128.6000000089407,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 537.7999999970198,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 47,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 48,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 47,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 48,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 826.2999999970198,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 16.899999991059303,
+      "mounted": 8,
+      "project_click_to_history_ms": 672.4000000059605,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 24,
+      "select_click_to_messages_ms": 123.70000000298023,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 506.69999998807907,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 49,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 50,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 49,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 50,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 713.5,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 20.200000002980232,
+      "mounted": 8,
+      "project_click_to_history_ms": 669.6999999880791,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 25,
+      "select_click_to_messages_ms": 150.09999999403954,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 500.29999999701977,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 55,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 56,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 55,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 56,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 668.1000000089407,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 23.799999997019768,
+      "mounted": 8,
+      "project_click_to_history_ms": 746.6999999880791,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 28,
+      "select_click_to_messages_ms": 128.69999998807907,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 274.20000000298023,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 57,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 58,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 57,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 58,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 703.4000000059605,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 16.5,
+      "mounted": 8,
+      "project_click_to_history_ms": 519,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 29,
+      "select_click_to_messages_ms": 133.90000000596046,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 263.79999999701977,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 63,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 64,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 63,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 64,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 707.9000000059605,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 20.5,
+      "mounted": 8,
+      "project_click_to_history_ms": 554.8999999910593,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 32,
+      "select_click_to_messages_ms": 135.3999999910593,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 400,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 65,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 66,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 65,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 66,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 790.4000000059605,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 28.799999997019768,
+      "mounted": 8,
+      "project_click_to_history_ms": 637.5,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 33,
+      "select_click_to_messages_ms": 122.6000000089407,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 423.29999999701977,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 71,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 72,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 71,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 72,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 821.2999999970198,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 22.100000008940697,
+      "mounted": 8,
+      "project_click_to_history_ms": 660.3999999910593,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 36,
+      "select_click_to_messages_ms": 129,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 467,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 73,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 74,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 73,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 74,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 709.5,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 24.400000005960464,
+      "mounted": 8,
+      "project_click_to_history_ms": 718.5999999940395,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 37,
+      "select_click_to_messages_ms": 137.59999999403954,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 630,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 57118,
+            "encoded_body_bytes": 57118,
+            "requests": 5,
+            "transfer_bytes": 58618
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 166103,
+        "groups": {
+          "css": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 116392
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 849
+          },
+          "js": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 166703
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 62628,
+            "encoded_body_bytes": 62628,
+            "requests": 9,
+            "transfer_bytes": 65328
+          },
+          "other_static": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 19,
+            "encoded_body_bytes": 19,
+            "requests": 1,
+            "transfer_bytes": 319
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": false,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 79,
+            "resource_transfer_bytes": 165512,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": false,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 80,
+            "resource_transfer_bytes": 1191,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [
+          {
+            "body_bytes": 165212,
+            "declared": 165212,
+            "file": "index-J2IzkI2j.js",
+            "gzip": true,
+            "id": 79,
+            "invalid": false,
+            "status": 200
+          },
+          {
+            "body_bytes": 891,
+            "declared": 891,
+            "file": "accountGovernance-B96FFIB5.js",
+            "gzip": true,
+            "id": 80,
+            "invalid": false,
+            "status": 200
+          }
+        ],
+        "valid": true,
+        "wire_js_body_bytes": 166103
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 896.4000000059605,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 25,
+      "mounted": 8,
+      "project_click_to_history_ms": 843.1000000089407,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 40,
+      "select_click_to_messages_ms": 129.5,
+      "sse_response_headers_at_home": 0,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 166103,
+        "browser_js_body_bytes": 166103,
+        "matched_requests": 2,
+        "observed_requests": 2,
+        "unmatched_receipts": [],
+        "valid": true
+      }
+    }
+  ],
+  "cpu_model": "Intel(R) Core(TM) Ultra 7 155U",
+  "fixture": {
+    "accepted_chat_turns": 5000,
+    "additional_generation_posts": 0,
+    "seeding_ms": 137635,
+    "stored_messages": 10000
+  },
+  "full_calibrated_integrated_gpu_run": true,
+  "http": "loopback plaintext",
+  "integrated_graphics_identified_for_all_samples": true,
+  "logical_cpus": 14,
+  "mode": "full",
+  "os": "win32 10.0.26200",
+  "passed": true,
+  "ram_bytes": 33849176064,
+  "samples_per_condition": 20,
+  "summary": {
+    "cold": {
+      "first_interactive_ms": {
+        "p50": 785.2999999970198,
+        "p95": 880
+      },
+      "input_to_next_paint_opportunity_ms": {
+        "p50": 21.19999998807907,
+        "p95": 27.600000008940697
+      },
+      "project_click_to_history_ms": {
+        "p50": 648.4000000059605,
+        "p95": 834.8999999910593
+      },
+      "select_click_to_messages_ms": {
+        "p50": 129.5,
+        "p95": 150.09999999403954
+      }
+    },
+    "warm": {
+      "first_interactive_ms": {
+        "p50": 484.5,
+        "p95": 565.7999999970198
+      },
+      "input_to_next_paint_opportunity_ms": {
+        "p50": 21.700000002980232,
+        "p95": 28.600000008940697
+      },
+      "project_click_to_history_ms": {
+        "p50": 278.29999999701977,
+        "p95": 317.3999999910593
+      },
+      "select_click_to_messages_ms": {
+        "p50": 133.30000001192093,
+        "p95": 157.20000000298023
+      }
+    }
+  },
+  "warm": [
+    {
+      "chat_click_to_list_ms": 125.19999998807907,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 3,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 4,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 484.5,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 23.200000002980232,
+      "mounted": 8,
+      "project_click_to_history_ms": 284.59999999403954,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 2,
+      "select_click_to_messages_ms": 134.40000000596046,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 109.09999999403954,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 5,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 6,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 531.0999999940395,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 22.19999998807907,
+      "mounted": 8,
+      "project_click_to_history_ms": 270.3999999910593,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 3,
+      "select_click_to_messages_ms": 133.59999999403954,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 109.80000001192093,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 11,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 12,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 508.29999999701977,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 21.600000008940697,
+      "mounted": 8,
+      "project_click_to_history_ms": 272.80000001192093,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 6,
+      "select_click_to_messages_ms": 135.30000001192093,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 116.09999999403954,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 13,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 14,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 407.09999999403954,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 11.5,
+      "mounted": 8,
+      "project_click_to_history_ms": 284.8999999910593,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 7,
+      "select_click_to_messages_ms": 132.19999998807907,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 109.59999999403954,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 19,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 20,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 460.6000000089407,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 21.700000002980232,
+      "mounted": 8,
+      "project_click_to_history_ms": 269.79999999701977,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 10,
+      "select_click_to_messages_ms": 133.70000000298023,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 120.29999999701977,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 21,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 22,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 469.59999999403954,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 19.30000001192093,
+      "mounted": 8,
+      "project_click_to_history_ms": 269,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 11,
+      "select_click_to_messages_ms": 131.3999999910593,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 108.5,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 27,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 28,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 446.90000000596046,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 24.399999991059303,
+      "mounted": 8,
+      "project_click_to_history_ms": 285.29999999701977,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 14,
+      "select_click_to_messages_ms": 134.40000000596046,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 108.5,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 29,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 30,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 439,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 19.399999991059303,
+      "mounted": 8,
+      "project_click_to_history_ms": 269.5,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 15,
+      "select_click_to_messages_ms": 132.59999999403954,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 124.40000000596046,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 35,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 36,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 504.20000000298023,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 24.399999991059303,
+      "mounted": 8,
+      "project_click_to_history_ms": 281.09999999403954,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 18,
+      "select_click_to_messages_ms": 130.3999999910593,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 105.70000000298023,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 37,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 38,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 445.5,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 19.299999997019768,
+      "mounted": 8,
+      "project_click_to_history_ms": 264.5,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 19,
+      "select_click_to_messages_ms": 126.90000000596046,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 93.5,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 43,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 44,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 479.69999998807907,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 23.400000005960464,
+      "mounted": 8,
+      "project_click_to_history_ms": 323.79999999701977,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 22,
+      "select_click_to_messages_ms": 186.79999999701977,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 109.70000000298023,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 45,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 46,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 531,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 23.099999994039536,
+      "mounted": 8,
+      "project_click_to_history_ms": 296.70000000298023,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 23,
+      "select_click_to_messages_ms": 143.90000000596046,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 113.20000000298023,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 51,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 52,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 477.79999999701977,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 25.69999998807907,
+      "mounted": 8,
+      "project_click_to_history_ms": 294.09999999403954,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 26,
+      "select_click_to_messages_ms": 157.20000000298023,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 110.79999999701977,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 53,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 54,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 476,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 26.400000005960464,
+      "mounted": 8,
+      "project_click_to_history_ms": 270.70000000298023,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 27,
+      "select_click_to_messages_ms": 133.30000001192093,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 126.20000000298023,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 59,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 60,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 532.0999999940395,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 28.600000008940697,
+      "mounted": 8,
+      "project_click_to_history_ms": 273,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 30,
+      "select_click_to_messages_ms": 121.90000000596046,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 105.80000001192093,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 61,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 62,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 505,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 29.200000002980232,
+      "mounted": 8,
+      "project_click_to_history_ms": 269.40000000596046,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 31,
+      "select_click_to_messages_ms": 131.5,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 117.79999999701977,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 2188,
+            "encoded_body_bytes": 2188,
+            "requests": 2,
+            "transfer_bytes": 2788
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 118652,
+            "encoded_body_bytes": 118652,
+            "requests": 13,
+            "transfer_bytes": 120391
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 67,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 68,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 576.9000000059605,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 19.400000005960464,
+      "mounted": 8,
+      "project_click_to_history_ms": 317.3999999910593,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 34,
+      "select_click_to_messages_ms": 151.29999999701977,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 127.29999999701977,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 69,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 70,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 565.7999999970198,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 14.899999991059303,
+      "mounted": 8,
+      "project_click_to_history_ms": 302.90000000596046,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 35,
+      "select_click_to_messages_ms": 150.1000000089407,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 103,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 55885,
+            "encoded_body_bytes": 55885,
+            "requests": 3,
+            "transfer_bytes": 56785
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 63861,
+            "encoded_body_bytes": 63861,
+            "requests": 11,
+            "transfer_bytes": 65000
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 75,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 76,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 524.7000000029802,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 20.5,
+      "mounted": 8,
+      "project_click_to_history_ms": 278.29999999701977,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 38,
+      "select_click_to_messages_ms": 127.20000000298023,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    },
+    {
+      "chat_click_to_list_ms": 101.79999999701977,
+      "completed_history_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "history_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 9189,
+            "encoded_body_bytes": 9189,
+            "requests": 4,
+            "transfer_bytes": 10389
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 2188,
+            "encoded_body_bytes": 2188,
+            "requests": 2,
+            "transfer_bytes": 2788
+          }
+        },
+        "scripts": [],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "completed_startup_transfers": {
+        "browser_js_body_bytes": 0,
+        "groups": {
+          "css": {
+            "cache_hits": 1,
+            "decoded_body_bytes": 116092,
+            "encoded_body_bytes": 116092,
+            "requests": 1,
+            "transfer_bytes": 0
+          },
+          "document": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 549,
+            "encoded_body_bytes": 549,
+            "requests": 1,
+            "transfer_bytes": 300
+          },
+          "js": {
+            "cache_hits": 2,
+            "decoded_body_bytes": 518723,
+            "encoded_body_bytes": 166103,
+            "requests": 2,
+            "transfer_bytes": 0
+          },
+          "other_api": {
+            "cache_hits": 0,
+            "decoded_body_bytes": 118652,
+            "encoded_body_bytes": 118652,
+            "requests": 13,
+            "transfer_bytes": 120391
+          }
+        },
+        "scripts": [
+          {
+            "cache_hit": true,
+            "declared_bytes": 165212,
+            "decoded_body_bytes": 517225,
+            "encoded_body_bytes": 165212,
+            "encoding": "gzip",
+            "file": "index-J2IzkI2j.js",
+            "receipt": 77,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          },
+          {
+            "cache_hit": true,
+            "declared_bytes": 891,
+            "decoded_body_bytes": 1498,
+            "encoded_body_bytes": 891,
+            "encoding": "gzip",
+            "file": "accountGovernance-B96FFIB5.js",
+            "receipt": 78,
+            "resource_transfer_bytes": 0,
+            "status": 200,
+            "vary_encoding": true
+          }
+        ],
+        "server_js_responses": [],
+        "valid": true,
+        "wire_js_body_bytes": 0
+      },
+      "expected_node_count": 10000,
+      "first_interactive_ms": 539,
+      "generation_posts": 0,
+      "indexed_latest_page": 20,
+      "input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "measured"
+      },
+      "input_to_next_paint_opportunity_ms": 21.200000002980232,
+      "mounted": 8,
+      "project_click_to_history_ms": 290.70000000298023,
+      "renderer": {
+        "canvas2d": "enabled",
+        "compositing": "enabled",
+        "integrated": "identified",
+        "observed": "hardware",
+        "product": "Chrome/157.0.8103.79",
+        "renderer": "ANGLE (Intel, Intel(R) Graphics (0x00007D45) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.101.8991)"
+      },
+      "resident": 20,
+      "resident_bytes": 340,
+      "sample": 39,
+      "select_click_to_messages_ms": 131.1000000089407,
+      "sse_response_headers_at_home": 1,
+      "sse_response_headers_over_trip": 1,
+      "total_script_transfers": {
+        "actual_js_body_bytes": 0,
+        "browser_js_body_bytes": 0,
+        "matched_requests": 0,
+        "observed_requests": 0,
+        "unmatched_receipts": [],
+        "valid": true
+      },
+      "warmup_input_evidence": {
+        "after_input": {
+          "expected_value": true,
+          "focused": true,
+          "length": 6,
+          "trusted_events": 1
+        },
+        "initial_input": {
+          "disabled": false,
+          "focused": true,
+          "length": 0,
+          "present": true
+        },
+        "input_painted": true,
+        "kind": "warmup",
+        "left_document": true,
+        "warmup_draft_cleared": true
+      }
+    }
+  ]
+}

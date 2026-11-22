@@ -155,6 +155,14 @@ func (a *App) readOperationsResourceSQL(ctx context.Context, tx pgx.Tx, workspac
 	if kind == "run" {
 		var blob []byte
 		var run Run
+		if lock {
+			// Financial plans lock the Run before applying their action.
+			// Take the same reservation-first order as Run execution and
+			// offline ledger resolution, including on a stale worker save.
+			if err := lockRunReservation(ctx, tx, id, workspace); err != nil {
+				return out, err
+			}
+		}
 		if err := tx.QueryRow(ctx, query, id, workspace).Scan(&blob); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return out, operationsNotFound()
@@ -235,6 +243,28 @@ func readOperationsCaseSQL(ctx context.Context, tx pgx.Tx, workspace, id string,
 	return v, err
 }
 
+// The caller holds the resource lock and has checked the applicable operations grant.
+func insertOperationsCaseSQL(ctx context.Context, tx pgx.Tx, p *principal, in OperationsCaseInput, resource operationsResource) (OperationsCase, error) {
+	var result OperationsCase
+	var err error
+	var own, total int
+	if err = tx.QueryRow(ctx, `SELECT count(*) FILTER(WHERE workspace_id=$1),count(*) FROM (SELECT workspace_id FROM studio_operations_cases LIMIT 100001) c`, in.WorkspaceID).Scan(&own, &total); err != nil {
+		return result, err
+	}
+	if own >= 10000 || total >= 100000 {
+		return result, failure(429, "OPERATIONS_CASE_LIMIT", "运营工单存储已达上限")
+	}
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	result = OperationsCase{ID: newID("ocase"), WorkspaceID: in.WorkspaceID, ProjectID: resource.Summary.ProjectID, ResourceType: in.ResourceType, ResourceID: in.ResourceID, ResourceVersion: in.ResourceVersion, State: "OPEN", Version: 1, Reason: in.Reason, EvidenceRef: in.EvidenceRef, CreatedAt: now, UpdatedAt: now, Resource: &resource.Summary}
+	if _, err = tx.Exec(ctx, `INSERT INTO studio_operations_cases(id,workspace_id,project_id,resource_type,resource_id,resource_version,reason,evidence_ref,created_by,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10)`, result.ID, result.WorkspaceID, result.ProjectID, result.ResourceType, result.ResourceID, result.ResourceVersion, result.Reason, result.EvidenceRef, p.User.ID, now); err != nil {
+		return result, err
+	}
+	if err = insertOperationsAuditSQL(ctx, tx, OperationsAuditEvent{ActorUserID: p.User.ID, WorkspaceID: in.WorkspaceID, Action: "case.created", CaseID: result.ID, ResourceType: in.ResourceType, ResourceID: in.ResourceID, ReasonCode: in.Reason, EvidenceRef: in.EvidenceRef, Version: 1}); err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
 func (a *App) createOperationsCase(p *principal, in OperationsCaseInput, key string) (OperationsCase, bool, error) {
 	var result OperationsCase
 	replayed := false
@@ -291,22 +321,11 @@ func (a *App) createOperationsCase(p *principal, in OperationsCaseInput, key str
 		if open {
 			return failure(409, "OPERATIONS_CASE_EXISTS", "该资源已有未关闭工单")
 		}
-		var own, total int
-		if err = tx.QueryRow(ctx, `SELECT count(*) FILTER(WHERE workspace_id=$1),count(*) FROM (SELECT workspace_id FROM studio_operations_cases LIMIT 100001) c`, in.WorkspaceID).Scan(&own, &total); err != nil {
-			return err
-		}
-		if own >= 10000 || total >= 100000 {
-			return failure(429, "OPERATIONS_CASE_LIMIT", "运营工单存储已达上限")
-		}
-		now := time.Now().UTC().Truncate(time.Microsecond)
-		result = OperationsCase{ID: newID("ocase"), WorkspaceID: in.WorkspaceID, ProjectID: resource.Summary.ProjectID, ResourceType: in.ResourceType, ResourceID: in.ResourceID, ResourceVersion: in.ResourceVersion, State: "OPEN", Version: 1, Reason: in.Reason, EvidenceRef: in.EvidenceRef, CreatedAt: now, UpdatedAt: now, Resource: &resource.Summary}
-		if _, err = tx.Exec(ctx, `INSERT INTO studio_operations_cases(id,workspace_id,project_id,resource_type,resource_id,resource_version,reason,evidence_ref,created_by,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10)`, result.ID, result.WorkspaceID, result.ProjectID, result.ResourceType, result.ResourceID, result.ResourceVersion, result.Reason, result.EvidenceRef, p.User.ID, now); err != nil {
+		result, err = insertOperationsCaseSQL(ctx, tx, p, in, resource)
+		if err != nil {
 			return err
 		}
 		if _, err = tx.Exec(ctx, "INSERT INTO studio_operations_case_idempotency(actor_id,workspace_id,idempotency_key,request_hash,case_id) VALUES($1,$2,$3,$4,$5)", p.User.ID, in.WorkspaceID, key, hash[:], result.ID); err != nil {
-			return err
-		}
-		if err = insertOperationsAuditSQL(ctx, tx, OperationsAuditEvent{ActorUserID: p.User.ID, WorkspaceID: in.WorkspaceID, Action: "case.created", CaseID: result.ID, ResourceType: in.ResourceType, ResourceID: in.ResourceID, ReasonCode: in.Reason, EvidenceRef: in.EvidenceRef, Version: 1}); err != nil {
 			return err
 		}
 		return tx.Commit(ctx)
@@ -599,6 +618,7 @@ func (a *App) cacheOperationsResourceLocked(resource operationsResource) {
 		if cached := a.runs[resource.Run.ID]; cached != nil {
 			cached.Run = copyRun(*resource.Run)
 			cached.CheckpointSeq = cached.Run.Seq
+			a.publishRunLocked(cached, "run.snapshot", cached.Run)
 		}
 	}
 	if resource.Task != nil {

@@ -32,7 +32,11 @@ func operationsRoles(permission string) []string {
 		return []string{"operator"}
 	case "finance":
 		return []string{"finance"}
-	case "generation_restrict", "appeal_resolve":
+	case "risk_review":
+		return []string{"risk_reviewer"}
+	case "support_ticket":
+		return []string{"support"}
+	case "generation_restrict", "appeal_resolve", "content_appeal_review":
 		return []string{"moderator"}
 	default:
 		return nil
@@ -47,8 +51,12 @@ func operationsRolePermissions(role string) []string {
 		return []string{"read", "case_open", "investigate"}
 	case "finance":
 		return []string{"read", "case_open", "finance"}
+	case "risk_reviewer":
+		return []string{"risk_review"}
+	case "support":
+		return []string{"support_ticket"}
 	case "moderator":
-		return []string{"read", "generation_restrict", "appeal_resolve"}
+		return []string{"read", "generation_restrict", "appeal_resolve", "content_appeal_review"}
 	default:
 		return nil
 	}
@@ -307,7 +315,11 @@ type OperationsAuditRecord struct {
 
 func insertOperationsAuditRecordSQL(ctx context.Context, tx pgx.Tx, event OperationsAuditEvent) (OperationsAuditRecord, error) {
 	result := OperationsAuditRecord{OperationsAuditEvent: event}
-	actions := map[string]bool{"role.granted": true, "role.revoked": true, "case.created": true, "case.updated": true, "case.previewed": true, "case.executed": true, "case.reconciled": true, "case.resolved": true, "case.refunded": true, "generation.previewed": true, "generation.restricted": true, "generation.lifted": true, "appeal.created": true, "appeal.upheld": true, "appeal.lifted": true}
+	actions := map[string]bool{"role.granted": true, "role.revoked": true, "case.created": true, "case.updated": true, "case.previewed": true, "case.executed": true, "case.reconciled": true, "case.resolved": true, "case.refunded": true, "generation.previewed": true, "generation.restricted": true, "generation.lifted": true, "appeal.created": true, "appeal.upheld": true, "appeal.lifted": true,
+		"content_appeal.created": true, "content_appeal.previewed": true, "content_appeal.upheld": true,
+		"content_appeal.opinion": true, "content_appeal.referred": true, "content_appeal.finance_linked": true,
+		"risk_review.created": true, "risk_review.previewed": true, "risk_review.approved": true, "risk_review.denied": true,
+	}
 	kinds := map[string]bool{"": true, "run": true, "task": true, "reservation": true, "grant": true, "case": true, "restriction": true, "appeal": true}
 	if !validOperationsID(event.WorkspaceID, "ws") || event.ActorUserID != "" && !validOperationsID(event.ActorUserID, "usr") || !actions[event.Action] || !kinds[event.ResourceType] || event.Version > 9007199254740991 {
 		return result, failure(422, "INVALID_OPERATIONS_AUDIT", "运营审计字段无效")

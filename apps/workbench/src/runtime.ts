@@ -1,3 +1,4 @@
+import { uiText } from './locale';
 import type { RuntimeUsage, WorkspaceRuntime } from './types';
 
 export const RUNTIME_POLL_MS = 15_000;
@@ -10,4 +11,4 @@ export function validRuntime(value: unknown): value is WorkspaceRuntime {
   return item.scope === 'workspace' && typeof item.ready === 'boolean' && typeof item.state === 'string' && group(item.runs) && group(item.tasks) && !!item.streams && count(item.streams.active) && count(item.streams.limit);
 }
 export function capacityFraction(active: number, limit: number): number { return limit > 0 ? Math.max(0, Math.min(1, active / limit)) : 0; }
-export function queueAge(seconds: number): string { const value = Math.max(0, Math.floor(seconds)); return value < 60 ? `${value} 秒` : value < 3600 ? `${Math.floor(value / 60)} 分 ${value % 60} 秒` : `${Math.floor(value / 3600)} 小时 ${Math.floor(value % 3600 / 60)} 分`; }
+export function queueAge(seconds: number): string { const value = Math.max(0, Math.floor(seconds)); return value < 60 ? uiText("{0} 秒", value) : value < 3600 ? uiText("{0} 分 {1} 秒", Math.floor(value / 60), value % 60) : uiText("{0} 小时 {1} 分", Math.floor(value / 3600), Math.floor(value % 3600 / 60)); }

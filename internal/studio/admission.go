@@ -14,14 +14,14 @@ import (
 // distributed semaphore. Zero selects defaults only for in-process Config;
 // explicitly configured environment values are validated before New.
 type AdmissionLimits struct {
-	WorkspaceRuns, ModelRuns, WorkspaceTasks, ModelTasks, WorkspaceStreams int
+	WorkspaceRuns, ModelRuns, WorkspaceTasks, ModelTasks, WorkspaceStreams, GlobalStreams int
 }
 
 func (l *AdmissionLimits) defaults() {
 	for _, v := range []struct {
 		p     *int
 		value int
-	}{{&l.WorkspaceRuns, 64}, {&l.ModelRuns, 32}, {&l.WorkspaceTasks, 128}, {&l.ModelTasks, 64}, {&l.WorkspaceStreams, 32}} {
+	}{{&l.WorkspaceRuns, 64}, {&l.ModelRuns, 32}, {&l.WorkspaceTasks, 128}, {&l.ModelTasks, 64}, {&l.WorkspaceStreams, 32}, {&l.GlobalStreams, 128}} {
 		if *v.p == 0 {
 			*v.p = v.value
 		}
@@ -36,6 +36,7 @@ func (l AdmissionLimits) validate() error {
 		{"ADMISSION_WORKSPACE_RUNS", l.WorkspaceRuns, 4096}, {"ADMISSION_MODEL_RUNS", l.ModelRuns, 4096},
 		{"ADMISSION_WORKSPACE_TASKS", l.WorkspaceTasks, 4096}, {"ADMISSION_MODEL_TASKS", l.ModelTasks, 4096},
 		{"ADMISSION_WORKSPACE_STREAMS", l.WorkspaceStreams, 128},
+		{"ADMISSION_GLOBAL_STREAMS", l.GlobalStreams, 256},
 	} {
 		if v.value < 1 || v.value > v.max {
 			return fmt.Errorf("%s must be an integer between 1 and %d", v.name, v.max)

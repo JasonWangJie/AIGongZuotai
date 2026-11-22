@@ -1,3 +1,4 @@
+import { uiText } from './locale';
 import type { CloudDraft, DraftNode, DraftWriteInput } from './types';
 
 export type DraftOperation = { key: string; body: DraftWriteInput };
@@ -21,13 +22,13 @@ export function copyNodes(nodes: DraftNode[]): DraftNode[] { return nodes.map(({
 export function sameNodes(left: DraftNode[], right: DraftNode[]): boolean { return JSON.stringify(copyNodes(left)) === JSON.stringify(copyNodes(right)); }
 export function isDraftDirty(state: DraftEditorState): boolean { return !!state.pending || state.forceSave || !!state.server && !sameNodes(state.nodes, state.server.nodes); }
 export function draftSyncLabel(state: DraftEditorState): string {
-  if (state.phase === 'loading') return '读取中';
-  if (!state.server) return state.phase === 'error' ? '读取失败' : '未连接';
-  if (state.phase === 'saving') return '正在保存';
-  if (state.phase === 'uncertain') return '受理待确认';
-  if (state.phase === 'conflict') return '版本冲突';
-  if (isDraftDirty(state)) return '未保存编辑';
-  return state.phase === 'error' ? '需要检查' : '已同步';
+  if (state.phase === 'loading') return uiText('读取中');
+  if (!state.server) return state.phase === 'error' ? uiText('读取失败') : uiText('未连接');
+  if (state.phase === 'saving') return uiText('正在保存');
+  if (state.phase === 'uncertain') return uiText('受理待确认');
+  if (state.phase === 'conflict') return uiText('版本冲突');
+  if (isDraftDirty(state)) return uiText('未保存编辑');
+  return state.phase === 'error' ? uiText('需要检查') : uiText('已同步');
 }
 export function draftNodesValid(value: unknown): value is DraftNode[] {
   if (!Array.isArray(value) || value.length > 40) return false;

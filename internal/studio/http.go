@@ -21,10 +21,26 @@ import (
 
 func (a *App) Handler() http.Handler {
 	mux := http.NewServeMux()
+	a.registerRiskAppealRoutes(mux)
+	a.registerPresentationRoutes(mux)
+	a.registerVideoTimelineRoutes(mux)
+	a.registerComicRoutes(mux)
+	a.registerCollaborationMembershipRoutes(mux)
+	a.registerCollaborationDraftRoutes(mux)
+	a.registerOrderIntentRoutes(mux)
+	a.registerSupportTicketRoutes(mux)
+	a.registerAccountGovernanceRoutes(mux)
+	a.registerContentAppealRoutes(mux)
+	a.registerCanvasRoutes(mux)
+	a.registerWorkflowDefinitionRoutes(mux)
+	a.registerWorkflowExecutionRoutes(mux)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]string{"status": "alive"})
 	})
 	mux.HandleFunc("GET /readyz", a.readyHTTP)
+	mux.HandleFunc("GET /api/locale", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]string{"locale": a.locales.Language(r)})
+	})
 	mux.HandleFunc("GET /metrics", a.metricsHTTP)
 	mux.HandleFunc("GET /api/v1/runtime", a.runtimeHTTP)
 	mux.HandleFunc("GET /api/v1/bootstrap", a.bootstrap)
@@ -83,6 +99,7 @@ func (a *App) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/auth/sessions/revoke-all", a.accountRevokeSessions)
 	mux.HandleFunc("POST /api/v1/auth/sessions/{id}/revoke", a.accountRevokeSessions)
 	mux.HandleFunc("GET /api/v1/auth/security/events", a.accountSecurityEvents)
+	mux.HandleFunc("POST /api/v1/auth/data-export", a.accountDataExportHTTP)
 	mux.HandleFunc("GET /api/v1/projects", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]any{"items": principalFrom(r).Projects})
 	})
@@ -162,6 +179,11 @@ func (a *App) Handler() http.Handler {
 			writeError(w, failure(403, "ORIGIN_FORBIDDEN", "请求来源不在同源或本地开发白名单"))
 			return
 		}
+		// The public language hint is also used by signed-out and recovery pages.
+		if r.URL.Path == "/api/locale" && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+			mux.ServeHTTP(w, r)
+			return
+		}
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			w.Header().Set("Cache-Control", "no-store")
 			if ready, state := a.readiness(); !ready {
@@ -181,6 +203,10 @@ func (a *App) Handler() http.Handler {
 			}
 			if p == nil {
 				writeError(w, failure(401, "AUTH_REQUIRED", "请先登录"))
+				return
+			}
+			if p.AccountRestricted && !limitedAccountRoute(r.Method, r.URL.Path) {
+				writeError(w, accountRestrictedError())
 				return
 			}
 			r = r.WithContext(context.WithValue(r.Context(), principalKey{}, p))
@@ -405,6 +431,8 @@ func (a *App) runEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer a.releaseObservedStream(principalFrom(r).Workspace.ID)
+	r, stopAccountStream := a.accountStreamContext(r)
+	defer stopAccountStream()
 	a.mu.Lock()
 	record, err := a.getRunLocked(r.PathValue("id"))
 	if err == nil && !resourceAllowed(r, record.Run.WorkspaceID, record.Run.ProjectID) {
@@ -415,17 +443,20 @@ func (a *App) runEvents(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	if after > record.Run.Seq {
+	if a.store == nil && after > record.Run.Seq {
 		a.mu.Unlock()
 		writeError(w, failure(409, "CURSOR_AHEAD", "事件游标超出当前运行，请重新获取快照"))
 		return
 	}
 	replay := make([]event, 0, len(record.Events))
 	isTerminal := terminal(record.Run.Status)
-	if record.Run.Moderation != nil || len(record.Events) == 0 && record.Run.Seq > 0 || len(record.Events) > 0 && after < record.Events[record.EventStart].Seq-1 || isTerminal && after == record.Run.Seq {
+	// A request without a cursor historically starts with the full snapshot
+	// when the local ring cannot supply the beginning (including cold Runs).
+	initialSnapshot := afterText == "" && (len(record.Events) == 0 || record.Events[record.EventStart].Seq > 1)
+	if a.store == nil && (record.Run.Moderation != nil || len(record.Events) == 0 && record.Run.Seq > 0 || len(record.Events) > 0 && after < record.Events[record.EventStart].Seq-1 || isTerminal && after == record.Run.Seq) {
 		data, _ := json.Marshal(copyRun(record.Run))
 		replay = append(replay, event{Seq: record.Run.Seq, Name: "run.snapshot", Data: data})
-	} else {
+	} else if a.store == nil {
 		for i := range record.Events {
 			e := record.Events[(record.EventStart+i)%len(record.Events)]
 			if e.Seq > after {
@@ -433,12 +464,25 @@ func (a *App) runEvents(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	ch := make(chan event, a.config.SubscriberBuffer)
-	if !isTerminal {
-		record.Subscribers[ch] = true
-	}
+	reader := &runStreamReader{record: record}
+	// acquireStream bounded this extra pin before the record was read. Keep
+	// the same record even when a slow subscriber's channel is removed early.
+	record.streamReaders++
+	a.runs[record.Run.ID] = record
+	a.armRunReaderLocked(reader)
+	scope := subscriptionScope{WorkspaceID: record.Run.WorkspaceID, ProjectID: record.Run.ProjectID}
 	a.mu.Unlock()
-	defer func() { a.mu.Lock(); delete(record.Subscribers, ch); a.mu.Unlock() }()
+	defer func() {
+		a.mu.Lock()
+		delete(record.Subscribers, reader.events)
+		record.streamReaders--
+		a.releaseRunCacheLocked(record)
+		a.mu.Unlock()
+	}()
+	if a.store != nil {
+		a.serveDurableRunEvents(w, r, reader, scope, after, initialSnapshot)
+		return
+	}
 	if !startSSE(w) {
 		return
 	}
@@ -450,7 +494,7 @@ func (a *App) runEvents(w http.ResponseWriter, r *http.Request) {
 	if isTerminal {
 		return
 	}
-	a.streamLoop(w, r, ch, true)
+	a.streamLoop(w, r, reader.events, true)
 }
 
 func (a *App) workspaceEvents(w http.ResponseWriter, r *http.Request) {
@@ -467,6 +511,8 @@ func (a *App) workspaceEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer a.releaseObservedStream(p.Workspace.ID)
+	r, stopAccountStream := a.accountStreamContext(r)
+	defer stopAccountStream()
 	ch := make(chan event, a.config.SubscriberBuffer)
 	a.mu.Lock()
 	a.workspaceSubscribers[ch] = subscriptionScope{WorkspaceID: p.Workspace.ID, ProjectID: p.Project.ID}
@@ -531,14 +577,14 @@ func (a *App) streamLoop(w http.ResponseWriter, r *http.Request, ch <-chan event
 		case <-a.ctx.Done():
 			return
 		case e, ok := <-ch:
-			if !ok || !writeSSE(w, e) {
+			if !ok || r.Context().Err() != nil || !writeSSE(w, e) {
 				return
 			}
 			if stopAtTerminal && strings.HasPrefix(e.Name, "run.") {
 				return
 			}
 		case <-ticker.C:
-			if !a.sessionStillValid(r) {
+			if r.Context().Err() != nil {
 				return
 			}
 			controller := http.NewResponseController(w)
@@ -692,6 +738,10 @@ func (a *App) serveFrontend(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if strings.HasSuffix(strings.ToLower(strings.TrimRight(filepath.Base(resolved), ". ")), ".js.gz") {
+		http.NotFound(w, r)
+		return
+	}
 	file, err := os.Open(resolved)
 	if err != nil {
 		http.NotFound(w, r)
@@ -708,6 +758,10 @@ func (a *App) serveFrontend(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-cache")
 	} else {
 		w.Header().Set("Cache-Control", "public, max-age=3600")
+	}
+	if r.URL.Path == "/"+filepath.ToSlash(rel) && frontendChunkPath.MatchString(r.URL.Path) {
+		serveFrontendChunk(w, r, resolved, file, info)
+		return
 	}
 	http.ServeContent(w, r, info.Name(), info.ModTime(), file)
 }

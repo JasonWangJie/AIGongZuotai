@@ -10,7 +10,7 @@ import (
 
 // This measures complete New on an already-current database. Fixture loading
 // and a separate warm migration-only openPostgres measurement are excluded.
-// It deliberately retains the existing cache policy; this is not A4.2.
+// The 089 report preserves the original measurement before startup cache bounds.
 func TestPostgresRecoveryNewLargeBacklog(t *testing.T) {
 	if os.Getenv("RECOVERY_LARGE_TEST") != "1" {
 		t.Skip("set RECOVERY_LARGE_TEST=1 for complete New with 12002 interrupted records and 9999 pending events")
@@ -62,7 +62,7 @@ func TestPostgresRecoveryNewLargeBacklog(t *testing.T) {
 		t.Fatal("startup invented money, public assets or external generation")
 	}
 	stats := a.recoveryStats
-	if stats.RunPages < (runs+127)/128 || stats.TaskPages < (tasks+127)/128 || stats.MaxPageRecords < 1 || stats.MaxPageRecords > 128 || stats.MaxPageEncodedBytes < 1 || stats.MaxPageEncodedBytes > 16<<20 || stats.LeasesCleared != tasks || stats.CachedRunsPeak < runs || stats.CachedTasksPeak < tasks {
+	if stats.RunPages < (runs+127)/128 || stats.TaskPages < (tasks+127)/128 || stats.MaxPageRecords < 1 || stats.MaxPageRecords > 128 || stats.MaxPageEncodedBytes < 1 || stats.MaxPageEncodedBytes > 16<<20 || stats.LeasesCleared != tasks || stats.RunRows != runs || stats.TaskRows != tasks || stats.CachedRunsPeak > a.config.MaxRecords || stats.CachedTasksPeak > a.config.MaxRecords {
 		t.Fatalf("complete New page or aggregate cache evidence invalid: %+v", stats)
 	}
 	first := recoveryBusinessSnapshot(t, admin)
@@ -89,7 +89,6 @@ func TestPostgresRecoveryNewLargeBacklog(t *testing.T) {
 		CurrentFormatMigrationOnlyMS float64 `json:"current_format_migration_only_ms"`
 		CompleteNewMS                float64 `json:"complete_new_ms"`
 		SecondNewMS                  float64 `json:"second_new_ms"`
-		ProjectPages                 int     `json:"project_pages"`
 		RunPages                     int     `json:"run_pages"`
 		TaskPages                    int     `json:"task_pages"`
 		MaxPageRecords               int     `json:"max_page_records"`
@@ -101,11 +100,11 @@ func TestPostgresRecoveryNewLargeBacklog(t *testing.T) {
 		SecondNewBusinessUnchanged   bool    `json:"second_new_business_unchanged"`
 		ExternalCalls                int64   `json:"external_calls"`
 		Scope                        string  `json:"scope"`
-	}{1, runtime.Version(), runs, tasks, backlog, expectedEvents, float64(loadElapsed) / float64(time.Millisecond), float64(migrationElapsed) / float64(time.Millisecond), float64(newElapsed) / float64(time.Millisecond), float64(restartElapsed) / float64(time.Millisecond), stats.ProjectPages, stats.RunPages, stats.TaskPages, stats.MaxPageRecords, stats.MaxPageEncodedBytes, stats.CachedProjectsPeak, stats.CachedRunsPeak, stats.CachedTasksPeak, stats.LeasesCleared, true, int64(media.calls.Load()) + chatCalls.Load(), "single local complete New; unchanged cache policy; no production capacity claim"}
+	}{1, runtime.Version(), runs, tasks, backlog, expectedEvents, float64(loadElapsed) / float64(time.Millisecond), float64(migrationElapsed) / float64(time.Millisecond), float64(newElapsed) / float64(time.Millisecond), float64(restartElapsed) / float64(time.Millisecond), stats.RunPages, stats.TaskPages, stats.MaxPageRecords, stats.MaxPageEncodedBytes, stats.CachedProjectsPeak, stats.CachedRunsPeak, stats.CachedTasksPeak, stats.LeasesCleared, true, int64(media.calls.Load()) + chatCalls.Load(), "single local complete New; bounded startup caches; no production capacity claim"}
 	if path := os.Getenv("RECOVERY_LARGE_REPORT"); path != "" {
 		if err = os.WriteFile(path, recoveryAggregateJSON(t, report), 0600); err != nil {
 			t.Fatal("could not write aggregate recovery report", err)
 		}
 	}
-	t.Logf("complete New=%s warm migration-only=%s second New=%s; interrupted=%d initial backlog=%d projected=%d pages=%d/%d/%d max loaded page=%d records/%d encoded bytes; cached run/task peaks=%d/%d (not bounded memory)", newElapsed, migrationElapsed, restartElapsed, runs+tasks, backlog, expectedEvents, stats.ProjectPages, stats.RunPages, stats.TaskPages, stats.MaxPageRecords, stats.MaxPageEncodedBytes, stats.CachedRunsPeak, stats.CachedTasksPeak)
+	t.Logf("complete New=%s warm migration-only=%s second New=%s; interrupted=%d initial backlog=%d projected=%d run/task pages=%d/%d max loaded page=%d records/%d encoded bytes; cached run/task peaks=%d/%d (record counts)", newElapsed, migrationElapsed, restartElapsed, runs+tasks, backlog, expectedEvents, stats.RunPages, stats.TaskPages, stats.MaxPageRecords, stats.MaxPageEncodedBytes, stats.CachedRunsPeak, stats.CachedTasksPeak)
 }

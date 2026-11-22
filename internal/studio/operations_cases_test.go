@@ -95,13 +95,10 @@ func (f operationsCasesFixture) run(t *testing.T, billed bool) Run {
 		t.Fatal(err)
 	}
 	if billed {
-		run.Status = "RUNNING"
-		if err := f.app.store.saveRunCandidate(&run); err != nil {
-			t.Fatal(err)
-		}
+		l := claimFixtureRun(t, f.app.store, &run)
 		run.Status = "FAILED"
 		run.Seq = 1
-		if err := f.app.store.saveRunCandidate(&run); err != nil {
+		if err := f.app.store.saveLeasedRun(&run, l, 0); err != nil {
 			t.Fatal(err)
 		}
 	}
