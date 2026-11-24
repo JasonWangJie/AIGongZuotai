@@ -13,6 +13,7 @@ type taskMediaModerationAdmission struct {
 	input       TaskInput
 	refs        []referenceRecord
 	firstFrame  *AssetInfo
+	videoSource *AssetInfo
 	hash        [32]byte
 	checked     bool
 	policy      *MediaModerationPolicy
@@ -37,6 +38,9 @@ func (p *taskMediaModerationAdmission) prepare(input TaskInput, parameters TaskP
 	}
 	if f := p.firstFrame; f != nil {
 		identities = append(identities, MediaModerationContent{Kind: "image", ContentType: f.ContentType, ByteSize: f.ByteSize, SHA256: f.SHA256})
+	}
+	if f := p.videoSource; f != nil {
+		identities = append(identities, MediaModerationContent{Kind: "video", ContentType: f.ContentType, ByteSize: f.ByteSize, SHA256: f.SHA256})
 	}
 	hash := payloadHash(struct {
 		Input      TaskInput
@@ -66,16 +70,19 @@ func (p *taskMediaModerationAdmission) check(ctx context.Context, a *App) {
 	}
 	for _, ref := range p.refs {
 		s := MediaEditSource{ContentType: ref.Blob.ContentType, ByteSize: ref.Blob.ByteSize, SHA256: ref.Blob.SHA256, Open: func() (io.ReadCloser, error) { return a.references.OpenVerified(ctx, ref.Blob) }}
-		if p.err = p.checkImage(ctx, a, s); p.err != nil {
+		if p.err = p.checkMedia(ctx, a, "image", s); p.err != nil {
 			return
 		}
 	}
 	if p.firstFrame != nil {
-		p.err = p.checkImage(ctx, a, a.firstFrameSource(ctx, *p.firstFrame))
+		p.err = p.checkMedia(ctx, a, "image", a.firstFrameSource(ctx, *p.firstFrame))
+	}
+	if p.videoSource != nil {
+		p.err = p.checkMedia(ctx, a, "video", a.privateMediaSource(ctx, *p.videoSource, "video"))
 	}
 }
 
-func (p *taskMediaModerationAdmission) checkImage(ctx context.Context, a *App, src MediaEditSource) error {
+func (p *taskMediaModerationAdmission) checkMedia(ctx context.Context, a *App, kind string, src MediaEditSource) error {
 	permit, err := a.mediaModeration.acquireInputPermit(ctx, p.workspaceID)
 	if err != nil {
 		return err
@@ -90,7 +97,7 @@ func (p *taskMediaModerationAdmission) checkImage(ctx context.Context, a *App, s
 	if !ok {
 		return mediaModerationInputError(ModerationDecision{State: "REVIEW", ReasonCode: "check_unavailable"})
 	}
-	decision := permit.Check(ctx, p.policy, "input", MediaModerationContent{Kind: "image", ContentType: src.ContentType, ByteSize: src.ByteSize, SHA256: src.SHA256}, reader)
+	decision := permit.Check(ctx, p.policy, "input", MediaModerationContent{Kind: kind, ContentType: src.ContentType, ByteSize: src.ByteSize, SHA256: src.SHA256}, reader)
 	if decision.State != "ALLOWED" {
 		return mediaModerationInputError(decision)
 	}

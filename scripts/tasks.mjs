@@ -88,11 +88,21 @@ export function renderPlan(plan) {
 
 export function renderEntry(plan) {
   const done = plan.batches.filter(batch => batch.status === 'done').length;
-  return ['# 开发 TODO · 导航', '',
-    `更新时间：${plan.updated_on}。已验收 **${done}/${plan.batches.length} 个批次**，不代表整体完成百分比。`, '',
-    `完整范围、依赖、验收与证据统一在 ${link(target, '开发 TODO')}。唯一状态源为 ${link(source)}；运行 \`npm run todo:sync\` 同步本入口与完整清单，不直接勾选。`, '',
-    ...plan.batches.map(batch => `- [${batch.status === 'done' ? 'x' : ' '}] **${batch.id} ${batch.title}** — ${labels[batch.status]}`), '',
-  ].join('\n');
+  const lines = ['# 开发 TODO · 导航', '',
+    `更新时间：${plan.updated_on}。已验收 **${done}/${plan.batches.length} 个批次**。进行中批次列出已登记验收子项的通过数，整批验收还需满足依赖和交付条件。`, '',
+    `完整范围、依赖、验收与证据统一在 ${link(target, '开发 TODO')}。唯一状态源为 ${link(source)}；运行 \`npm run todo:sync\` 同步本入口与完整清单，不直接勾选。`, ''];
+  for (const batch of plan.batches) {
+    const details = [labels[batch.status]];
+    if (batch.status === 'in_progress') {
+      const passed = batch.checks.filter(check => check.status === 'passed').length;
+      details.push(`已登记 ${batch.checks.length} 项验收，通过 ${passed} 项`);
+    }
+    const records = batch.ledgers.map(file => ({ file, number: path.posix.basename(file).split('-')[3] }));
+    const [latest] = records.sort((a, b) => Number(b.number) - Number(a.number));
+    if (latest) details.push(link(latest.file, '台账 ' + latest.number));
+    lines.push(`- [${batch.status === 'done' ? 'x' : ' '}] **${batch.id} ${batch.title}** — ${details.join(' · ')}`);
+  }
+  return lines.join('\n') + '\n';
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

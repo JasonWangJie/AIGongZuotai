@@ -39,6 +39,11 @@ type childAcceptanceServer struct {
 
 func startChildAcceptanceServer(t *testing.T, ctx context.Context, binary string, settings map[string]string) *childAcceptanceServer {
 	t.Helper()
+	return startObservedChildAcceptanceServer(t, ctx, binary, settings, io.Discard)
+}
+
+func startObservedChildAcceptanceServer(t *testing.T, ctx context.Context, binary string, settings map[string]string, diagnostics io.Writer) *childAcceptanceServer {
+	t.Helper()
 	socket, err := net.Listen("tcp4", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal("loopback listener allocation failed")
@@ -52,7 +57,7 @@ func startChildAcceptanceServer(t *testing.T, ctx context.Context, binary string
 	cmd.Dir = t.TempDir()
 	cmd.Env = childFixtureEnvironment(settings)
 	// The isolated child service never inherits test runner output or an operator environment.
-	cmd.Stdout, cmd.Stderr = io.Discard, io.Discard
+	cmd.Stdout, cmd.Stderr = io.Discard, diagnostics
 	if err = cmd.Start(); err != nil {
 		t.Fatal("standard server failed to start")
 	}
@@ -125,6 +130,9 @@ func childKernelObservation(ctx context.Context, server *childAcceptanceServer, 
 	if runtime.GOOS != "windows" {
 		return nil, errors.New("Windows filtered TCP ownership probe required")
 	}
+	if len(peers) > maxChatChildProcesses*maxChatChildSlots {
+		return nil, errors.New("too many peers for owned kernel observation")
+	}
 	parts := make([]string, len(peers))
 	for i, v := range peers {
 		if v < 1 || v > 65535 {
@@ -142,7 +150,14 @@ func childKernelObservation(ctx context.Context, server *childAcceptanceServer, 
 	}
 	cmd.Env = childFixtureEnvironment(map[string]string{"FIXTURE_BINARY": server.proc.Path, "FIXTURE_PARENT": strconv.Itoa(server.proc.Process.Pid), "FIXTURE_PORT": strconv.Itoa(port), "FIXTURE_PEERS": strings.Join(parts, ","), "FIXTURE_EXPECT_PARENT": mode})
 	out, err := cmd.Output()
-	if err != nil || len(out) > 16<<10 {
+	limit := 16 << 10
+	if len(peers) > 512 {
+		// The fixture emits only the requested peer-port and owner PID pairs.
+		limit = 64 << 10
+	} else if len(peers) >= 512 {
+		limit = 32 << 10
+	}
+	if err != nil || len(out) > limit {
 		return nil, errors.New("filtered local kernel observation failed")
 	}
 	return out, nil

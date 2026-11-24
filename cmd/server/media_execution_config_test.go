@@ -20,7 +20,7 @@ func TestMediaExecutionEnvironmentStrictAndIndependent(t *testing.T) {
 			t.Fatal("valid delivery ceiling rejected", err)
 		}
 	}
-	for _, name := range []string{"MEDIA_SUBMIT_WORKERS", "MEDIA_QUERY_WORKERS", "MEDIA_WORKSPACE_CONCURRENCY", "MEDIA_CHANNEL_CONCURRENCY"} {
+	for _, name := range []string{"MEDIA_SUBMIT_WORKERS", "MEDIA_WORKSPACE_CONCURRENCY", "MEDIA_CHANNEL_CONCURRENCY"} {
 		for _, raw := range []string{"", "0", "-1", "+1", " 1", "1 ", "1.5", "１", "33", "10000000000"} {
 			if _, err := mediaSchedulingFromEnv(func(key string) (string, bool) { return raw, key == name }); err == nil {
 				t.Fatalf("invalid %s accepted", name)

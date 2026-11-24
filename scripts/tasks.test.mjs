@@ -36,3 +36,40 @@ test('documentation and SQL layout rejects regressions but retains entrypoints',
   assert.match(errors.join(), /db\//);
   assert.match(errors.join(), /docs\//);
 });
+
+test('entry reflects individual checks while a batch remains in progress', () => {
+  const plan = fixture();
+  const batch = plan.batches[0];
+  batch.status = 'in_progress';
+  batch.completed_on = null;
+  batch.checks = ['pending', 'failed', 'blocked', 'passed'].map(status => ({
+    label: status, command: 'test', status, note: 'fixture',
+  }));
+  const before = renderEntry(plan);
+  assert.match(before, /进行中 · 已登记 4 项验收，通过 1 项/);
+  batch.checks[0].status = 'passed';
+  const after = renderEntry(plan);
+  assert.match(after, /进行中 · 已登记 4 项验收，通过 2 项/);
+  batch.checks.forEach(check => { check.status = 'passed'; });
+  assert.match(renderEntry(plan), /- \[ \] \*\*V00 .*进行中 · 已登记 4 项验收，通过 4 项/);
+  batch.checks = [];
+  batch.ledgers = [];
+  assert.match(renderEntry(plan), /进行中 · 已登记 0 项验收，通过 0 项\n$/);
+});
+
+test('entry links the highest ledger number independently of date and source order', () => {
+  const plan = fixture();
+  const batch = plan.batches[0];
+  const newer = 'docs/changes/2026-11-12-019-follow-up.md';
+  batch.ledgers.unshift(newer);
+  for (const status of ['done', 'in_progress', 'blocked', 'todo']) {
+    batch.status = status;
+    assert.ok(renderEntry(plan).includes(`[台账 019](${newer})`));
+    assert.deepEqual(batch.ledgers, [newer, ledger]);
+  }
+  const latest = 'docs/changes/2026-11-13-020-next.md';
+  batch.ledgers.push(latest);
+  const updated = renderEntry(plan);
+  assert.ok(updated.includes(`[台账 020](${latest})`));
+  assert.ok(!updated.includes(newer));
+});

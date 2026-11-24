@@ -352,6 +352,25 @@ func TestPostgresAdmissionTerminalPredicateAndIndexes(t *testing.T) {
 	if err != nil || snapshot.Tasks.Active != wantActive || snapshot.Tasks.Queued != 1 || snapshot.Tasks.OldestQueuedSeconds < 59 {
 		t.Fatalf("terminal predicate diverged: %#v %v", snapshot, err)
 	}
+	for _, probe := range []struct {
+		workspace, model, kind     string
+		workspaceLimit, modelLimit int
+		workspaceFull, modelFull   bool
+	}{
+		{"ws_demo", "studio-image", "image", wantActive, wantActive, true, true},
+		{"ws_demo", "studio-image", "image", wantActive + 1, wantActive, false, true},
+		{"ws_demo", "studio-video", "video", wantActive, 1, true, false},
+		{"ws_demo", "studio-image", "image", wantActive + 1, wantActive + 1, false, false},
+		{"ws_demo", "studio-image", "chat", 1, 1, false, false},
+		{"empty_workspace", "studio-image", "image", 1, 1, false, false},
+	} {
+		a.mu.Lock()
+		ws, model, e := a.admissionAtLimitLocked(probe.workspace, probe.model, probe.kind, probe.workspaceLimit, probe.modelLimit)
+		a.mu.Unlock()
+		if e != nil || ws != probe.workspaceFull || model != probe.modelFull {
+			t.Fatalf("admission threshold %+v gave workspace=%v model=%v err=%v", probe, ws, model, e)
+		}
+	}
 	err = a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
 		var count int
 		if err := conn.QueryRow(ctx, "SELECT count(*) FROM pg_indexes WHERE schemaname=current_schema() AND indexname IN ('studio_runs_admission_active','studio_tasks_admission_active') AND indexdef LIKE '%workspace_id%' AND indexdef LIKE '%model_id%' AND indexdef LIKE '%WHERE%'").Scan(&count); err != nil {

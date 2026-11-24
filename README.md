@@ -183,6 +183,51 @@ db/migrations/         内嵌数据库SQL脚本
 
 ## 最近变更
 
+040 支持为原任务查询单独配置执行位、工作区上限、渠道上限和 PostgreSQL 连接数。修改后需重启。大于 32 的配置须显式启用查询连接池。[配置及实测范围](docs/wiki/media-original-query-capacity.md)
+
+视频工作室支持从项目素材库选择已交付 MP4，分别报价编辑或延长。工作台按原键查询受理不明的任务。本机 Chromium 已验证响应正文截断与无响应头重送两种情况。[配置与验收范围](docs/wiki/decisions/0039-source-video.md)
+
+- [259 · 定速媒体受理与完整生命周期](docs/changes/2026-11-24-259-openloop-media-lifecycle.md)
+- [258 · 受管聊天 1,024 路并发对照](docs/changes/2026-11-24-258-managed-chat-1024.md)
+- [257 · 正常受理任务的多轮原查询](docs/changes/2026-11-24-257-recurring-original-query.md)
+- [256 · 同一服务的混合运行与重启核验](docs/changes/2026-11-24-256-mixed-service-soak.md)
+- [255 · 原查询预选的公平页对照](docs/changes/2026-11-24-255-original-query-page.md)
+- [254 · 六万项正常媒体受理及原库重开](docs/changes/2026-11-24-254-normal-admission-60000.md)（本机通过，重开后零新增生成提交）
+- [253 · 受管模型全执行位联合验收](docs/changes/2026-11-23-253-managed-chat-512.md)
+- [252 · 准入配额与原库恢复扫描](docs/changes/2026-11-23-252-admission-thresholds-and-recovery.md)
+- [251 · 040 同源程序累计回归](docs/changes/2026-11-23-251-format-040-regression.md)（主树 609 项前端与六组冒烟通过）
+- [250 · 原查询结果合批的实库对照](docs/changes/2026-11-23-250-known-query-save-batch.md)
+- [249 · 原任务查询的并发登记](docs/changes/2026-11-23-249-large-query-entry-pin.md)
+- [248 · 原任务查询的分段耗时](docs/changes/2026-11-23-248-query-stage-timing.md)
+- [247 · 窄屏报价的完整原片编号](docs/changes/2026-11-23-247-source-quote-narrow.md)
+- [246 · 经正式接口受理的媒体在途任务](docs/changes/2026-11-23-246-normal-media-admission-capacity.md)
+- [245 · 039 至 040 的原任务恢复与渠道探测](docs/changes/2026-11-23-245-media-query-format-restore.md)
+- [244 · 大档原任务查询与有界派发](docs/changes/2026-11-23-244-large-original-query.md)
+- [243 · 039 本机累计回归](docs/changes/2026-11-23-243-format-039-regression.md)
+- [242 · 媒体原任务查询的独立 PostgreSQL 连接预算](docs/changes/2026-11-23-242-query-lease-pool.md)
+- [241 · 媒体原 handle 查询的到期与发起延迟](docs/changes/2026-11-23-241-media-original-query-capacity.md)
+- [240 · 受管模型执行容量与 264 路联合入口](docs/changes/2026-11-23-240-managed-chat-capacity.md)
+- [239 · 真实浏览器的原视频报价与受理恢复](docs/changes/2026-11-23-239-source-video-browser.md)
+- [238 · 原视频操作与停写联备验收](docs/changes/2026-11-23-238-source-video-integration-restore.md)
+- [237 · 项目事件按游标共享已提交的通知页](docs/changes/2026-11-23-237-shared-project-feed.md)
+
+- [236 · 视频工作室选择原片、报价和查询原收据](docs/changes/2026-11-23-236-source-video-workbench.md)
+- [234 · 冻结私有原视频的网关请求](docs/changes/2026-11-23-234-source-video-provider.md)
+- [233 · 真实项目 SSE 广播与断线恢复](docs/changes/2026-11-23-233-project-sse-fanout.md)
+- [232 · 授权订阅的分页会话复核](docs/changes/2026-11-23-232-paged-stream-session-admission.md)
+
+- [235 · 私有原视频编辑与延长受理](docs/changes/2026-11-22-235-video-source-admission.md)
+
+- [231 · 按用户选择暂缓正式支付接入](docs/changes/2026-11-22-231-payment-channel-deferred.md)
+
+- [230 · 根任务导航显示已验证子项与最新台账](docs/changes/2026-11-22-230-todo-entry-acceptance.md)
+
+- [229 · 单镜视频窄屏表单标签对比度](docs/changes/2026-11-22-229-panel-video-label-contrast.md)
+
+- [228 · 共享会话批量复核的返回位置](docs/changes/2026-11-22-228-stream-session-batch-positions.md)
+
+- [227 · 037 与 038 本地制品复验](docs/changes/2026-11-22-227-local-acceptance.md) · [037 半小时实测](docs/wiki/assets/performance-long-reply-037.json)
+
 - [222 · 已确认分镜的视频报价与受理](docs/changes/2026-11-22-222-comic-panel-video.md) · [223 · 分镜产物替换指定剪辑镜头](docs/changes/2026-11-22-223-panel-video-timeline-replacement.md) · [224 · 工作台单镜生成与原键核对](docs/changes/2026-11-22-224-panel-video-workbench.md)
 
 - [226 · 四语界面与首次访问 IP 地区识别](docs/changes/2026-11-22-226-workbench-languages.md)
@@ -548,7 +593,7 @@ A4.1 覆盖分页恢复、启动背压和提交回执丢失后的重启。A4.2 �
 
 ## 可选的本机聊天执行子进程
 
-在已启用鉴权、PostgreSQL 和 live 聊天网关的服务端，可以成对设置 CHAT_CHILD_PROCESSES 与 CHAT_CHILD_SLOTS，使新会话的模型 HTTP 请求分到受管子进程。控制服务继续决定接纳、审核、权益和 SSE 交付。默认省略这两项；配置例见 .env.example。[设计、边界及回退](docs/wiki/decisions/v17j1-managed-chat-execution.md) · [验收记录](docs/changes/2026-11-22-208-managed-chat-integration.md)。
+在已启用鉴权、PostgreSQL 和 live 聊天网关的服务端，可以成对设置 CHAT_CHILD_PROCESSES（1–16）与 CHAT_CHILD_SLOTS（每进程 1–64），使新会话的模型 HTTP 请求分到受管子进程。控制服务继续决定接纳、审核、权益和 SSE 交付。默认省略这两项；配置例见 .env.example。[设计、边界及回退](docs/wiki/decisions/v17j1-managed-chat-execution.md) · [验收记录](docs/changes/2026-11-22-208-managed-chat-integration.md)。
 
 ## 可选的聊天增量批量提交
 
@@ -556,4 +601,4 @@ A4.1 覆盖分页恢复、启动背压和提交回执丢失后的重启。A4.2 �
 
 ## 持久订阅的容量配置
 
-全局订阅默认 128 个，单工作区默认 32 个。用 ADMISSION_GLOBAL_STREAMS 和 ADMISSION_WORKSPACE_STREAMS 配置两级上限。全局取值 129–256 时，需要 PostgreSQL、AUTH_MODE=required 和至少一个 RUN_REPLAY_READ_CONNECTIONS；服务另外使用一个专用只读连接，按会话成组核验仍在线的读者。原会话失效后关闭对应订阅，可按当前账户和已有游标重新连接。[218 配置与指标](docs/changes/2026-11-22-218-stream-session-batches.md) · [219 授权读者验收](docs/changes/2026-11-22-219-authenticated-sse-sessions.md)。
+全局订阅默认 128 个，单工作区默认 32 个。用 ADMISSION_GLOBAL_STREAMS 和 ADMISSION_WORKSPACE_STREAMS 配置两级上限。全局取值 129–16,384 时，需要 PostgreSQL、AUTH_MODE=required 和至少一个 RUN_REPLAY_READ_CONNECTIONS；服务另外使用一个专用只读连接，每页最多核验 256 个会话，共用一次复核期限。PG 项目通知另用两条只读连接共享同项目、同游标的已提交事件页。原会话失效后关闭对应订阅，可按当前账户和已有游标重新连接。[218 配置与指标](docs/changes/2026-11-22-218-stream-session-batches.md) · [219 授权读者验收](docs/changes/2026-11-22-219-authenticated-sse-sessions.md)。

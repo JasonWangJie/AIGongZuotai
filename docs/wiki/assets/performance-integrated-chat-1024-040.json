@@ -1,0 +1,400 @@
+{
+  "format": "040",
+  "platform": "windows/amd64",
+  "postgresql": "16.14",
+  "go": "go1.26.11",
+  "controlled_upstream": "loopback HTTP",
+  "service_sha256": "8628a3ac9eb75dc03fe05ec554a840b65dbaab85e185b2762380fa15461b520a",
+  "go_command_seconds": {
+    "512": 68.0,
+    "1024": 987.953
+  },
+  "profiles": {
+    "512": {
+      "service_sha256_before": "8628a3ac9eb75dc03fe05ec554a840b65dbaab85e185b2762380fa15461b520a",
+      "service_sha256_after": "8628a3ac9eb75dc03fe05ec554a840b65dbaab85e185b2762380fa15461b520a",
+      "report_sha256": "0d062b5df717a789028e4277afd673114e92ff195e9f37a59aa567bb124a07e2",
+      "test_passed": true,
+      "new_job_members_after_go_exit": 0,
+      "measurements": {
+        "active_per_frozen_model": [
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64
+        ],
+        "active_per_workspace": [
+          57,
+          57,
+          57,
+          57,
+          57,
+          57,
+          57,
+          57,
+          56
+        ],
+        "additional_paused_reader": 1,
+        "all_children_lost": {
+          "child_slots": [
+            1,
+            1
+          ],
+          "controller_remained_alive": true,
+          "interrupted_with_original_prefix": 2,
+          "local_slots_observed": 1,
+          "old_terminals_and_review_before_first_local_post": true,
+          "queued_first_dispatch_local": 2
+        },
+        "all_model_posts_including_moderation": 520,
+        "authorized_normal_readers": 512,
+        "controller_crash_with_review": 1,
+        "joint_wave": {
+          "simultaneous_original_model_requests": 512,
+          "simultaneous_admitted_readers": 513,
+          "simultaneous_readers_per_workspace": [
+            58,
+            57,
+            57,
+            57,
+            57,
+            57,
+            57,
+            57,
+            56
+          ],
+          "configured_global_stream_limit": 513,
+          "observed_workspace_stream_limit": 64,
+          "configured_replay_read_connections": 2,
+          "steady_peak_session_rounds": 1,
+          "steady_peak_session_checks": 9,
+          "normal_readers_per_run": 1,
+          "normal_delta_deliveries": 6144,
+          "delayed_delta_deliveries": 12,
+          "normal_terminal_deliveries": 512,
+          "delayed_terminal_deliveries": 1,
+          "normal_reader_delta_deliveries_latency": {
+            "samples": 6144,
+            "p50_ms": 52.1067,
+            "p95_ms": 131.8028,
+            "p99_ms": 218.9257,
+            "max_ms": 956.6933
+          },
+          "delayed_reader_delta_deliveries_latency": {
+            "samples": 12,
+            "p50_ms": 4524.3531,
+            "p95_ms": 5004.3644,
+            "p99_ms": 5004.3644,
+            "max_ms": 5004.3644
+          },
+          "all_reader_delta_deliveries_latency": {
+            "samples": 6156,
+            "p50_ms": 52.1111,
+            "p95_ms": 134.0027,
+            "p99_ms": 219.738,
+            "max_ms": 5004.3644
+          },
+          "postgres_original_deltas": {
+            "delta_rows": 6144,
+            "distinct_runs": 512,
+            "distinct_delta_insert_xids": 194,
+            "transaction_shapes": [
+              {
+                "distinct_runs_per_transaction": 1,
+                "delta_events_per_transaction": 1,
+                "transactions": 1
+              },
+              {
+                "distinct_runs_per_transaction": 3,
+                "delta_events_per_transaction": 3,
+                "transactions": 1
+              },
+              {
+                "distinct_runs_per_transaction": 29,
+                "delta_events_per_transaction": 29,
+                "transactions": 1
+              },
+              {
+                "distinct_runs_per_transaction": 31,
+                "delta_events_per_transaction": 31,
+                "transactions": 1
+              },
+              {
+                "distinct_runs_per_transaction": 32,
+                "delta_events_per_transaction": 32,
+                "transactions": 190
+              }
+            ],
+            "observed_events_per_wave_second": 2848.0323058831195
+          },
+          "coordinator": {
+            "confirmed_events": 6144,
+            "group_commits": 193,
+            "group_delta_events": 6143,
+            "single_attempts": 1
+          },
+          "first_wave_to_last_normal_delta_ms": 2157.2789
+        },
+        "killed_child_with_review": 1,
+        "live_delta_latency": {
+          "samples": 6144,
+          "p50_ms": 52.1067,
+          "p95_ms": 131.8028,
+          "p99_ms": 218.9257,
+          "max_ms": 956.6933
+        },
+        "matching_active_generation": true,
+        "moderation_companion": {
+          "candidate_journal_deltas": 0,
+          "input_checks": 1,
+          "model_posts": 1,
+          "output_checks": 1
+        },
+        "new_generation_after_restart": true,
+        "peak_model_requests": 512,
+        "queued_cancel_without_post": 1,
+        "reader_pause_ms": 5951.1063,
+        "simultaneous_child_model_sockets": [
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64
+        ],
+        "standard_executable_model_posts": 519,
+        "started_cancel_with_review": 1,
+        "unexpected_or_repeated_posts": 0,
+        "verified_child_owners": 8,
+        "verified_normal_original_key_replays": 512,
+        "verified_registered_workspaces": 9,
+        "verified_settled_runs": 512
+      }
+    },
+    "1024": {
+      "service_sha256_before": "8628a3ac9eb75dc03fe05ec554a840b65dbaab85e185b2762380fa15461b520a",
+      "service_sha256_after": "8628a3ac9eb75dc03fe05ec554a840b65dbaab85e185b2762380fa15461b520a",
+      "report_sha256": "c977a71d08f92c5ff28e9b90c52ab881ef49ef75b2f3b348c9e805ac54ea02cd",
+      "test_passed": true,
+      "new_job_members_after_go_exit": 0,
+      "measurements": {
+        "active_per_frozen_model": [
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64
+        ],
+        "active_per_workspace": [
+          61,
+          61,
+          61,
+          61,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60
+        ],
+        "additional_paused_reader": 1,
+        "all_children_lost": {
+          "child_slots": [
+            1,
+            1
+          ],
+          "controller_remained_alive": true,
+          "interrupted_with_original_prefix": 2,
+          "local_slots_observed": 1,
+          "old_terminals_and_review_before_first_local_post": true,
+          "queued_first_dispatch_local": 2
+        },
+        "all_model_posts_including_moderation": 1032,
+        "authorized_normal_readers": 1024,
+        "controller_crash_with_review": 1,
+        "joint_wave": {
+          "simultaneous_original_model_requests": 1024,
+          "simultaneous_admitted_readers": 1025,
+          "simultaneous_readers_per_workspace": [
+            62,
+            61,
+            61,
+            61,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ],
+          "configured_global_stream_limit": 1025,
+          "observed_workspace_stream_limit": 64,
+          "configured_replay_read_connections": 2,
+          "steady_peak_session_rounds": 1,
+          "steady_peak_session_checks": 17,
+          "normal_readers_per_run": 1,
+          "normal_delta_deliveries": 12288,
+          "delayed_delta_deliveries": 12,
+          "normal_terminal_deliveries": 1024,
+          "delayed_terminal_deliveries": 1,
+          "normal_reader_delta_deliveries_latency": {
+            "samples": 12288,
+            "p50_ms": 77.7555,
+            "p95_ms": 193.2817,
+            "p99_ms": 242.5468,
+            "max_ms": 984.1426
+          },
+          "delayed_reader_delta_deliveries_latency": {
+            "samples": 12,
+            "p50_ms": 5922.7788,
+            "p95_ms": 6871.6509,
+            "p99_ms": 6871.6509,
+            "max_ms": 6871.6509
+          },
+          "all_reader_delta_deliveries_latency": {
+            "samples": 12300,
+            "p50_ms": 77.8362,
+            "p95_ms": 194.7418,
+            "p99_ms": 243.6563,
+            "max_ms": 6871.6509
+          },
+          "postgres_original_deltas": {
+            "delta_rows": 12288,
+            "distinct_runs": 1024,
+            "distinct_delta_insert_xids": 387,
+            "transaction_shapes": [
+              {
+                "distinct_runs_per_transaction": 1,
+                "delta_events_per_transaction": 1,
+                "transactions": 1
+              },
+              {
+                "distinct_runs_per_transaction": 7,
+                "delta_events_per_transaction": 7,
+                "transactions": 1
+              },
+              {
+                "distinct_runs_per_transaction": 8,
+                "delta_events_per_transaction": 8,
+                "transactions": 1
+              },
+              {
+                "distinct_runs_per_transaction": 24,
+                "delta_events_per_transaction": 24,
+                "transactions": 1
+              },
+              {
+                "distinct_runs_per_transaction": 25,
+                "delta_events_per_transaction": 25,
+                "transactions": 1
+              },
+              {
+                "distinct_runs_per_transaction": 31,
+                "delta_events_per_transaction": 31,
+                "transactions": 1
+              },
+              {
+                "distinct_runs_per_transaction": 32,
+                "delta_events_per_transaction": 32,
+                "transactions": 381
+              }
+            ],
+            "observed_events_per_wave_second": 4365.626165192836
+          },
+          "coordinator": {
+            "confirmed_events": 12288,
+            "group_commits": 386,
+            "group_delta_events": 12287,
+            "single_attempts": 1
+          },
+          "first_wave_to_last_normal_delta_ms": 2814.7165
+        },
+        "killed_child_with_review": 1,
+        "live_delta_latency": {
+          "samples": 12288,
+          "p50_ms": 77.7555,
+          "p95_ms": 193.2817,
+          "p99_ms": 242.5468,
+          "max_ms": 984.1426
+        },
+        "matching_active_generation": true,
+        "moderation_companion": {
+          "candidate_journal_deltas": 0,
+          "input_checks": 1,
+          "model_posts": 1,
+          "output_checks": 1
+        },
+        "new_generation_after_restart": true,
+        "peak_model_requests": 1024,
+        "queued_cancel_without_post": 1,
+        "reader_pause_ms": 7843.5871,
+        "registration_window_wait_ms": 901000,
+        "simultaneous_child_model_sockets": [
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64,
+          64
+        ],
+        "standard_executable_model_posts": 1031,
+        "started_cancel_with_review": 1,
+        "unexpected_or_repeated_posts": 0,
+        "verified_child_owners": 16,
+        "verified_normal_original_key_replays": 1024,
+        "verified_registered_workspaces": 17,
+        "verified_same_execution_renewals": 1024,
+        "verified_settled_runs": 1024
+      }
+    }
+  },
+  "integration_build": {
+    "official_main_sha256": "6e1256fe30a856bb1a43a71c43e858fc583f41da79a30f6ee5fa76aac9d172d7",
+    "dedicated_profile_sha256": "8628a3ac9eb75dc03fe05ec554a840b65dbaab85e185b2762380fa15461b520a",
+    "checkout_vcs_revision": "79a9e490a071c2d1be5243c40a4ff958039aa8cc",
+    "candidate_git_revision_absent": true,
+    "both_rebuilt_with_buildvcs_false_sha256": "0493c242b05872626d3853a74320a9f4b523bb454c39bae427577c60a6954ca2",
+    "equal_neutral_binaries": true
+  }
+}

@@ -82,7 +82,7 @@ func TestMediaTransportLaneConfiguration(t *testing.T) {
 			t.Fatal("lane split changed existing request or response header deadlines")
 		}
 	}
-	for _, test := range []struct{ submit, query int }{{-1, 2}, {33, 2}, {2, -1}, {2, 33}} {
+	for _, test := range []struct{ submit, query int }{{-1, 2}, {33, 2}, {2, -1}, {2, MaxMediaQueryWorkers + 1}} {
 		p, err := NewAsyncMediaProvider(AsyncMediaConfig{BaseURL: server.URL, APIKey: fixtureMediaKey, CredentialID: "fixture", ImageModel: "image",
 			AssetDir: t.TempDir(), SubmitConcurrency: test.submit, QueryConcurrency: test.query})
 		if err == nil {

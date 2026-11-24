@@ -1,6 +1,6 @@
 import type { TaskInput } from './types';
 
-export type PendingOperation = ({ kind: 'task'; body: TaskInput } | { kind: 'run'; body: { project_id: string; model_id: string; model_version?: string; input: string; quote_id?: string } }) & { key: string; ownerId: string };
+export type PendingOperation = ({ kind: 'task'; body: TaskInput } | { kind: 'run'; body: { project_id: string; model_id: string; model_version?: string; input: string; quote_id?: string } }) & { key: string; ownerId: string; workspaceId?: string };
 export class PendingRequests {
   private entries = new Map<string, PendingOperation>();
   private slot(ownerId: string, projectId: string): string { return JSON.stringify([ownerId, projectId]); }

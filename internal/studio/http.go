@@ -127,6 +127,7 @@ func (a *App) Handler() http.Handler {
 	})
 	mux.HandleFunc("GET /api/v1/tasks", a.listTasksHTTP)
 	mux.HandleFunc("POST /api/v1/tasks", a.postTask)
+	mux.HandleFunc("GET /api/v1/tasks/receipt", a.sourceVideoReceiptHTTP)
 	mux.HandleFunc("GET /api/v1/tasks/{id}", a.taskSnapshot)
 	mux.HandleFunc("POST /api/v1/tasks/{id}/reconcile", func(w http.ResponseWriter, r *http.Request) {
 		if err := a.checkTaskAccess(r); err != nil {
@@ -336,7 +337,9 @@ func (a *App) postTask(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	if !a.authorizeProject(principalFrom(r), input.ProjectID) {
+	p := principalFrom(r)
+	if !a.authorizeProject(p, input.ProjectID) || (sourceVideoOperation(input.Operation) &&
+		(r.Header.Get("X-Project-ID") != "" || r.URL.Query().Has("project_id")) && p.Project.ID != input.ProjectID) {
 		writeError(w, failure(422, "INVALID_INPUT", "请检查项目、媒体模型、提示词、画幅；图片数量1至4，视频数量1"))
 		return
 	}

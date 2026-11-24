@@ -1,0 +1,118 @@
+[
+  {
+    "authorized_workspaces": 4,
+    "workspace_limit": 32,
+    "model_limit": 16,
+    "normal_api_accepted": 128,
+    "original_key_replays_before": 128,
+    "original_key_replays_after": 128,
+    "model_429": 4,
+    "workspace_429": 12,
+    "first_admissions_and_overflow_ms": 727,
+    "Before": {
+      "pg_tasks": 128,
+      "pg_running_with_original_handle": 127,
+      "pg_unknown_without_handle": 1,
+      "gateway_posts": 128,
+      "gateway_gets": 128
+    },
+    "After": {
+      "pg_tasks": 128,
+      "pg_running_with_original_handle": 127,
+      "pg_unknown_without_handle": 1,
+      "gateway_posts": 128,
+      "gateway_gets": 129
+    },
+    "gateway_gets_after_reopen": 1,
+    "gateway_posts_after_reopen": 0
+  },
+  {
+    "authorized_workspaces": 4,
+    "workspace_limit": 128,
+    "model_limit": 64,
+    "normal_api_accepted": 512,
+    "original_key_replays_before": 512,
+    "original_key_replays_after": 512,
+    "model_429": 4,
+    "workspace_429": 12,
+    "first_admissions_and_overflow_ms": 3036,
+    "Before": {
+      "pg_tasks": 512,
+      "pg_running_with_original_handle": 511,
+      "pg_unknown_without_handle": 1,
+      "gateway_posts": 512,
+      "gateway_gets": 514
+    },
+    "After": {
+      "pg_tasks": 512,
+      "pg_running_with_original_handle": 511,
+      "pg_unknown_without_handle": 1,
+      "gateway_posts": 512,
+      "gateway_gets": 515
+    },
+    "gateway_gets_after_reopen": 1,
+    "gateway_posts_after_reopen": 0
+  },
+  {
+    "authorized_workspaces": 4,
+    "workspace_limit": 1024,
+    "model_limit": 512,
+    "normal_api_accepted": 4096,
+    "original_key_replays_before": 4096,
+    "original_key_replays_after": 4096,
+    "model_429": 4,
+    "workspace_429": 12,
+    "first_admissions_and_overflow_ms": 77652,
+    "Before": {
+      "pg_tasks": 4096,
+      "pg_running_with_original_handle": 4095,
+      "pg_unknown_without_handle": 1,
+      "gateway_posts": 4096,
+      "gateway_gets": 4103
+    },
+    "After": {
+      "pg_tasks": 4096,
+      "pg_running_with_original_handle": 4095,
+      "pg_unknown_without_handle": 1,
+      "gateway_posts": 4096,
+      "gateway_gets": 4104
+    },
+    "gateway_gets_after_reopen": 1,
+    "gateway_posts_after_reopen": 0
+  },
+  {
+    "authorized_workspaces": 16,
+    "workspace_limit": 3750,
+    "model_limit": 1875,
+    "normal_api_accepted": 60000,
+    "original_key_replays_before": 60000,
+    "original_key_replays_after": 60000,
+    "model_429": 16,
+    "workspace_429": 48,
+    "first_admissions_and_overflow_ms": 1471601,
+    "Before": {
+      "pg_tasks": 60000,
+      "pg_running_with_original_handle": 59999,
+      "pg_unknown_without_handle": 1,
+      "gateway_posts": 60000,
+      "gateway_gets": 60029
+    },
+    "After": {
+      "pg_tasks": 60000,
+      "pg_running_with_original_handle": 59999,
+      "pg_unknown_without_handle": 1,
+      "gateway_posts": 60000,
+      "gateway_gets": 60031
+    },
+    "gateway_gets_after_reopen": 2,
+    "gateway_posts_after_reopen": 0,
+    "reopen_recovery_task_rows": 59999,
+    "reopen_recovery_task_pages": 469,
+    "reopen_recovery_max_page_records": 128,
+    "reopen_recovery_max_page_bytes": 323926,
+    "reopen_recovery_cached_tasks_peak": 512,
+    "observed_target_seconds": 2940.88,
+    "go_exit": 0,
+    "clean_private_cluster_shutdown": true
+  }
+]

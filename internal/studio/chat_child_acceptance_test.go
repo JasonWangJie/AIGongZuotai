@@ -26,12 +26,12 @@ type childConversation struct {
 	input    ConversationRunInput
 }
 
-func childAcceptTurn(t *testing.T, ctx context.Context, base string, scope capacityScope, index int) childConversation {
+func (f childFixture) acceptTurn(t *testing.T, ctx context.Context, base string, scope capacityScope, index int) childConversation {
 	t.Helper()
 	var c Conversation
 	capacityRequest(t, ctx, scope, "POST", base+"/api/v1/conversations", newID("key"), ConversationInput{ProjectID: scope.identity.Project.ID, Title: "Execution fixture"}, &c, 201)
 	body := conversationInput(c.Version, nil, activePrompt(index))
-	body.ModelID = childUpstream(index)
+	body.ModelID = f.upstream(index)
 	var quote BillingQuote
 	capacityRequest(t, ctx, scope, "POST", base+"/api/v1/billing/quotes", "", map[string]any{"resource_type": "conversation_run", "conversation_id": c.ID, "conversation_input": body}, &quote, 201)
 	if quote.ID == "" || quote.ConversationID != c.ID || quote.ProjectID != scope.identity.Project.ID || quote.ReserveMicros <= 5 {
@@ -45,13 +45,14 @@ func childAcceptTurn(t *testing.T, ctx context.Context, base string, scope capac
 	}
 	return out
 }
-func (c childConversation) replay(t *testing.T, ctx context.Context, base string) {
+func (c childConversation) replay(t *testing.T, ctx context.Context, base string) Run {
 	t.Helper()
 	var got Run
 	capacityRequest(t, ctx, c.scope, "POST", base+c.url, c.key, c.input, &got, 201)
 	if got.ID != c.run.ID || got.UserMessageID != c.run.UserMessageID || got.AssistantMessageID != c.run.AssistantMessageID || got.Billing == nil || got.Billing.ReservationID != c.run.Billing.ReservationID {
 		t.Fatal("original key did not identify the original run, branch and reservation")
 	}
+	return got
 }
 func (c childConversation) wait(t *testing.T, ctx context.Context, base, status string, seq uint64) Run {
 	t.Helper()
@@ -72,8 +73,10 @@ func (c childConversation) wait(t *testing.T, ctx context.Context, base, status 
 }
 
 type childFixture struct {
+	childAcceptanceTopology
 	dsn, asset, reference, catalog, prices string
 	scopes                                 []capacityScope
+	registrationWait                       time.Duration
 }
 
 func TestChatChildAcceptanceQueuedSnapshot(t *testing.T) {
@@ -100,16 +103,16 @@ func TestChatChildAcceptanceQueuedSnapshot(t *testing.T) {
 
 // Register normal accounts before the measurement; fund each with the existing
 // offline preview and digest-checked apply while its control writer is stopped.
-func prepareChildFixture(t *testing.T, ctx context.Context) childFixture {
+func prepareChildFixture(t *testing.T, ctx context.Context, profile childAcceptanceTopology) childFixture {
 	t.Helper()
-	f := childFixture{dsn: testDatabase(t), asset: t.TempDir(), reference: t.TempDir(), scopes: make([]capacityScope, 5)}
+	f := childFixture{childAcceptanceTopology: profile, dsn: testDatabase(t), asset: t.TempDir(), reference: t.TempDir(), scopes: make([]capacityScope, profile.workspaces)}
 	catalog := customCatalogFixture()
 	first := catalog.Models[0]
 	catalog.Models = nil
 	prices := pricingFile{SchemaVersion: 1, ProviderMode: "live", Unit: LedgerUnit, Scale: LedgerScale}
-	for i := range 4 {
+	for i := range f.models {
 		m := first
-		m.ID, m.UpstreamModel = childUpstream(i), childUpstream(i)
+		m.ID, m.UpstreamModel = f.upstream(i), f.upstream(i)
 		m.Capabilities.ContextWindowTokens, m.Capabilities.MaxOutputTokens = 2048, 128
 		catalog.Models = append(catalog.Models, m)
 		prices.Rates = append(prices.Rates, pricingRate{ModelID: m.ID, Kind: "chat", Operation: "chat", InputPerMillionMicros: "1000000", OutputPerMillionMicros: "1000000"})
@@ -129,6 +132,17 @@ func prepareChildFixture(t *testing.T, ctx context.Context) childFixture {
 		defer app.Close()
 		defer server.Close()
 		for i := range f.scopes {
+			// Registration is limited to ten per fifteen minutes from one IP.
+			// Keep the same real host, auth service and sessions across batches.
+			if i > 0 && i%10 == 0 {
+				start := time.Now()
+				select {
+				case <-ctx.Done():
+					t.Fatal("registration deadline while waiting for the next real window")
+				case <-time.After(15*time.Minute + time.Second):
+				}
+				f.registrationWait += time.Since(start)
+			}
 			c := authClient(t)
 			tr := http.DefaultTransport.(*http.Transport).Clone()
 			tr.Proxy = nil
@@ -157,13 +171,14 @@ func prepareChildFixture(t *testing.T, ctx context.Context) childFixture {
 
 func (f childFixture) settings(g *childAcceptanceGateway, origin string) map[string]string {
 	n := g.normal
+	workspaceLimit := max(2, (n+len(f.scopes)-1)/len(f.scopes))
 	return map[string]string{
 		"DATABASE_URL": f.dsn, "AUTH_MODE": "required", "ASSET_DIR": f.asset, "REFERENCE_DIR": f.reference,
 		"PROVIDER_MODE": "live", "NEWAPI_BASE_URL": origin + "/v1", "NEWAPI_API_KEY": g.key, "MODEL_CATALOG_FILE": f.catalog,
 		"BILLING_MODE": "credits", "BILLING_PRICE_FILE": f.prices, "RUN_REPLAY_READ_CONNECTIONS": "2",
-		"CHAT_CHILD_PROCESSES": "2", "CHAT_CHILD_SLOTS": strconv.Itoa(n / 2), "CHAT_WORKERS": "1", "CHAT_QUEUE_SIZE": "12", "CHAT_WORKSPACE_QUEUE_SIZE": "3",
-		"CHAT_WORKSPACE_CONCURRENCY": strconv.Itoa(max(2, n/5)), "CHAT_MODEL_CONCURRENCY": strconv.Itoa(max(2, n/4)),
-		"ADMISSION_WORKSPACE_RUNS": "32", "ADMISSION_MODEL_RUNS": "32", "ADMISSION_WORKSPACE_STREAMS": "32",
+		"CHAT_CHILD_PROCESSES": strconv.Itoa(f.processes), "CHAT_CHILD_SLOTS": strconv.Itoa(n / f.processes), "CHAT_WORKERS": "1", "CHAT_QUEUE_SIZE": "12", "CHAT_WORKSPACE_QUEUE_SIZE": "3",
+		"CHAT_WORKSPACE_CONCURRENCY": strconv.Itoa(workspaceLimit), "CHAT_MODEL_CONCURRENCY": strconv.Itoa(max(2, (n+f.models-1)/f.models)),
+		"ADMISSION_WORKSPACE_RUNS": strconv.Itoa(max(32, workspaceLimit+1)), "ADMISSION_MODEL_RUNS": "32", "ADMISSION_WORKSPACE_STREAMS": "32",
 	}
 }
 
@@ -270,7 +285,7 @@ func observeChildFallback(t *testing.T, ctx context.Context, f childFixture, g *
 	}
 	for i := range running {
 		lane := base + i
-		running[i] = childAcceptTurn(t, ctx, s.base, f.scopes[i], lane)
+		running[i] = f.acceptTurn(t, ctx, s.base, f.scopes[i], lane)
 		childGate(t, ctx, g.lanes[lane].entered)
 		running[i].wait(t, ctx, s.base, "RUNNING", 1)
 		g.mu.Lock()
@@ -281,7 +296,7 @@ func observeChildFallback(t *testing.T, ctx context.Context, f childFixture, g *
 	if processes[peers[0]] == processes[peers[1]] {
 		t.Fatal("one-slot crash phase requires two independent processes")
 	}
-	if assertChildLease(t, ctx, admin, running[0], childUpstream(base), generation) == assertChildLease(t, ctx, admin, running[1], childUpstream(base+1), generation) {
+	if assertChildLease(t, ctx, admin, running[0], f.upstream(base), generation) == assertChildLease(t, ctx, admin, running[1], f.upstream(base+1), generation) {
 		t.Fatal("one-slot processes did not own distinct leases")
 	}
 	var queued [2]childConversation
@@ -301,7 +316,7 @@ func observeChildFallback(t *testing.T, ctx context.Context, f childFixture, g *
 	}
 	for i := range queued {
 		lane := base + 2 + i
-		queued[i] = childAcceptTurn(t, ctx, s.base, f.scopes[2], lane)
+		queued[i] = f.acceptTurn(t, ctx, s.base, f.scopes[2], lane)
 		requireQueued(queued[i], lane)
 		queued[i].replay(t, ctx, s.base)
 	}
@@ -364,7 +379,7 @@ func observeChildFallback(t *testing.T, ctx context.Context, f childFixture, g *
 		if observedOwners(t, ctx, s, port, []int{peer}, true)[peer] != s.proc.Process.Pid {
 			t.Fatal("fallback did not use original controller process")
 		}
-		_ = assertChildLease(t, ctx, admin, c, childUpstream(lane), generation)
+		_ = assertChildLease(t, ctx, admin, c, f.upstream(lane), generation)
 		close(g.lanes[lane].release)
 		r := c.wait(t, ctx, s.base, "COMPLETED", 2)
 		if r.Output != activeDelta(lane, 0) {
@@ -380,9 +395,11 @@ func TestPostgresChatChildAcceptance(t *testing.T) {
 	if mode == "" {
 		t.Skip("opt-in genuine child-process acceptance")
 	}
-	n, readersPerRun, integrated := childAcceptanceProfile(mode)
+	profile := childAcceptanceProfile(mode)
+	fullChildPool := mode == "integrated-512" || mode == "integrated-1024"
+	n, readersPerRun, integrated := profile.normal, profile.readers, profile.integrated
 	if n == 0 {
-		t.Fatal("choose pilot, full, integrated-pilot or integrated")
+		t.Fatal("choose pilot, full, integrated-pilot, integrated, integrated-264, integrated-512 or integrated-1024")
 	}
 	if runtime.GOOS != "windows" || !mixedLoopbackDatabase(os.Getenv("TEST_DATABASE_URL")) {
 		t.Fatal("requires the Windows kernel ownership probe and a dedicated loopback PostgreSQL")
@@ -397,10 +414,24 @@ func TestPostgresChatChildAcceptance(t *testing.T) {
 	if _, err := os.Lstat(reportPath); !os.IsNotExist(err) {
 		t.Fatal("report path must be new")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 7*time.Minute)
+	duration := 7 * time.Minute
+	if mode == "integrated-1024" {
+		duration = 30 * time.Minute
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), duration)
 	defer cancel()
-	f := prepareChildFixture(t, ctx)
-	g := newChildAcceptanceGateway(ctx, n)
+	f := prepareChildFixture(t, ctx, profile)
+	if fullChildPool {
+		users, workspaces := make(map[string]bool), make(map[string]bool)
+		for _, scope := range f.scopes {
+			u, w := scope.identity.User.ID, scope.identity.Workspace.ID
+			if u == "" || w == "" || users[u] || workspaces[w] || scope.identity.Project.ID == "" || scope.identity.Project.WorkspaceID != w {
+				t.Fatal("each model cohort needs a distinct registered user and workspace with its own project")
+			}
+			users[u], workspaces[w] = true, true
+		}
+	}
+	g := newChildAcceptanceGateway(ctx, profile)
 	gateway := httptest.NewServer(g)
 	t.Cleanup(gateway.Close)
 	gatewayPort, err := childFixturePort(gateway.Listener.Addr().String())
@@ -410,7 +441,7 @@ func TestPostgresChatChildAcceptance(t *testing.T) {
 	settings := f.settings(g, gateway.URL)
 	if integrated {
 		settings["RUN_DELTA_BATCHING_ENABLED"] = "true"
-		settings["ADMISSION_GLOBAL_STREAMS"] = "256"
+		settings["ADMISSION_GLOBAL_STREAMS"] = strconv.Itoa(profile.streamLimit())
 		settings["ADMISSION_WORKSPACE_STREAMS"] = "64"
 		settings["METRICS_TOKEN"] = newID("metrics")
 	}
@@ -434,7 +465,7 @@ func TestPostgresChatChildAcceptance(t *testing.T) {
 	events := make(chan childReaderEvent, ordinary*(activeStreamSteps+1))
 	done := make(chan error, ordinary)
 	for i := range n {
-		turns[i] = childAcceptTurn(t, ctx, s.base, f.scopes[i%5], i)
+		turns[i] = f.acceptTurn(t, ctx, s.base, f.scopes[i%len(f.scopes)], i)
 		childGate(t, ctx, g.lanes[i].entered)
 		for copyIndex := range readersPerRun {
 			res := capacityOpen(t, ctx, turns[i].scope, s.base, turns[i].run.ID)
@@ -489,33 +520,49 @@ func TestPostgresChatChildAcceptance(t *testing.T) {
 	}
 	g.mu.Unlock()
 	owners := childOwners(t, ctx, s, gatewayPort, peers)
+	var renewed int
+	if mode == "integrated-1024" {
+		renewed = verifyChildRenewal258(t, ctx, admin, turns, generation)
+	}
 	counts := map[int]int{}
 	leases := map[int]string{}
-	workspaceCounts := make([]int, 5)
-	modelCounts := make([]int, 4)
+	workspaceCounts := make([]int, len(f.scopes))
+	modelCounts := make([]int, f.models)
 	for i, turn := range turns {
 		pid := owners[peers[i]]
-		owner := assertChildLease(t, ctx, admin, turn, childUpstream(i), generation)
+		owner := assertChildLease(t, ctx, admin, turn, f.upstream(i), generation)
+		if fullChildPool {
+			childLedgerState(t, admin, turn, "HELD", true, 0)
+		}
 		if leases[pid] != "" && leases[pid] != owner {
 			t.Fatal("OS owner disagrees with PG lease owner")
 		}
 		leases[pid] = owner
 		counts[pid]++
-		workspaceCounts[i%5]++
-		modelCounts[i%4]++
+		workspaceCounts[i%len(f.scopes)]++
+		modelCounts[i%f.models]++
 	}
-	dist := make([]int, 0, 2)
+	dist := make([]int, 0, f.processes)
 	identities := map[string]bool{}
 	for pid, count := range counts {
 		dist = append(dist, count)
 		identities[leases[pid]] = true
 	}
 	slices.Sort(dist)
-	if len(dist) != 2 || dist[0] != n/2 || dist[1] != n/2 || len(identities) != 2 {
-		t.Fatal("expected two distinct children with equal simultaneous physical execution")
+	if len(dist) != f.processes || len(identities) != f.processes || dist[0] != n/f.processes || dist[len(dist)-1] != n/f.processes {
+		t.Fatalf("expected %d distinct children with %d simultaneous model connections each", f.processes, n/f.processes)
 	}
-	queued := childAcceptTurn(t, ctx, s.base, f.scopes[0], n)
+	queueScope := f.scopes[0]
+	if fullChildPool {
+		// This workspace still has one execution slot. All original
+		// models and every child are full when its ordinary POST is accepted.
+		queueScope = f.scopes[len(f.scopes)-1]
+	}
+	queued := f.acceptTurn(t, ctx, s.base, queueScope, n)
 	queued.wait(t, ctx, s.base, "QUEUED", 0)
+	if fullChildPool {
+		childLedgerState(t, admin, queued, "HELD", false, 0)
+	}
 	queued.replay(t, ctx, s.base)
 	cancelTurn := func(c childConversation) {
 		capacityRequest(t, ctx, c.scope, "POST", s.base+"/api/v1/runs/"+c.run.ID+"/cancel", "", nil, nil, 200)
@@ -601,11 +648,27 @@ func TestPostgresChatChildAcceptance(t *testing.T) {
 		joint.NormalLatency = capacityDistributionOf(samples)
 		observeChildJointCommits(t, ctx, s, f.scopes[0].client, settings["METRICS_TOKEN"], admin, turns, waveDuration, &joint)
 	}
+	normalReplays := 0
+	var journalBefore int
+	if fullChildPool {
+		journalBefore = outboxCount(t, admin, "SELECT count(*) FROM studio_ledger_journals")
+	}
 	for i, turn := range turns {
 		verifyChildJournal(t, ctx, admin, turn, i, s.base)
+		if fullChildPool {
+			replayed := turn.replay(t, ctx, s.base)
+			b := replayed.Billing
+			if replayed.Status != "COMPLETED" || b.State != "SETTLED" || b.ChargedMicros != 5 || b.ChargedMicros+b.ReleasedMicros != b.ReservedMicros {
+				t.Fatal("normal original key lost its settled amount or charged the user again")
+			}
+			normalReplays++
+		}
+	}
+	if fullChildPool && outboxCount(t, admin, "SELECT count(*) FROM studio_ledger_journals") != journalBefore {
+		t.Fatal("reading terminal streams or replaying original admission keys appended a ledger entry")
 	}
 	faults := func(index int) childConversation {
-		c := childAcceptTurn(t, ctx, s.base, f.scopes[0], index)
+		c := f.acceptTurn(t, ctx, s.base, f.scopes[0], index)
 		childGate(t, ctx, g.lanes[index].entered)
 		c.wait(t, ctx, s.base, "RUNNING", 1)
 		return c
@@ -622,7 +685,7 @@ func TestPostgresChatChildAcceptance(t *testing.T) {
 	peer := g.lanes[n+2].peerPort
 	g.mu.Unlock()
 	pid := childOwners(t, ctx, s, gatewayPort, []int{peer})[peer]
-	if leases[pid] == "" || assertChildLease(t, ctx, admin, killed, childUpstream(n+2), generation) != leases[pid] {
+	if leases[pid] == "" || assertChildLease(t, ctx, admin, killed, f.upstream(n+2), generation) != leases[pid] {
 		t.Fatal("kill target is not original child owner")
 	}
 	killObservedChild(t, ctx, s, gatewayPort, peer, pid)
@@ -639,7 +702,7 @@ func TestPostgresChatChildAcceptance(t *testing.T) {
 	peer = g.lanes[n+3].peerPort
 	g.mu.Unlock()
 	survivor := childOwners(t, ctx, s, gatewayPort, []int{peer})[peer]
-	if survivor == pid || leases[survivor] == "" || assertChildLease(t, ctx, admin, orphan, childUpstream(n+3), generation) != leases[survivor] {
+	if survivor == pid || leases[survivor] == "" || assertChildLease(t, ctx, admin, orphan, f.upstream(n+3), generation) != leases[survivor] {
 		t.Fatal("remaining child not serving original generation")
 	}
 	s.crash(t)
@@ -647,6 +710,7 @@ func TestPostgresChatChildAcceptance(t *testing.T) {
 	waitChildExit(t, ctx, s)
 	// The recovery/failure phase needs two independent one-slot children so
 	// their final loss and the original single local slot can be checked directly.
+	settings["CHAT_CHILD_PROCESSES"] = "2"
 	settings["CHAT_CHILD_SLOTS"] = "1"
 	s = start()
 	restored := orphan.wait(t, ctx, s.base, "INTERRUPTED", 1)
@@ -694,6 +758,14 @@ func TestPostgresChatChildAcceptance(t *testing.T) {
 		"killed_child_with_review": 1, "controller_crash_with_review": 1,
 		"verified_settled_runs": n, "verified_child_owners": len(identities),
 		"matching_active_generation": true, "new_generation_after_restart": true,
+	}
+	if mode == "integrated-1024" {
+		report["verified_same_execution_renewals"] = renewed
+		report["registration_window_wait_ms"] = f.registrationWait.Milliseconds()
+	}
+	if fullChildPool {
+		report["verified_normal_original_key_replays"] = normalReplays
+		report["verified_registered_workspaces"] = len(f.scopes)
 	}
 	if integrated {
 		// The legacy field was unambiguous with a single normal reader per Run.

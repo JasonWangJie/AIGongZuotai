@@ -114,6 +114,20 @@ func mediaScheduleScope(l mediaExecutionLane) string {
 func (s *mediaScheduler) laneLimit(l mediaExecutionLane) int {
 	return [...]int{s.config.SubmitWorkers, s.config.QueryWorkers, s.config.DeliveryWorkers, s.config.ReviewWorkers}[l]
 }
+func (s *mediaScheduler) channelLimit(l mediaExecutionLane) int {
+	limit := s.config.ChannelConcurrency
+	if l == mediaQueryLane && s.config.QueryChannelConcurrency > 0 {
+		limit = s.config.QueryChannelConcurrency
+	}
+	return min(limit, s.laneLimit(l))
+}
+func (s *mediaScheduler) workspaceLimit(l mediaExecutionLane) int {
+	limit := s.config.WorkspaceConcurrency
+	if l == mediaQueryLane && s.config.QueryWorkspaceConcurrency > 0 {
+		limit = s.config.QueryWorkspaceConcurrency
+	}
+	return min(limit, s.laneLimit(l))
+}
 func (s *mediaScheduler) tryReserve(c mediaScheduleCandidate) (func(), bool) {
 	if s == nil || c.Lane > mediaReviewLane {
 		return nil, false
@@ -121,11 +135,11 @@ func (s *mediaScheduler) tryReserve(c mediaScheduleCandidate) (func(), bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	l := c.Lane
-	cl := min(s.config.ChannelConcurrency, s.laneLimit(l))
+	cl := s.channelLimit(l)
 	if c.EffectiveLimit > 0 {
 		cl = min(cl, c.EffectiveLimit)
 	}
-	if s.workspace[l][c.WorkspaceID] >= min(s.config.WorkspaceConcurrency, s.laneLimit(l)) || s.channel[l][c.ChannelKey] >= cl {
+	if s.workspace[l][c.WorkspaceID] >= s.workspaceLimit(l) || s.channel[l][c.ChannelKey] >= cl {
 		s.stats.Lanes[l].CapacityDeferrals++
 		return nil, false
 	}

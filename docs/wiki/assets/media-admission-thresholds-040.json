@@ -1,0 +1,75 @@
+{
+  "format": "040",
+  "local_date": "2026-11-24",
+  "order": [
+    "original",
+    "thresholds"
+  ],
+  "runs_per_setting": 1,
+  "source_mode": "normal HTTP admissions; dedicated loopback PostgreSQL; four authenticated workspaces",
+  "original": {
+    "test_seconds": 181.24,
+    "measurements": {
+      "authorized_workspaces": 4,
+      "workspace_limit": 1024,
+      "model_limit": 512,
+      "normal_api_accepted": 4096,
+      "original_key_replays_before": 4096,
+      "original_key_replays_after": 4096,
+      "model_429": 4,
+      "workspace_429": 12,
+      "first_admissions_and_overflow_ms": 148131,
+      "Before": {
+        "pg_tasks": 4096,
+        "pg_running_with_original_handle": 4095,
+        "pg_unknown_without_handle": 1,
+        "gateway_posts": 4096,
+        "gateway_gets": 4104
+      },
+      "After": {
+        "pg_tasks": 4096,
+        "pg_running_with_original_handle": 4095,
+        "pg_unknown_without_handle": 1,
+        "gateway_posts": 4096,
+        "gateway_gets": 4105
+      },
+      "gateway_gets_after_reopen": 1,
+      "gateway_posts_after_reopen": 0
+    }
+  },
+  "thresholds": {
+    "test_seconds": 154.65,
+    "measurements": {
+      "authorized_workspaces": 4,
+      "workspace_limit": 1024,
+      "model_limit": 512,
+      "normal_api_accepted": 4096,
+      "original_key_replays_before": 4096,
+      "original_key_replays_after": 4096,
+      "model_429": 4,
+      "workspace_429": 12,
+      "first_admissions_and_overflow_ms": 93783,
+      "Before": {
+        "pg_tasks": 4096,
+        "pg_running_with_original_handle": 4095,
+        "pg_unknown_without_handle": 1,
+        "gateway_posts": 4096,
+        "gateway_gets": 4104
+      },
+      "After": {
+        "pg_tasks": 4096,
+        "pg_running_with_original_handle": 4095,
+        "pg_unknown_without_handle": 1,
+        "gateway_posts": 4096,
+        "gateway_gets": 4105
+      },
+      "gateway_gets_after_reopen": 1,
+      "gateway_posts_after_reopen": 0,
+      "reopen_recovery_task_rows": 4095,
+      "reopen_recovery_task_pages": 32,
+      "reopen_recovery_max_page_records": 128,
+      "reopen_recovery_max_page_bytes": 321646,
+      "reopen_recovery_cached_tasks_peak": 512
+    }
+  }
+}

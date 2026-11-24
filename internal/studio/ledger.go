@@ -94,6 +94,7 @@ type ledgerReservationRow struct {
 	ChargeJournalID string
 }
 type LedgerReservationRequest struct {
+	RequireOwnedQuote                                                                                bool
 	ActorUserID                                                                                      string
 	QuoteID, WorkspaceID, ProjectID, ResourceType, ResourceID, ConversationID, ModelID, ModelVersion string
 	ProviderMode                                                                                     string

@@ -92,7 +92,11 @@ func (p *taskLeasePool) claimScheduled(ctx context.Context, conn *pgx.Conn, c me
 	// healthy scheduling baseline first: a concurrent first 429 INSERT must
 	// serialize before this claim is allowed to observe/lock channel state.
 	limit := c.HardLimit
-	if limit < 1 || limit > 32 {
+	maxLimit := 32
+	if c.Lane == mediaQueryLane {
+		maxLimit = MaxMediaQueryWorkers
+	}
+	if limit < 1 || limit > maxLimit {
 		return nil, errors.New("invalid media channel hard limit")
 	}
 	if _, err = tx.Exec(ctx, `INSERT INTO studio_media_channel_runtime(scope,lane,channel_key,effective_limit) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`, mediaScheduleScope(c.Lane), s.Lane, c.ChannelKey, limit); err != nil {
@@ -125,6 +129,10 @@ func (p *taskLeasePool) claimScheduled(ctx context.Context, conn *pgx.Conn, c me
 		}
 	}
 	lease := &TaskLease{TaskID: r.Task.ID, Owner: newID("worker"), Epoch: epoch + 1, Generation: p.generation, Version: r.Task.Version, ProbeID: c.ProbeID, ChannelKey: c.ChannelKey, Lane: c.Lane}
+	if p.queryShared && c.Lane == mediaQueryLane {
+		lease.queryHandleJSON = string(handle)
+		lease.queryStatus = r.Task.Status
+	}
 	err = tx.QueryRow(ctx, `UPDATE studio_tasks SET lease_owner=$2,lease_epoch=lease_epoch+1,lease_until=clock_timestamp()+$3::interval WHERE id=$1 RETURNING lease_until`, c.TaskID, lease.Owner, fmt.Sprintf("%d milliseconds", p.duration.Milliseconds())).Scan(&lease.Until)
 	if err != nil {
 		return nil, err

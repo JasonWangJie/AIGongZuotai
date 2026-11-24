@@ -67,6 +67,9 @@ func reserveLedgerSQL(ctx context.Context, tx pgx.Tx, request LedgerReservationR
 	if err != nil {
 		return nil, err
 	}
+	if request.RequireOwnedQuote && (q.OwnerUserID == "" || q.OwnerUserID != request.ActorUserID) {
+		return nil, failure(409, "QUOTE_MISMATCH", "此原视频报价仅供原申请人提交")
+	}
 	if q.WorkspaceID != request.WorkspaceID || q.ProjectID != request.ProjectID || q.ResourceType != request.ResourceType || q.ConversationID != request.ConversationID || q.ModelID != request.ModelID || q.ModelVersion != request.ModelVersion || q.RequestHash != request.RequestHash || q.Price.ProviderMode != request.ProviderMode {
 		return nil, failure(409, "QUOTE_MISMATCH", "报价与原请求或归属不匹配")
 	}

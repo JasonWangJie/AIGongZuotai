@@ -120,7 +120,7 @@ func (f childFrame) matches(kind childFrameKind) bool {
 	} else if f.CancelID != "" {
 		return false
 	}
-	if f.Tag != nil && (!f.Tag.valid() || f.Tag.Lane < 0 || f.Tag.Lane >= 64 || f.Tag.Ticket == 0) {
+	if f.Tag != nil && (!f.Tag.valid() || f.Tag.Lane < 0 || f.Tag.Lane >= maxChatChildSlots || f.Tag.Ticket == 0) {
 		return false
 	}
 	switch kind {

@@ -7,10 +7,10 @@ import (
 
 func TestManagedChatConfiguration(t *testing.T) {
 	good := Config{Mode: "live", AuthMode: "required", DatabaseURL: "fixture", BaseURL: "fixture", APIKey: "fixture"}
-	if (ChatChildConfig{}).validate(Config{}) != nil || (ChatChildConfig{2, 40}).validate(good) != nil {
+	if (ChatChildConfig{}).validate(Config{}) != nil || (ChatChildConfig{2, 40}).validate(good) != nil || (ChatChildConfig{8, 64}).validate(good) != nil || (ChatChildConfig{16, 64}).validate(good) != nil {
 		t.Fatal("disabled default or configured live fixture rejected")
 	}
-	for _, bad := range []ChatChildConfig{{1, 0}, {0, 1}, {5, 1}, {2, 65}, {-1, 40}} {
+	for _, bad := range []ChatChildConfig{{1, 0}, {0, 1}, {17, 1}, {2, 65}, {-1, 40}} {
 		if bad.validate(good) == nil {
 			t.Fatal("invalid child budget accepted")
 		}
@@ -24,6 +24,75 @@ func TestManagedChatConfiguration(t *testing.T) {
 		if (ChatChildConfig{1, 1}).validate(cfg) == nil {
 			t.Fatal("ineligible runtime accepted a managed execution topology")
 		}
+	}
+}
+
+func TestManagedChatEightProcessSlotEnvelope(t *testing.T) {
+	pool := childTestPool(t, Config{Mode: "demo", DemoTokenDelay: time.Millisecond, ChatChildren: ChatChildConfig{Processes: 8, SlotsPerProcess: 64}})
+	if !pool.ready() || pool.liveSlots() != 512 {
+		t.Fatal("eight actual child handshakes did not advertise 512 slots")
+	}
+	byPID := make(map[int]map[int]bool)
+	var slots []*chatChildSlot
+	for range 512 {
+		s := childTestTake(t, pool)
+		pid := s.proc.cmd.Process.Pid
+		if byPID[pid] == nil {
+			byPID[pid] = make(map[int]bool)
+		}
+		if byPID[pid][s.index] {
+			t.Fatal("same process lane reserved twice")
+		}
+		byPID[pid][s.index] = true
+		slots = append(slots, s)
+	}
+	if len(byPID) != 8 {
+		t.Fatal("reservations did not span eight live OS processes")
+	}
+	for _, lanes := range byPID {
+		if len(lanes) != 64 {
+			t.Fatal("expected exactly 64 occupied slots per child")
+		}
+	}
+	if _, ok := pool.reserve(); ok {
+		t.Fatal("reserved a 513th slot")
+	}
+	first := slots[0]
+	first.release()
+	reused := childTestTake(t, pool)
+	if reused.proc != first.proc || reused.index != first.index || reused.ticket <= first.ticket {
+		t.Fatal("single released lane was not reused with a new ticket")
+	}
+	first.release()
+	if pool.available() {
+		t.Fatal("an old ticket released its replacement")
+	}
+	first.proc.stop()
+	childTestWait(t, first.proc.done)
+	if pool.liveSlots() != 448 || pool.ready() || pool.available() {
+		t.Fatal("loss of one process did not remove exactly its 64 slots")
+	}
+	reused.release()
+	for _, s := range slots {
+		s.release()
+	}
+	var remaining []*chatChildSlot
+	for range 448 {
+		s := childTestTake(t, pool)
+		if s.proc == first.proc {
+			t.Fatal("dead process received another reservation")
+		}
+		remaining = append(remaining, s)
+	}
+	if pool.available() {
+		t.Fatal("surviving processes exceeded their slot budgets")
+	}
+	for _, s := range remaining {
+		s.release()
+	}
+	pool.close()
+	if pool.liveSlots() != 0 || pool.available() {
+		t.Fatal("closed pool retained execution capacity")
 	}
 }
 

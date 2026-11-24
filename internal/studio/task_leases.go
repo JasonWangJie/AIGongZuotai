@@ -14,15 +14,19 @@ import (
 // TaskLease is never sent to users. Version is the expected business version;
 // epoch/generation protect ownership independently of that public version.
 type TaskLease struct {
-	ProbeID    string
-	ChannelKey string
-	Lane       mediaExecutionLane
-	TaskID     string
-	Owner      string
-	Epoch      int64
-	Until      time.Time
-	Generation string
-	Version    uint64
+	queryTiming     *mediaQueryTiming
+	queryStatus     string
+	queryDispatch   *mediaScheduleCandidate // set only on the final large-lane preflight
+	queryHandleJSON string                  // exact stored JSON, used only by a pooled original-handle query
+	ProbeID         string
+	ChannelKey      string
+	Lane            mediaExecutionLane
+	TaskID          string
+	Owner           string
+	Epoch           int64
+	Until           time.Time
+	Generation      string
+	Version         uint64
 }
 
 type taskLeasePool struct {
@@ -32,6 +36,7 @@ type taskLeasePool struct {
 	generation     string
 	duration       time.Duration
 	closeOnce      sync.Once
+	queryShared    bool
 }
 
 func leaseLost() error {
@@ -70,6 +75,16 @@ AND EXISTS(SELECT 1 FROM gate)
 AND (document->>'version')::bigint=$11 AND document->>'status'=$12`
 		// The original business status is retained before a mutation advances it.
 		args = append(args, l.Owner, l.Epoch, l.Generation, l.Version, t.leasePreviousStatus(), t.LeaseComplete)
+		if l.queryHandleJSON != "" {
+			if err := lockPooledQueryForSave(ctx, conn, *l); err != nil {
+				return err
+			}
+			query += " AND handle=$14::jsonb"
+			// GET never replaces the accepted handle, including optional fields
+			// absent from this version of the Go representation.
+			args[2] = l.queryHandleJSON
+			args = append(args, l.queryHandleJSON)
+		}
 	}
 	tag, err := conn.Exec(ctx, query, args...)
 	if err == nil && tag.RowsAffected() != 1 {
@@ -96,7 +111,11 @@ func (a *App) initTaskLeases() error {
 	if a.mediaScheduler == nil {
 		a.mediaScheduler = newMediaScheduler(a.config.MediaScheduling)
 	}
-	pool := &taskLeasePool{connections: [4]chan *pgx.Conn{make(chan *pgx.Conn, a.config.MediaScheduling.SubmitWorkers), make(chan *pgx.Conn, a.config.MediaScheduling.QueryWorkers), make(chan *pgx.Conn, a.config.MediaScheduling.DeliveryWorkers), make(chan *pgx.Conn, a.config.MediaScheduling.ReviewWorkers)}, connectionLane: make(map[*pgx.Conn]mediaExecutionLane), generation: newID("executor"), duration: a.config.TaskLeaseDuration}
+	queryConnections := a.config.MediaScheduling.QueryWorkers
+	if a.config.MediaScheduling.QueryDBConnections > 0 {
+		queryConnections = a.config.MediaScheduling.QueryDBConnections
+	}
+	pool := &taskLeasePool{queryShared: a.config.MediaScheduling.QueryDBConnections > 0, connections: [4]chan *pgx.Conn{make(chan *pgx.Conn, a.config.MediaScheduling.SubmitWorkers), make(chan *pgx.Conn, queryConnections), make(chan *pgx.Conn, a.config.MediaScheduling.DeliveryWorkers), make(chan *pgx.Conn, a.config.MediaScheduling.ReviewWorkers)}, connectionLane: make(map[*pgx.Conn]mediaExecutionLane), generation: newID("executor"), duration: a.config.TaskLeaseDuration}
 	if err := a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
 		tx, err := conn.Begin(ctx)
 		if err != nil {

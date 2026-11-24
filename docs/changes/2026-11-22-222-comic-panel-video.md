@@ -41,3 +41,7 @@ V20-B 的 H02 项目与创作数据、H03 模型与执行、H04 资产与交付�
 ## 文档同步
 
 由集成人合入时同步根 README、Wiki、OpenAPI、总台账及 V20 任务证据。真实 PostgreSQL、浏览器、剪辑替换和联备复验以集成运行结果登记。
+
+## 038 真库串行验收
+
+绑定报价与单次受理 9.52 秒、提交确认丢失 4.41 秒通过。旧版数据试具第一次缺少 provider_mode，在建 037 旧任务时被当期触发器拒绝；补齐固定工作区、项目、演示模式及版本，并将原调度投影纳入比对。TestPostgresPanelVideoUpgrade037PreservesExistingCanvasAndTasks 复验 2.25 秒通过，038 未为旧任务补填分镜来源。

@@ -23,17 +23,17 @@ type childGatewayLane struct {
 }
 
 type childAcceptanceGateway struct {
-	ctx                   context.Context
-	key                   string
-	normal                int
+	ctx context.Context
+	key string
+	childAcceptanceTopology
 	mu                    sync.Mutex
 	lanes                 []childGatewayLane
 	ticks                 [activeStreamSteps]chan struct{}
 	active, peak, invalid int
 }
 
-func newChildAcceptanceGateway(ctx context.Context, n int) *childAcceptanceGateway {
-	g := &childAcceptanceGateway{ctx: ctx, key: newID("local"), normal: n, lanes: make([]childGatewayLane, n+9)}
+func newChildAcceptanceGateway(ctx context.Context, profile childAcceptanceTopology) *childAcceptanceGateway {
+	g := &childAcceptanceGateway{ctx: ctx, key: newID("local"), childAcceptanceTopology: profile, lanes: make([]childGatewayLane, profile.normal+9)}
 	for i := range g.lanes {
 		g.lanes[i] = childGatewayLane{entered: make(chan struct{}), finished: make(chan struct{}), release: make(chan struct{})}
 	}
@@ -42,8 +42,6 @@ func newChildAcceptanceGateway(ctx context.Context, n int) *childAcceptanceGatew
 	}
 	return g
 }
-
-func childUpstream(i int) string { return fmt.Sprintf("child-model-%d", i%4) }
 
 func (g *childAcceptanceGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var body struct {
@@ -62,7 +60,7 @@ func (g *childAcceptanceGateway) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	lane := -1
 	if valid && body.MaxTokens == 128 && body.AlternateLimit == nil {
 		for i := range g.lanes {
-			if body.Messages[0].Content == activePrompt(i) && body.Model == childUpstream(i) {
+			if body.Messages[0].Content == activePrompt(i) && body.Model == g.upstream(i) {
 				lane = i
 				break
 			}

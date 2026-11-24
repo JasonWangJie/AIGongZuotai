@@ -15,7 +15,7 @@ type childChatProvider interface {
 }
 
 func childProvider(h childHelloData) (childChatProvider, error) {
-	if h.Protocol != childProtocolVersion || h.Slots < 1 || h.Slots > 64 || h.Owner == "" || len(h.Owner) > 128 {
+	if h.Protocol != childProtocolVersion || h.Slots < 1 || h.Slots > maxChatChildSlots || h.Owner == "" || len(h.Owner) > 128 {
 		return nil, errChildProtocol
 	}
 	switch h.Mode {

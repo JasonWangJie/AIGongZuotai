@@ -1,4 +1,5 @@
 .pv-work {
+  --muted: #4c5e52;
   display: grid;
   gap: .85rem;
   min-width: 0;

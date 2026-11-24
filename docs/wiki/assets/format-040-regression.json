@@ -1,0 +1,74 @@
+{
+  "format": "040",
+  "service_sha256": "78aaebf8897d7215673b810b332d3bbf84be4ef508c853919b10199c7d1d78aa",
+  "integrated_source_ledgers": [
+    249,
+    252,
+    253
+  ],
+  "previous_report": "format-040-regression-first.json",
+  "local_build_and_smokes": {
+    "go": "1.26.11",
+    "frontend_tests": 609,
+    "frontend_files": 57,
+    "commands": {
+      "check": {
+        "exit": 0,
+        "seconds": 133.2
+      },
+      "smoke": {
+        "exit": 0,
+        "seconds": 11.2
+      },
+      "smoke:runtime": {
+        "exit": 0,
+        "seconds": 2.64
+      },
+      "smoke:catalog": {
+        "exit": 0,
+        "seconds": 11.08
+      },
+      "smoke:references": {
+        "exit": 0,
+        "seconds": 8.99
+      },
+      "smoke:library": {
+        "exit": 0,
+        "seconds": 8.95
+      },
+      "smoke:conversations": {
+        "exit": 0,
+        "seconds": 2.92
+      },
+      "check:changes": {
+        "exit": 0,
+        "seconds": 0.78
+      },
+      "check:todo": {
+        "exit": 0,
+        "seconds": 0.59
+      }
+    },
+    "first_frontend_attempt": {
+      "passed": 608,
+      "timed_out": 1,
+      "case": "sourceVideo.test.tsx video_edit",
+      "timeout_ms": 5000,
+      "isolated_original_pass_count": 3,
+      "isolated_original_seconds": 9.74,
+      "isolated_controlled_clock_pass_count": 3,
+      "isolated_controlled_clock_seconds": 2.91
+    }
+  },
+  "database_regression": {
+    "status": "pending_full_retry"
+  },
+  "first_database_attempt_diagnostics": {
+    "migration_active_at_cancel": 10,
+    "migration_file_sha256": "c3a1be19d367ace3e293f63d6dbb31a948f3d41eb8f70ed0b0f274da5db0aa2d",
+    "matched_normalized_complete_sql": true,
+    "startup_transaction_timeout_seconds": 60,
+    "individual_statement_duration_known": false,
+    "wait_cause_known": false
+  }
+}

@@ -32,6 +32,7 @@ type principal struct {
 	Project           Project
 	Projects          []Project
 	SessionHash       []byte
+	sessionDeadline   time.Time // conservative local deadline from the database clock
 	SessionID         string
 	CredentialVersion int64
 }
@@ -114,9 +115,12 @@ func (a *App) currentPrincipal(r *http.Request) (*principal, error) {
 		p.SessionHash = digest[:]
 		err = a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
 			var user User
-			if err := conn.QueryRow(ctx, `SELECT u.id,u.email,u.name,u.email_verified_at,w.id,w.name,s.id,u.credential_version,COALESCE(ac.state,'OPEN')<>'OPEN' FROM studio_sessions s JOIN studio_users u ON u.id=s.user_id JOIN studio_workspaces w ON w.id=s.workspace_id LEFT JOIN studio_account_controls ac ON ac.user_id=u.id WHERE s.token_hash=$1 AND s.expires_at>now() AND s.credential_version=u.credential_version`, p.SessionHash).Scan(&user.ID, &user.Email, &user.Name, &user.EmailVerifiedAt, &p.Workspace.ID, &p.Workspace.Name, &p.SessionID, &p.CredentialVersion, &p.AccountRestricted); err != nil {
+			var expires, dbNow time.Time
+			beforeQuery := time.Now()
+			if err := conn.QueryRow(ctx, `SELECT u.id,u.email,u.name,u.email_verified_at,w.id,w.name,s.id,u.credential_version,s.expires_at,clock_timestamp(),COALESCE(ac.state,'OPEN')<>'OPEN' FROM studio_sessions s JOIN studio_users u ON u.id=s.user_id JOIN studio_workspaces w ON w.id=s.workspace_id LEFT JOIN studio_account_controls ac ON ac.user_id=u.id WHERE s.token_hash=$1 AND s.expires_at>now() AND s.credential_version=u.credential_version`, p.SessionHash).Scan(&user.ID, &user.Email, &user.Name, &user.EmailVerifiedAt, &p.Workspace.ID, &p.Workspace.Name, &p.SessionID, &p.CredentialVersion, &expires, &dbNow, &p.AccountRestricted); err != nil {
 				return err
 			}
+			p.sessionDeadline = beforeQuery.Add(expires.Sub(dbNow))
 			user.EmailVerified = user.EmailVerifiedAt != nil
 			p.User = &user
 			return nil

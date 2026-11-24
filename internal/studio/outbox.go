@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -31,11 +30,6 @@ type DurableEvent struct {
 	Action          string `json:"action"`
 	WorkspaceID     string `json:"-"`
 	ProjectID       string `json:"-"`
-}
-
-type outboxNotifications struct {
-	mu       sync.Mutex
-	watchers map[chan struct{}]subscriptionScope
 }
 
 func appendOutboxSQL(ctx context.Context, tx pgx.Tx, key string, e DurableEvent) error {
@@ -212,11 +206,11 @@ func (s *postgresStore) projectOutboxBatch() (int, error) {
 		if _, err = tx.Exec(ctx, "UPDATE studio_outbox_limits SET pending=pending-$1,retained=$2 WHERE singleton", count, retained); err != nil {
 			return err
 		}
-		return tx.Commit(ctx)
+		if err = tx.Commit(ctx); err == nil && count > 0 {
+			s.notifications.projected(scopes)
+		}
+		return err
 	})
-	if err == nil && count > 0 {
-		s.notifyOutbox(scopes)
-	}
 	return count, err
 }
 
@@ -249,25 +243,9 @@ func (a *App) dispatchOutbox() {
 		}
 	}
 }
+
+// Other local consumers only need the projection hint.
 func (s *postgresStore) subscribeOutbox(scope subscriptionScope) (<-chan struct{}, func()) {
-	ch := make(chan struct{}, 1)
-	s.notifications.mu.Lock()
-	if s.notifications.watchers == nil {
-		s.notifications.watchers = make(map[chan struct{}]subscriptionScope)
-	}
-	s.notifications.watchers[ch] = scope
-	s.notifications.mu.Unlock()
-	return ch, func() { s.notifications.mu.Lock(); delete(s.notifications.watchers, ch); s.notifications.mu.Unlock() }
-}
-func (s *postgresStore) notifyOutbox(scopes map[subscriptionScope]bool) {
-	s.notifications.mu.Lock()
-	defer s.notifications.mu.Unlock()
-	for ch, scope := range s.notifications.watchers {
-		if scopes[scope] {
-			select {
-			case ch <- struct{}{}:
-			default:
-			}
-		}
-	}
+	_, wake, release := s.notifications.subscribe(scope)
+	return wake, release
 }

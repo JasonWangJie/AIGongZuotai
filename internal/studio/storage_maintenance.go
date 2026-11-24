@@ -56,7 +56,7 @@ var referenceGCFile = regexp.MustCompile(`^(blob_[a-f0-9]{64}\.bin|reference_par
 var assetGCFile = regexp.MustCompile(`^(asset_[a-f0-9]{64}\.(bin|json|thumb\.png)|(part|meta|asset_thumb|asset_manifest)_[a-f0-9]{32}\.tmp)$`)
 
 const maintenanceEntryLimit = 100000
-const maintenanceSchemaVersion = 38
+const maintenanceSchemaVersion = 40
 
 // MaintainPrivateStorage is an offline, explicitly configured admin operation.
 // It acquires both OS directory locks and the application's PostgreSQL writer

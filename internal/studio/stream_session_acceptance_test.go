@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -205,6 +206,102 @@ func holdSessionReaderConn(t *testing.T, ctx context.Context, p *runReplayPool) 
 		t.Fatal("read connection identity differs from this fixture")
 	}
 	return conn, release
+}
+
+func TestPostgresStreamSessionValidationPositions(t *testing.T) {
+	db := sseSocketDatabase(t)
+	a, server := testApp(t, Config{Mode: "demo", DatabaseURL: db, AuthMode: "required",
+		Admission: AdmissionLimits{GlobalStreams: 192, WorkspaceStreams: 96}, RunReplayReadConnections: 1})
+	var keys [2]streamSessionKey
+	for i := range keys {
+		scope := sseSocketScope(t, server, i, true)
+		keys[i].user = scope.identity.User.ID
+		var hash []byte
+		err := a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
+			return conn.QueryRow(ctx, "SELECT id,token_hash,credential_version FROM studio_sessions WHERE user_id=$1", keys[i].user).
+				Scan(&keys[i].id, &hash, &keys[i].version)
+		})
+		if err != nil || len(hash) != len(keys[i].hash) {
+			t.Fatal("could not obtain the fixture session identity")
+		}
+		copy(keys[i].hash[:], hash)
+	}
+	wrongVersion, wrongUser := keys[0], keys[1]
+	wrongVersion.version++
+	wrongUser.user = keys[0].user
+	// SQL returns only matching rows. The reader's result must retain the
+	// original batch position even when invalid identities leave gaps.
+	batch := []streamSessionKey{wrongVersion, keys[1], wrongUser, keys[0]}
+	got, err := a.store.validateStreamSessions(t.Context(), batch)
+	if err != nil || !slices.Equal(got, []bool{false, true, false, true}) || a.store.failed.Load() {
+		t.Fatal("verified read did not preserve the original positions of the two valid sessions")
+	}
+}
+
+// Ordinary authentication reads the remaining validity using the database
+// clock. The SSE must stop before its five-second periodic recheck, while a
+// different session continues to receive authorized project changes.
+func TestPostgresStreamSessionNaturalExpiryBetweenPages(t *testing.T) {
+	db := sseSocketDatabase(t)
+	a, server := testApp(t, Config{Mode: "demo", DatabaseURL: db, AuthMode: "required", Heartbeat: 5 * time.Second,
+		Admission: AdmissionLimits{GlobalStreams: 10_000, WorkspaceStreams: 128}, RunReplayReadConnections: 1})
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
+	defer cancel()
+	expiring := sseSocketScope(t, server, 0, true)
+	control := sseSocketScope(t, server, 1, true)
+	projectPath := func(s capacityScope) string { return "/api/v1/workspaces/" + s.identity.Workspace.ID + "/events" }
+	healthy := sseSocketOpen(t, ctx, server, control, projectPath(control), "").Body
+	defer healthy.Close()
+	controlReader := watchSessionSSE(healthy, control, a.store.streamAuth.storageID, "", 1, 0)
+	// Start immediately after a periodic check; expiry must happen with the
+	// round counter unchanged. A tick-driven implementation must fail here.
+	sseSocketWait(t, func() bool { return a.streamSessions.rounds.Load() != 0 })
+	round := a.streamSessions.rounds.Load()
+	spentBefore := time.Now()
+	err := a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
+		tag, err := conn.Exec(ctx, "UPDATE studio_sessions SET expires_at=clock_timestamp()+interval '1500 milliseconds' WHERE user_id=$1", expiring.identity.User.ID)
+		if err == nil && tag.RowsAffected() != 1 {
+			return errors.New("expected one expiring login")
+		}
+		return err
+	})
+	if err != nil {
+		t.Fatal("could not set the fixture session lifetime")
+	}
+	limited := sseSocketOpen(t, ctx, server, expiring, projectPath(expiring), "").Body
+	defer limited.Close()
+	expired := watchSessionSSE(limited, expiring, a.store.streamAuth.storageID, "", 0, 0)
+	select {
+	case <-expired.done:
+		if expired.err != nil || time.Since(spentBefore) < time.Second {
+			t.Fatal("did not receive a valid stream until expiry")
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("expired reader waited for periodic validation")
+	}
+	if a.streamSessions.rounds.Load() != round {
+		t.Fatal("expiry not isolated from periodic validation")
+	}
+	// The monotonic deadline is conservative by up to a database round trip.
+	// Observe the database's own clock before testing a fresh admission.
+	sseSocketWait(t, func() bool {
+		var expired bool
+		if err := a.store.do(func(ctx context.Context, c *pgx.Conn) error {
+			return c.QueryRow(ctx, "SELECT expires_at <= clock_timestamp() FROM studio_sessions WHERE user_id=$1", expiring.identity.User.ID).Scan(&expired)
+		}); err != nil {
+			t.Fatal("could not inspect fixture session clock")
+		}
+		return expired
+	})
+	capacityRequest(t, ctx, expiring, "GET", server.URL+projectPath(expiring), "", nil, nil, 401)
+	if len(a.streamSlots) != 1 {
+		t.Fatal("expiry evicted the other account or retained the expired slot")
+	}
+	var expected uint64
+	var doc ProjectDraft
+	input := draftSaveInput{ExpectedRevision: &expected, Nodes: []DraftNode{{ID: "expiry", Title: "after expiry"}}}
+	capacityRequest(t, ctx, control, "PUT", server.URL+"/api/v1/projects/"+control.identity.Project.ID+"/draft", newID("draft"), input, &doc, 200)
+	waitSessionGroup(t, []*sessionSSEReader{controlReader}, 1, false)
 }
 
 func TestPostgresStreamSessionShared192AndFailure(t *testing.T) {

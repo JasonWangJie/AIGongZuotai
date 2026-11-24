@@ -1,0 +1,224 @@
+{
+  "change": 250,
+  "schema": "040",
+  "measurement_date": "2026-11-23",
+  "environment": {
+    "host_platform": "windows/amd64",
+    "go": "go1.26.11",
+    "postgresql": "16.14",
+    "fsync": "on",
+    "synchronous_commit": "on",
+    "gateway": "loopback HTTP",
+    "query_workers": 128,
+    "query_lease_db_connections": 4,
+    "workspace_concurrency_limit": 128,
+    "channel_concurrency_limit": 128,
+    "scheduled_per_second": 320,
+    "gateway_service_ms": 200
+  },
+  "workload": {
+    "query_result": "known upstream failure on original handle",
+    "runs_per_setting": 1,
+    "setting_order": [
+      0,
+      8
+    ],
+    "physical_transaction_measurement": "distinct xmin of the 512 terminal task rows",
+    "latency_start": "scheduled due time",
+    "latency_end": "HTTP request written",
+    "phase_sample_unit": "actual observed interval; counted separately for each phase"
+  },
+  "paired_observations": [
+    {
+      "batch_limit": 0,
+      "scheduled_tasks": 512,
+      "durable_terminals": 512,
+      "original_unique_gets": 512,
+      "generation_posts": 0,
+      "unexpected_requests": 0,
+      "window_seconds": 4.4525658,
+      "completed_per_second": 114.98987842021334,
+      "http_concurrency_peak": 46,
+      "due_to_wire_ms": {
+        "P50MS": 1772.2106,
+        "P95MS": 2279.9401,
+        "P99MS": 2328.4927,
+        "MaxMS": 2337.9194
+      },
+      "backlog_at_last_arrival": 459,
+      "drain_after_last_arrival_ms": 2855.6908,
+      "undrained_tasks": 0,
+      "terminal_transaction_ids": 512,
+      "transactions_with_multiple_results": 0,
+      "results_in_shared_transactions": 0,
+      "largest_transaction_results": 1,
+      "phases": {
+        "control_mutex_wait": {
+          "Count": 512,
+          "TotalSampleMS": 385.4473,
+          "P95MS": 0,
+          "P99MS": 31.6968
+        },
+        "control_save_transaction": {
+          "Count": 512,
+          "TotalSampleMS": 2635.5703000000008,
+          "P95MS": 6.6261,
+          "P99MS": 10.149
+        },
+        "known_result_app_mutex_wait": {
+          "Count": 512,
+          "TotalSampleMS": 86911.3829,
+          "P95MS": 309.2849,
+          "P99MS": 316.7419
+        },
+        "known_result_batch_wait": {
+          "Count": 0,
+          "TotalSampleMS": 0,
+          "P95MS": 0,
+          "P99MS": 0
+        },
+        "known_result_save_total": {
+          "Count": 512,
+          "TotalSampleMS": 3065.650099999999,
+          "P95MS": 7.5902,
+          "P99MS": 37.8812
+        }
+      }
+    },
+    {
+      "batch_limit": 8,
+      "scheduled_tasks": 512,
+      "durable_terminals": 512,
+      "original_unique_gets": 512,
+      "generation_posts": 0,
+      "unexpected_requests": 0,
+      "window_seconds": 6.5642936,
+      "completed_per_second": 77.99773002231345,
+      "http_concurrency_peak": 58,
+      "due_to_wire_ms": {
+        "P50MS": 2952.5519,
+        "P95MS": 5570.7156,
+        "P99MS": 5598.0719,
+        "MaxMS": 5602.062
+      },
+      "backlog_at_last_arrival": 493,
+      "drain_after_last_arrival_ms": 4967.4186,
+      "undrained_tasks": 0,
+      "terminal_transaction_ids": 209,
+      "transactions_with_multiple_results": 110,
+      "results_in_shared_transactions": 413,
+      "largest_transaction_results": 8,
+      "phases": {
+        "control_mutex_wait": {
+          "Count": 209,
+          "TotalSampleMS": 631.44,
+          "P95MS": 27.1031,
+          "P99MS": 42.5369
+        },
+        "control_save_transaction": {
+          "Count": 209,
+          "TotalSampleMS": 3410.2054000000026,
+          "P95MS": 41.2174,
+          "P99MS": 107.1474
+        },
+        "known_result_app_mutex_wait": {
+          "Count": 512,
+          "TotalSampleMS": 8220.240599999994,
+          "P95MS": 56.7391,
+          "P99MS": 168.4088
+        },
+        "known_result_batch_wait": {
+          "Count": 512,
+          "TotalSampleMS": 714.579500000002,
+          "P95MS": 1.8998,
+          "P99MS": 2.0811
+        },
+        "known_result_save_total": {
+          "Count": 209,
+          "TotalSampleMS": 4051.2992000000013,
+          "P95MS": 54.5145,
+          "P99MS": 119.5675
+        }
+      }
+    }
+  ],
+  "test_results": {
+    "correctness": {
+      "process_exit": 0,
+      "package_seconds": 23.432,
+      "passed_cases_seconds": {
+        "TestPostgresKnownQuerySaveGroupSingleTransaction250": 2.38,
+        "TestPostgresKnownQuerySaveGroupStaleMember250": 2.46,
+        "TestPostgresKnownQuerySaveGroupExpiresDuringOutboxWait250": 3.72,
+        "TestPostgresKnownQuerySaveGroupOutboxRollback250": 2.01,
+        "TestPostgresKnownQuerySaveGroupUnknownCommit250": 2.25,
+        "TestPostgresKnownQuerySaveGroupWorkflowBilling250": 2.9,
+        "TestPostgresQuerySaveRepeatedProgress250": 3.11,
+        "TestPostgresQuerySaveSingleFallbackExpiry250": 4.44
+      }
+    },
+    "rate_curve": {
+      "process_exit": 0,
+      "package_seconds": 21.404,
+      "passed_cases_seconds": {
+        "TestPostgresQuerySaveBatchCurve250": 21.27
+      }
+    }
+  },
+  "isolated_reproduction": {
+    "patch_gzip": "media-query-save-batch-040.patch.gz",
+    "patch_gzip_sha256": "21e986a5dec0ba90253ed2ad896a4f044fa8bef4c2483f2f5e751536350266d2",
+    "patch_lf_sha256": "8df8e68999cef6e5bf560dd880cb6f7ce055c6c2c4c98fb52fea2f19653e0e65",
+    "includes": "internal/studio application and test deltas only",
+    "normalized_source_files": {
+      "internal/studio/app.go": {
+        "base_sha256_lf": "b98289cac5ced1d01f5230deae7fddadf3f40147100e91a599f04f45a56738fb",
+        "experiment_sha256_lf": "dde384a14d2bccb585bc148a87c05b7400a14c46e543ac4c59a2503669ed43b3"
+      },
+      "internal/studio/media_execution_lanes.go": {
+        "base_sha256_lf": "79af6fa2f697cd9dcb88f96928d8fb761605df42a9786dc4e7c77b5500b0bb6a",
+        "experiment_sha256_lf": "239d98b75b1da1758b96e9b104a8941b8b327dbb73989579d3ea899c33ca5393"
+      },
+      "internal/studio/media_query_curve_test.go": {
+        "base_sha256_lf": "384eab629fe9de17e3f453b58976946e5dd686850fdaedd62f5d5941a4dd1ecb",
+        "experiment_sha256_lf": "0f4732307929479acaa48b4b5ff7889f0bb9339e29e0555de2f15be928714950"
+      },
+      "internal/studio/media_query_save_batch.go": {
+        "base_sha256_lf": null,
+        "experiment_sha256_lf": "731b281a504f73dd58c20cc229564c550121188892227f4c2dea0dabed3f916b"
+      },
+      "internal/studio/media_query_save_batch_fault_test.go": {
+        "base_sha256_lf": null,
+        "experiment_sha256_lf": "33d57180ede7ebc1fc2e67e386518795b2335e7c6f95c1919018b6fd5c83c240"
+      },
+      "internal/studio/media_query_save_batch_test.go": {
+        "base_sha256_lf": null,
+        "experiment_sha256_lf": "ef3e911c8eb67575475e8a43d8c0098089df7317b4a70e3636c542f1006c0a2d"
+      },
+      "internal/studio/media_query_save_store.go": {
+        "base_sha256_lf": null,
+        "experiment_sha256_lf": "8346d1c7995a2e4c776d6d4ed8b3362c541f26721ce36a5fb2582dfb988de2b2"
+      },
+      "internal/studio/media_query_timing.go": {
+        "base_sha256_lf": "e10bfad4bb9b39f24ec05206b9313ae04f05e49765b137f7698786a2bf7f3ebc",
+        "experiment_sha256_lf": "617de7e63f9d96901d49543309ed9f73065cf2f3418c7c3db671235a4f0256f9"
+      },
+      "internal/studio/media_query_timing_test.go": {
+        "base_sha256_lf": "773dd0cb1ba77800d01ee95c37bcee5706277bac1329f3b8825b45a15d7805c0",
+        "experiment_sha256_lf": "398f66e09eb9a29a45e81c4ffea4c7aff2f945a4b4e3968b888de45f48a17d53"
+      },
+      "internal/studio/persistence.go": {
+        "base_sha256_lf": "3e791f1f921ea8ff8805fffe13f6d605c75fac4e977475bace48c44f3d60e94a",
+        "experiment_sha256_lf": "548e86e6da4f790ff16f23d069fb8b7e5e99145c7699dc9fbd2063f15d4ebe81"
+      },
+      "internal/studio/task_leases.go": {
+        "base_sha256_lf": "3242384480c725e805731f0933bcf9f5da065eea13ad4366f554957097df7d6f",
+        "experiment_sha256_lf": "c7d025cf0325451bcb66ad4d38258084e291f87a98429b43827449331ca57bde"
+      },
+      "internal/studio/task_leases_worker.go": {
+        "base_sha256_lf": "5168cd7f5c9bff48ddab739e233a6d47b65372408fddbc070b04a4c9c73d3fdf",
+        "experiment_sha256_lf": "e3535511e843379356bcefce5b5e0c451e13ae15aa86ccad3c40519f8cfc0f9e"
+      }
+    }
+  }
+}

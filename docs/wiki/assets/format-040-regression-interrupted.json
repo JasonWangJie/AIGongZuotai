@@ -1,0 +1,77 @@
+{
+  "format": "040",
+  "source_includes": [
+    249,
+    252,
+    253,
+    254,
+    256,
+    257,
+    258,
+    259
+  ],
+  "date_local": "2026-11-24",
+  "run_id": "r20261124-160436-02bb3f559d1bd87f",
+  "standard_service_sha256": "6e1256fe30a856bb1a43a71c43e858fc583f41da79a30f6ee5fa76aac9d172d7",
+  "status": "interrupted_before_suite_exit",
+  "completed_top_level_tests": {
+    "pass": 646,
+    "skip": 29,
+    "fail": 1
+  },
+  "observed_failure": {
+    "name": "TestPostgresRunReplayPoolModeratedSnapshot",
+    "elapsed_seconds": 14.06,
+    "source": "internal/studio/run_replay_pool_test.go:331",
+    "phase": "outboxStore initialization; failed SASL auth, timeout, context deadline exceeded",
+    "snapshot_read_reached": false
+  },
+  "last_started_test": "TestPostgresRunStreamAppendBeforeBroadcastAndConcurrentCancel",
+  "windows_last_boot_local": "2026-11-24T16:30:52+08:00",
+  "original_controller_running": false,
+  "original_postmaster_running": false,
+  "original_object_process_running": false,
+  "original_ports_listening": false,
+  "postgres_control_state": "in production",
+  "full_npm_exit": null,
+  "full_runner_exit": null,
+  "pg_clean_shutdown_evidence": false,
+  "object_clean_shutdown_evidence": false,
+  "slow_migration_sample_rows": 0,
+  "observer_final_receipt": false,
+  "isolated_retests": [
+    {
+      "case": "replay",
+      "source": "original",
+      "go_exit": 0,
+      "go_command_seconds": 55.984,
+      "passed": [
+        "TestPostgresRunReplayPoolModeratedSnapshot"
+      ],
+      "run_id": "run-20261124-163647-5d3f4897"
+    },
+    {
+      "case": "cancel",
+      "source": "original",
+      "go_exit": 0,
+      "go_command_seconds": 15.781,
+      "passed": [
+        "TestPostgresWorkflowCancelQueuedUnknownAndKnownMedia",
+        "TestPostgresWorkflowCancelQueuedUnknownAndKnownMedia/submit",
+        "TestPostgresWorkflowCancelQueuedUnknownAndKnownMedia/query"
+      ],
+      "run_id": "run-20261124-163647-5d3f4897"
+    },
+    {
+      "case": "replay",
+      "source": "without_unused_admin_connection",
+      "go_exit": 0,
+      "go_command_seconds": 19.375,
+      "passed": [
+        "TestPostgresRunReplayPoolModeratedSnapshot"
+      ],
+      "run_id": "run-20261124-163828-aa6dbaa5"
+    }
+  ],
+  "source_fix": "The moderated snapshot test opens only its actual PostgreSQL control store and verified replay reader. It used to open an additional direct connection through outboxStore and discard it. Its SASL authentication timed out in the interrupted run. Production read, authentication and migration timeouts are unchanged."
+}

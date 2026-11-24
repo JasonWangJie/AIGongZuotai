@@ -161,7 +161,13 @@ func (a *App) cacheIdleTaskLocked(t *taskRecord) {
 	if current != nil && current.Task.Version > t.Task.Version {
 		return
 	}
-	if current != nil || a.store == nil || len(a.tasks) < a.config.MaxRecords || a.activeTaskClaims[id] > 0 {
+	if current != nil || a.store == nil || len(a.tasks) < a.config.MaxRecords {
+		a.tasks[id] = t
+		return
+	}
+	a.taskPinsMu.Lock()
+	defer a.taskPinsMu.Unlock()
+	if a.activeTaskClaims[id] > 0 {
 		a.tasks[id] = t
 	}
 }
@@ -172,11 +178,16 @@ func (a *App) evictTerminalsLocked() {
 	}
 	if len(a.tasks) >= a.config.MaxRecords {
 		for id, t := range a.tasks {
-			if (terminal(t.Task.Status) || t.Task.Status == "SUBMIT_UNKNOWN" || t.Task.Status == "RECONCILE_REQUIRED") && !t.InFlight && a.activeTaskClaims[id] == 0 {
+			if t.InFlight || !(terminal(t.Task.Status) || t.Task.Status == "SUBMIT_UNKNOWN" || t.Task.Status == "RECONCILE_REQUIRED") {
+				continue
+			}
+			a.taskPinsMu.Lock()
+			if a.activeTaskClaims[id] == 0 {
 				delete(a.tasks, id)
-				if len(a.tasks) < a.config.MaxRecords {
-					break
-				}
+			}
+			a.taskPinsMu.Unlock()
+			if len(a.tasks) < a.config.MaxRecords {
+				break
 			}
 		}
 	}

@@ -1,0 +1,13 @@
+{
+  "accepted_responses_dropped_before_headers": 1,
+  "browser_receipt_gets": 0,
+  "charged_credit_micros": 350000,
+  "extension_tasks": 1,
+  "idempotency_replayed_responses": 1,
+  "independent_original_receipt_gets": 1,
+  "outcome": "transport_replay",
+  "page_task_fetch_calls": 1,
+  "settled_reservations": 1,
+  "supplier_extension_posts": 1,
+  "task_http_posts": 2
+}

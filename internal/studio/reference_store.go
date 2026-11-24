@@ -310,7 +310,11 @@ func (s *ReferenceStore) WriteBody(ctx context.Context, contentType string, writ
 		return MediaBodyInfo{}, err
 	}
 	defer func() { <-s.slots }()
-	blob, err := s.writeBlob(ctx, MaxMediaBodyBytes, write, nil)
+	limit := MaxMediaBodyBytes
+	if contentType == "application/json" {
+		limit = maxSourceVideoBodyBytes
+	}
+	blob, err := s.writeBlob(ctx, limit, write, nil)
 	if err != nil {
 		return MediaBodyInfo{}, err
 	}
@@ -374,7 +378,7 @@ func (s *ReferenceStore) OpenBody(id string) (*os.File, error) {
 		return nil, err
 	}
 	stat, err := file.Stat()
-	if err != nil || !stat.Mode().IsRegular() || stat.Size() < 1 || stat.Size() > MaxMediaBodyBytes {
+	if err != nil || !stat.Mode().IsRegular() || stat.Size() < 1 || stat.Size() > maxSourceVideoBodyBytes {
 		file.Close()
 		return nil, ErrReferenceCorrupt
 	}

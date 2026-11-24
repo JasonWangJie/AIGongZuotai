@@ -328,7 +328,11 @@ func TestPostgresRunReplayPoolStartupFailureReleasesSessions(t *testing.T) {
 
 func TestPostgresRunReplayPoolModeratedSnapshot(t *testing.T) {
 	ctx := context.Background()
-	s, _, _ := outboxStore(t)
+	s, err := openPostgres(testDatabase(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(s.close)
 	if err := s.openRunReplayPool(ctx, 1); err != nil {
 		t.Fatal(err)
 	}

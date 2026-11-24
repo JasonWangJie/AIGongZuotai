@@ -1,0 +1,57 @@
+{
+  "scope": "local authenticated Chromium downloads, synthetic source footage",
+  "video": "H.264 1280x720 24fps",
+  "audio": "AAC 48kHz stereo",
+  "versions": [
+    {
+      "version": 1,
+      "file": "timeline-v1.mp4",
+      "sha256": "c83601452e579c7f3d538764332d1688b2058db136d2345aa15e350fdc176603",
+      "frames": 54,
+      "duration_ms": 2250,
+      "clips": [
+        {
+          "source": "red",
+          "in_ms": 250,
+          "out_ms": 1250,
+          "frames": 24,
+          "max_marker_error_px": 0.0,
+          "measured_tone_hz": 440.0
+        },
+        {
+          "source": "red",
+          "in_ms": 500,
+          "out_ms": 1750,
+          "frames": 30,
+          "max_marker_error_px": 0.0,
+          "measured_tone_hz": 440.0
+        }
+      ]
+    },
+    {
+      "version": 2,
+      "file": "timeline-v2.mp4",
+      "sha256": "e6822c94ba4f9a5de3c45c87e9593b088e6ab170fe4ac128b5b4991ef10532bc",
+      "frames": 54,
+      "duration_ms": 2250,
+      "clips": [
+        {
+          "source": "red",
+          "in_ms": 250,
+          "out_ms": 1250,
+          "frames": 24,
+          "max_marker_error_px": 0.0,
+          "measured_tone_hz": 440.0
+        },
+        {
+          "source": "blue",
+          "in_ms": 500,
+          "out_ms": 1750,
+          "frames": 30,
+          "max_marker_error_px": 0.0,
+          "measured_tone_hz": 880.2
+        }
+      ]
+    }
+  ]
+}

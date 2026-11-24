@@ -8,6 +8,8 @@ import (
 // Only four fixed lane labels. Reserved slots include lease/connection work,
 // downstream I/O, review and terminal commit; they are not gateway connections.
 func writeMediaSchedulingMetrics(out *strings.Builder, snapshot MediaExecutionSnapshot) {
+	metricHeader(out, "studio_media_query_dispatch_attempts_total", "Dispatch attempts from the large original-query selector, including empty or backpressured passes.", "counter")
+	fmt.Fprintf(out, "studio_media_query_dispatch_attempts_total %d\n", snapshot.QueryDispatchAttempts)
 	metricHeader(out, "studio_media_lane_reserved", "Reserved execution budgets in this process, including claim, connection, review and persistence work.", "gauge")
 	fmt.Fprintf(out, "studio_media_lane_reserved{lane=\"submit\"} %d\nstudio_media_lane_reserved{lane=\"query\"} %d\nstudio_media_lane_reserved{lane=\"delivery\"} %d\nstudio_media_lane_reserved{lane=\"review\"} %d\n", snapshot.SubmitInFlight, snapshot.QueryInFlight, snapshot.DeliveryInFlight, snapshot.ReviewInFlight)
 	metricHeader(out, "studio_media_lane_limit", "Configured process-local execution ceilings; review shares the bounded moderation engine with reference input checks.", "gauge")

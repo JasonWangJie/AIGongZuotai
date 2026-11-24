@@ -1,0 +1,817 @@
+{
+  "schema": "040",
+  "platform": "windows/amd64",
+  "postgresql": "16.14",
+  "service_sha256": "78aaebf8897d7215673b810b332d3bbf84be4ef508c853919b10199c7d1d78aa",
+  "profile": "pilot",
+  "windows": 6,
+  "summary": {
+    "complete": true,
+    "completed_chats": 14,
+    "cursor_recoveries": 1,
+    "expected_media_failure_terminals": 14,
+    "gateway": {
+      "ChatPosts": 15,
+      "MediaPosts": 14,
+      "MediaQueries": 15,
+      "RateLimits": 1,
+      "Invalid": 0
+    },
+    "interrupted_chats": 1,
+    "missed_pairs": 0,
+    "observed_seconds": 108.0082608,
+    "offered_pairs": 14,
+    "original_chat_receipts": 17,
+    "original_media_receipts": 16,
+    "original_retry_after_ms": 4008,
+    "planned_pairs": 14,
+    "scheduled_seconds": 108
+  },
+  "events": [
+    {
+      "type": "baseline",
+      "resources": {
+        "AtMS": 13,
+        "Generation": 1,
+        "Resources": {
+          "service": {
+            "cpu_ms": 828,
+            "resident_bytes": 21663744,
+            "handle_count": 204
+          },
+          "driver": {
+            "cpu_ms": 62,
+            "resident_bytes": 75030528,
+            "handle_count": 193
+          }
+        },
+        "ServiceGCCycles": 2,
+        "ServiceGCUnparsed": 0,
+        "ServiceGCPauseMS": 0.52,
+        "DriverGCCycles": 1,
+        "DriverGCPauseNS": 0,
+        "PGClientConnections": 11,
+        "PGActive": 0,
+        "PGWaitingOnLock": 0,
+        "ActiveChatRuns": 0,
+        "ActiveMediaTasks": 0,
+        "UncertainMediaTasks": 0,
+        "OutboxPending": 0,
+        "OutboxRetained": 2
+      }
+    },
+    {
+      "type": "window",
+      "counts": {
+        "Planned": 2,
+        "Offered": 2,
+        "Missed": 0,
+        "MissedDuringStop": 0,
+        "ChatAccepted": 2,
+        "MediaAccepted": 2,
+        "ChatFirstDelta": 2,
+        "ChatComplete": 2,
+        "MediaFailed": 2,
+        "ChatReplays": 2,
+        "MediaReplays": 2,
+        "CursorReplays": 0,
+        "UnobservedMediaPeak": 1
+      },
+      "drain": false,
+      "index": 0,
+      "latency": {
+        "chat_admission": {
+          "samples": 2,
+          "p50_ms": 3.3761,
+          "p95_ms": 10.2742,
+          "p99_ms": 10.2742,
+          "max_ms": 10.2742
+        },
+        "chat_send_to_first_observed_delta": {
+          "samples": 2,
+          "p50_ms": 23.7244,
+          "p95_ms": 42.2822,
+          "p99_ms": 42.2822,
+          "max_ms": 42.2822
+        },
+        "chat_send_to_observed_terminal": {
+          "samples": 2,
+          "p50_ms": 43.4493,
+          "p95_ms": 61.7937,
+          "p99_ms": 61.7937,
+          "max_ms": 61.7937
+        },
+        "due_to_client_send": {
+          "samples": 2,
+          "p50_ms": 0.4558,
+          "p95_ms": 15.4025,
+          "p99_ms": 15.4025,
+          "max_ms": 15.4025
+        },
+        "media_admission": {
+          "samples": 2,
+          "p50_ms": 7.0147,
+          "p95_ms": 24.41,
+          "p99_ms": 24.41,
+          "max_ms": 24.41
+        },
+        "media_admission_to_observed_terminal": {
+          "samples": 2,
+          "p50_ms": 3244.7281,
+          "p95_ms": 8051.2929,
+          "p99_ms": 8051.2929,
+          "max_ms": 8051.2929
+        }
+      },
+      "missed_slots": null,
+      "observed_unfinished_media": 0,
+      "planned_end_ms": 18000,
+      "planned_start_ms": 0,
+      "resources": {
+        "AtMS": 18001,
+        "Generation": 1,
+        "Resources": {
+          "service": {
+            "cpu_ms": 953,
+            "resident_bytes": 76521472,
+            "handle_count": 215
+          },
+          "driver": {
+            "cpu_ms": 78,
+            "resident_bytes": 75603968,
+            "handle_count": 196
+          }
+        },
+        "ServiceGCCycles": 4,
+        "ServiceGCUnparsed": 0,
+        "ServiceGCPauseMS": 0.52,
+        "DriverGCCycles": 1,
+        "DriverGCPauseNS": 0,
+        "PGClientConnections": 11,
+        "PGActive": 0,
+        "PGWaitingOnLock": 0,
+        "ActiveChatRuns": 0,
+        "ActiveMediaTasks": 0,
+        "UncertainMediaTasks": 0,
+        "OutboxPending": 0,
+        "OutboxRetained": 21
+      },
+      "upstream_cumulative": {
+        "ChatPosts": 2,
+        "MediaPosts": 2,
+        "MediaQueries": 3,
+        "RateLimits": 1,
+        "Invalid": 0
+      }
+    },
+    {
+      "type": "window",
+      "counts": {
+        "Planned": 4,
+        "Offered": 4,
+        "Missed": 0,
+        "MissedDuringStop": 0,
+        "ChatAccepted": 4,
+        "MediaAccepted": 4,
+        "ChatFirstDelta": 4,
+        "ChatComplete": 4,
+        "MediaFailed": 4,
+        "ChatReplays": 4,
+        "MediaReplays": 4,
+        "CursorReplays": 0,
+        "UnobservedMediaPeak": 1
+      },
+      "drain": false,
+      "index": 1,
+      "latency": {
+        "chat_admission": {
+          "samples": 4,
+          "p50_ms": 3.3713,
+          "p95_ms": 3.9632,
+          "p99_ms": 3.9632,
+          "max_ms": 3.9632
+        },
+        "chat_send_to_first_observed_delta": {
+          "samples": 4,
+          "p50_ms": 22.4884,
+          "p95_ms": 23.9981,
+          "p99_ms": 23.9981,
+          "max_ms": 23.9981
+        },
+        "chat_send_to_observed_terminal": {
+          "samples": 4,
+          "p50_ms": 41.6528,
+          "p95_ms": 43.2624,
+          "p99_ms": 43.2624,
+          "max_ms": 43.2624
+        },
+        "due_to_client_send": {
+          "samples": 4,
+          "p50_ms": 0.6774,
+          "p95_ms": 1.9979,
+          "p99_ms": 1.9979,
+          "max_ms": 1.9979
+        },
+        "media_admission": {
+          "samples": 4,
+          "p50_ms": 6.4089,
+          "p95_ms": 6.8687,
+          "p99_ms": 6.8687,
+          "max_ms": 6.8687
+        },
+        "media_admission_to_observed_terminal": {
+          "samples": 4,
+          "p50_ms": 3642.7615,
+          "p95_ms": 3643.0035,
+          "p99_ms": 3643.0035,
+          "max_ms": 3643.0035
+        }
+      },
+      "missed_slots": null,
+      "observed_unfinished_media": 0,
+      "planned_end_ms": 36000,
+      "planned_start_ms": 18000,
+      "resources": {
+        "AtMS": 36000,
+        "Generation": 1,
+        "Resources": {
+          "service": {
+            "cpu_ms": 1125,
+            "resident_bytes": 77119488,
+            "handle_count": 215
+          },
+          "driver": {
+            "cpu_ms": 93,
+            "resident_bytes": 76550144,
+            "handle_count": 206
+          }
+        },
+        "ServiceGCCycles": 6,
+        "ServiceGCUnparsed": 0,
+        "ServiceGCPauseMS": 0.52,
+        "DriverGCCycles": 2,
+        "DriverGCPauseNS": 0,
+        "PGClientConnections": 11,
+        "PGActive": 0,
+        "PGWaitingOnLock": 0,
+        "ActiveChatRuns": 0,
+        "ActiveMediaTasks": 0,
+        "UncertainMediaTasks": 0,
+        "OutboxPending": 0,
+        "OutboxRetained": 57
+      },
+      "upstream_cumulative": {
+        "ChatPosts": 6,
+        "MediaPosts": 6,
+        "MediaQueries": 7,
+        "RateLimits": 1,
+        "Invalid": 0
+      }
+    },
+    {
+      "type": "window",
+      "counts": {
+        "Planned": 2,
+        "Offered": 2,
+        "Missed": 0,
+        "MissedDuringStop": 0,
+        "ChatAccepted": 2,
+        "MediaAccepted": 2,
+        "ChatFirstDelta": 2,
+        "ChatComplete": 2,
+        "MediaFailed": 2,
+        "ChatReplays": 2,
+        "MediaReplays": 2,
+        "CursorReplays": 0,
+        "UnobservedMediaPeak": 1
+      },
+      "drain": false,
+      "index": 2,
+      "latency": {
+        "chat_admission": {
+          "samples": 2,
+          "p50_ms": 4.041,
+          "p95_ms": 8.558,
+          "p99_ms": 8.558,
+          "max_ms": 8.558
+        },
+        "chat_send_to_first_observed_delta": {
+          "samples": 2,
+          "p50_ms": 23.0499,
+          "p95_ms": 37.3989,
+          "p99_ms": 37.3989,
+          "max_ms": 37.3989
+        },
+        "chat_send_to_observed_terminal": {
+          "samples": 2,
+          "p50_ms": 41.948,
+          "p95_ms": 49.5138,
+          "p99_ms": 49.5138,
+          "max_ms": 49.5138
+        },
+        "due_to_client_send": {
+          "samples": 2,
+          "p50_ms": 0.8796,
+          "p95_ms": 1.6136,
+          "p99_ms": 1.6136,
+          "max_ms": 1.6136
+        },
+        "media_admission": {
+          "samples": 2,
+          "p50_ms": 4.8794,
+          "p95_ms": 21.6251,
+          "p99_ms": 21.6251,
+          "max_ms": 21.6251
+        },
+        "media_admission_to_observed_terminal": {
+          "samples": 2,
+          "p50_ms": 3644.8366,
+          "p95_ms": 4036.2735,
+          "p99_ms": 4036.2735,
+          "max_ms": 4036.2735
+        }
+      },
+      "missed_slots": null,
+      "observed_unfinished_media": 0,
+      "planned_end_ms": 54000,
+      "planned_start_ms": 36000,
+      "resources": {
+        "AtMS": 54008,
+        "Generation": 1,
+        "Resources": {
+          "service": {
+            "cpu_ms": 1359,
+            "resident_bytes": 77459456,
+            "handle_count": 223
+          },
+          "driver": {
+            "cpu_ms": 93,
+            "resident_bytes": 76754944,
+            "handle_count": 206
+          }
+        },
+        "ServiceGCCycles": 8,
+        "ServiceGCUnparsed": 0,
+        "ServiceGCPauseMS": 0.52,
+        "DriverGCCycles": 2,
+        "DriverGCPauseNS": 0,
+        "PGClientConnections": 11,
+        "PGActive": 0,
+        "PGWaitingOnLock": 0,
+        "ActiveChatRuns": 0,
+        "ActiveMediaTasks": 0,
+        "UncertainMediaTasks": 0,
+        "OutboxPending": 0,
+        "OutboxRetained": 75
+      },
+      "upstream_cumulative": {
+        "ChatPosts": 8,
+        "MediaPosts": 8,
+        "MediaQueries": 9,
+        "RateLimits": 1,
+        "Invalid": 0
+      }
+    },
+    {
+      "type": "restart",
+      "after": {
+        "AtMS": 55276,
+        "Generation": 2,
+        "Resources": {
+          "service": {
+            "cpu_ms": 156,
+            "resident_bytes": 20357120,
+            "handle_count": 165
+          },
+          "driver": {
+            "cpu_ms": 93,
+            "resident_bytes": 76910592,
+            "handle_count": 207
+          }
+        },
+        "ServiceGCCycles": 1,
+        "ServiceGCUnparsed": 0,
+        "ServiceGCPauseMS": 0,
+        "DriverGCCycles": 2,
+        "DriverGCPauseNS": 0,
+        "PGClientConnections": 11,
+        "PGActive": 0,
+        "PGWaitingOnLock": 0,
+        "ActiveChatRuns": 0,
+        "ActiveMediaTasks": 1,
+        "UncertainMediaTasks": 0,
+        "OutboxPending": 0,
+        "OutboxRetained": 88
+      },
+      "before": {
+        "AtMS": 54407,
+        "Generation": 1,
+        "Resources": {
+          "service": {
+            "cpu_ms": 1375,
+            "resident_bytes": 77553664,
+            "handle_count": 222
+          },
+          "driver": {
+            "cpu_ms": 93,
+            "resident_bytes": 76779520,
+            "handle_count": 205
+          }
+        },
+        "ServiceGCCycles": 8,
+        "ServiceGCUnparsed": 0,
+        "ServiceGCPauseMS": 0.52,
+        "DriverGCCycles": 2,
+        "DriverGCPauseNS": 0,
+        "PGClientConnections": 11,
+        "PGActive": 0,
+        "PGWaitingOnLock": 0,
+        "ActiveChatRuns": 1,
+        "ActiveMediaTasks": 1,
+        "UncertainMediaTasks": 0,
+        "OutboxPending": 2,
+        "OutboxRetained": 85
+      },
+      "kill_to_verified_replay_ms": 869,
+      "recovered_terminal_events": 1,
+      "replacement_ready_ns": 55237571900,
+      "replayed_tenants": 2,
+      "retained_deltas": 1,
+      "retired_pg_connections": 0,
+      "stop_start_ns": 54407044700
+    },
+    {
+      "type": "window",
+      "counts": {
+        "Planned": 2,
+        "Offered": 2,
+        "Missed": 0,
+        "MissedDuringStop": 0,
+        "ChatAccepted": 2,
+        "MediaAccepted": 2,
+        "ChatFirstDelta": 2,
+        "ChatComplete": 2,
+        "MediaFailed": 2,
+        "ChatReplays": 5,
+        "MediaReplays": 4,
+        "CursorReplays": 1,
+        "UnobservedMediaPeak": 1
+      },
+      "drain": false,
+      "index": 3,
+      "latency": {
+        "chat_admission": {
+          "samples": 2,
+          "p50_ms": 5.1693,
+          "p95_ms": 7.078,
+          "p99_ms": 7.078,
+          "max_ms": 7.078
+        },
+        "chat_send_to_first_observed_delta": {
+          "samples": 2,
+          "p50_ms": 26.5453,
+          "p95_ms": 27.9169,
+          "p99_ms": 27.9169,
+          "max_ms": 27.9169
+        },
+        "chat_send_to_observed_terminal": {
+          "samples": 2,
+          "p50_ms": 44.9669,
+          "p95_ms": 49.4539,
+          "p99_ms": 49.4539,
+          "max_ms": 49.4539
+        },
+        "due_to_client_send": {
+          "samples": 2,
+          "p50_ms": 0.5754,
+          "p95_ms": 10.047,
+          "p99_ms": 10.047,
+          "max_ms": 10.047
+        },
+        "media_admission": {
+          "samples": 2,
+          "p50_ms": 8.7121,
+          "p95_ms": 11.5534,
+          "p99_ms": 11.5534,
+          "max_ms": 11.5534
+        },
+        "media_admission_to_observed_terminal": {
+          "samples": 2,
+          "p50_ms": 3644.5821,
+          "p95_ms": 4064.7556,
+          "p99_ms": 4064.7556,
+          "max_ms": 4064.7556
+        }
+      },
+      "missed_slots": null,
+      "observed_unfinished_media": 0,
+      "planned_end_ms": 72000,
+      "planned_start_ms": 54000,
+      "resources": {
+        "AtMS": 72001,
+        "Generation": 2,
+        "Resources": {
+          "service": {
+            "cpu_ms": 281,
+            "resident_bytes": 23404544,
+            "handle_count": 223
+          },
+          "driver": {
+            "cpu_ms": 93,
+            "resident_bytes": 76988416,
+            "handle_count": 210
+          }
+        },
+        "ServiceGCCycles": 3,
+        "ServiceGCUnparsed": 0,
+        "ServiceGCPauseMS": 0,
+        "DriverGCCycles": 2,
+        "DriverGCPauseNS": 0,
+        "PGClientConnections": 11,
+        "PGActive": 0,
+        "PGWaitingOnLock": 0,
+        "ActiveChatRuns": 0,
+        "ActiveMediaTasks": 0,
+        "UncertainMediaTasks": 0,
+        "OutboxPending": 0,
+        "OutboxRetained": 98
+      },
+      "upstream_cumulative": {
+        "ChatPosts": 11,
+        "MediaPosts": 10,
+        "MediaQueries": 11,
+        "RateLimits": 1,
+        "Invalid": 0
+      }
+    },
+    {
+      "type": "window",
+      "counts": {
+        "Planned": 2,
+        "Offered": 2,
+        "Missed": 0,
+        "MissedDuringStop": 0,
+        "ChatAccepted": 2,
+        "MediaAccepted": 2,
+        "ChatFirstDelta": 2,
+        "ChatComplete": 2,
+        "MediaFailed": 2,
+        "ChatReplays": 2,
+        "MediaReplays": 2,
+        "CursorReplays": 0,
+        "UnobservedMediaPeak": 1
+      },
+      "drain": false,
+      "index": 4,
+      "latency": {
+        "chat_admission": {
+          "samples": 2,
+          "p50_ms": 3.316,
+          "p95_ms": 10.5874,
+          "p99_ms": 10.5874,
+          "max_ms": 10.5874
+        },
+        "chat_send_to_first_observed_delta": {
+          "samples": 2,
+          "p50_ms": 22.6952,
+          "p95_ms": 34.9127,
+          "p99_ms": 34.9127,
+          "max_ms": 34.9127
+        },
+        "chat_send_to_observed_terminal": {
+          "samples": 2,
+          "p50_ms": 42.7856,
+          "p95_ms": 57.6767,
+          "p99_ms": 57.6767,
+          "max_ms": 57.6767
+        },
+        "due_to_client_send": {
+          "samples": 2,
+          "p50_ms": 0.4552,
+          "p95_ms": 2.869,
+          "p99_ms": 2.869,
+          "max_ms": 2.869
+        },
+        "media_admission": {
+          "samples": 2,
+          "p50_ms": 7.6389,
+          "p95_ms": 16.1419,
+          "p99_ms": 16.1419,
+          "max_ms": 16.1419
+        },
+        "media_admission_to_observed_terminal": {
+          "samples": 2,
+          "p50_ms": 3642.2874,
+          "p95_ms": 3642.3351,
+          "p99_ms": 3642.3351,
+          "max_ms": 3642.3351
+        }
+      },
+      "missed_slots": null,
+      "observed_unfinished_media": 0,
+      "planned_end_ms": 90000,
+      "planned_start_ms": 72000,
+      "resources": {
+        "AtMS": 90000,
+        "Generation": 2,
+        "Resources": {
+          "service": {
+            "cpu_ms": 578,
+            "resident_bytes": 24494080,
+            "handle_count": 228
+          },
+          "driver": {
+            "cpu_ms": 93,
+            "resident_bytes": 77058048,
+            "handle_count": 210
+          }
+        },
+        "ServiceGCCycles": 5,
+        "ServiceGCUnparsed": 0,
+        "ServiceGCPauseMS": 0,
+        "DriverGCCycles": 2,
+        "DriverGCPauseNS": 0,
+        "PGClientConnections": 11,
+        "PGActive": 0,
+        "PGWaitingOnLock": 0,
+        "ActiveChatRuns": 0,
+        "ActiveMediaTasks": 0,
+        "UncertainMediaTasks": 0,
+        "OutboxPending": 0,
+        "OutboxRetained": 116
+      },
+      "upstream_cumulative": {
+        "ChatPosts": 13,
+        "MediaPosts": 12,
+        "MediaQueries": 13,
+        "RateLimits": 1,
+        "Invalid": 0
+      }
+    },
+    {
+      "type": "window",
+      "counts": {
+        "Planned": 2,
+        "Offered": 2,
+        "Missed": 0,
+        "MissedDuringStop": 0,
+        "ChatAccepted": 2,
+        "MediaAccepted": 2,
+        "ChatFirstDelta": 2,
+        "ChatComplete": 2,
+        "MediaFailed": 2,
+        "ChatReplays": 2,
+        "MediaReplays": 2,
+        "CursorReplays": 0,
+        "UnobservedMediaPeak": 1
+      },
+      "drain": false,
+      "index": 5,
+      "latency": {
+        "chat_admission": {
+          "samples": 2,
+          "p50_ms": 3.5676,
+          "p95_ms": 6.0103,
+          "p99_ms": 6.0103,
+          "max_ms": 6.0103
+        },
+        "chat_send_to_first_observed_delta": {
+          "samples": 2,
+          "p50_ms": 25.8008,
+          "p95_ms": 26.2932,
+          "p99_ms": 26.2932,
+          "max_ms": 26.2932
+        },
+        "chat_send_to_observed_terminal": {
+          "samples": 2,
+          "p50_ms": 44.7928,
+          "p95_ms": 45.4976,
+          "p99_ms": 45.4976,
+          "max_ms": 45.4976
+        },
+        "due_to_client_send": {
+          "samples": 2,
+          "p50_ms": 0.416,
+          "p95_ms": 1.151,
+          "p99_ms": 1.151,
+          "max_ms": 1.151
+        },
+        "media_admission": {
+          "samples": 2,
+          "p50_ms": 5.7479,
+          "p95_ms": 9.5108,
+          "p99_ms": 9.5108,
+          "max_ms": 9.5108
+        },
+        "media_admission_to_observed_terminal": {
+          "samples": 2,
+          "p50_ms": 3644.9044,
+          "p95_ms": 3645.2034,
+          "p99_ms": 3645.2034,
+          "max_ms": 3645.2034
+        }
+      },
+      "missed_slots": null,
+      "observed_unfinished_media": 0,
+      "planned_end_ms": 108000,
+      "planned_start_ms": 90000,
+      "resources": {
+        "AtMS": 108006,
+        "Generation": 2,
+        "Resources": {
+          "service": {
+            "cpu_ms": 609,
+            "resident_bytes": 24412160,
+            "handle_count": 228
+          },
+          "driver": {
+            "cpu_ms": 93,
+            "resident_bytes": 77508608,
+            "handle_count": 218
+          }
+        },
+        "ServiceGCCycles": 6,
+        "ServiceGCUnparsed": 0,
+        "ServiceGCPauseMS": 0,
+        "DriverGCCycles": 3,
+        "DriverGCPauseNS": 0,
+        "PGClientConnections": 11,
+        "PGActive": 0,
+        "PGWaitingOnLock": 0,
+        "ActiveChatRuns": 0,
+        "ActiveMediaTasks": 0,
+        "UncertainMediaTasks": 0,
+        "OutboxPending": 0,
+        "OutboxRetained": 134
+      },
+      "upstream_cumulative": {
+        "ChatPosts": 15,
+        "MediaPosts": 14,
+        "MediaQueries": 15,
+        "RateLimits": 1,
+        "Invalid": 0
+      }
+    },
+    {
+      "type": "window",
+      "counts": {
+        "Planned": 0,
+        "Offered": 0,
+        "Missed": 0,
+        "MissedDuringStop": 0,
+        "ChatAccepted": 0,
+        "MediaAccepted": 0,
+        "ChatFirstDelta": 0,
+        "ChatComplete": 0,
+        "MediaFailed": 0,
+        "ChatReplays": 0,
+        "MediaReplays": 0,
+        "CursorReplays": 0,
+        "UnobservedMediaPeak": 0
+      },
+      "drain": true,
+      "index": 6,
+      "latency": {},
+      "missed_slots": null,
+      "observed_unfinished_media": 0,
+      "planned_end_ms": 108007,
+      "planned_start_ms": 108000,
+      "resources": {
+        "AtMS": 108007,
+        "Generation": 2,
+        "Resources": {
+          "service": {
+            "cpu_ms": 609,
+            "resident_bytes": 24412160,
+            "handle_count": 228
+          },
+          "driver": {
+            "cpu_ms": 93,
+            "resident_bytes": 77508608,
+            "handle_count": 218
+          }
+        },
+        "ServiceGCCycles": 6,
+        "ServiceGCUnparsed": 0,
+        "ServiceGCPauseMS": 0,
+        "DriverGCCycles": 3,
+        "DriverGCPauseNS": 0,
+        "PGClientConnections": 11,
+        "PGActive": 0,
+        "PGWaitingOnLock": 0,
+        "ActiveChatRuns": 0,
+        "ActiveMediaTasks": 0,
+        "UncertainMediaTasks": 0,
+        "OutboxPending": 0,
+        "OutboxRetained": 134
+      },
+      "upstream_cumulative": {
+        "ChatPosts": 15,
+        "MediaPosts": 14,
+        "MediaQueries": 15,
+        "RateLimits": 1,
+        "Invalid": 0
+      }
+    }
+  ]
+}

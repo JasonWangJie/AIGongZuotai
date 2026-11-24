@@ -1,0 +1,61 @@
+{
+  "format": "040",
+  "through_ledger": 248,
+  "exit": 1,
+  "top_level": {
+    "pass": 763,
+    "skip": 27,
+    "fail": 1
+  },
+  "failures": {
+    "TestPostgresWorkflowCancelQueuedUnknownAndKnownMedia": "91.52"
+  },
+  "key_tests_seconds": {
+    "TestPostgresMediaQueryUpgrade039Restore040": 45.9,
+    "TestPostgresSourceVideoBrowser039": 15.06,
+    "TestPostgresSourceVideoTransportBrowser039": 11.88,
+    "TestPostgresSourceVideoOperationsAndRestore039": 23.95
+  },
+  "studio_seconds": 2374.815,
+  "service_sha256": "babcf50d787c28844b78276b8ba76d4013a2f38398602b78f7f75af815aee575",
+  "order_reconcile_sha256": "e96a73ec2644fb52161f8f17dd19b94bf8077d54ad0674647cdebe5092a68897",
+  "workflow_repeat": {
+    "test": "TestPostgresWorkflowCancelQueuedUnknownAndKnownMedia",
+    "test_seconds": 8.66,
+    "submit_seconds": 2.44,
+    "query_seconds": 6.23,
+    "exit": 0
+  },
+  "smoke_same_artifact": {
+    "smoke": {
+      "exit": 0,
+      "seconds": 12.11
+    },
+    "smoke:runtime": {
+      "exit": 0,
+      "seconds": 3.33
+    },
+    "smoke:catalog": {
+      "exit": 0,
+      "seconds": 6.53
+    },
+    "smoke:references": {
+      "exit": 0,
+      "seconds": 12.25
+    },
+    "smoke:library": {
+      "exit": 0,
+      "seconds": 9.38
+    },
+    "smoke:conversations": {
+      "exit": 0,
+      "seconds": 2.78
+    }
+  },
+  "check": {
+    "exit": 0,
+    "vitest_files": 57,
+    "vitest_tests": 609,
+    "vite_modules": 183
+  }
+}

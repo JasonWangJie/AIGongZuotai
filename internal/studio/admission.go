@@ -10,6 +10,9 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// MaxGlobalStreams is the opt-in ceiling for authenticated PostgreSQL subscriptions.
+const MaxGlobalStreams = 16_384
+
 // AdmissionLimits are process-local policy, not a purchased entitlement or a
 // distributed semaphore. Zero selects defaults only for in-process Config;
 // explicitly configured environment values are validated before New.
@@ -36,7 +39,7 @@ func (l AdmissionLimits) validate() error {
 		{"ADMISSION_WORKSPACE_RUNS", l.WorkspaceRuns, 4096}, {"ADMISSION_MODEL_RUNS", l.ModelRuns, 4096},
 		{"ADMISSION_WORKSPACE_TASKS", l.WorkspaceTasks, 4096}, {"ADMISSION_MODEL_TASKS", l.ModelTasks, 4096},
 		{"ADMISSION_WORKSPACE_STREAMS", l.WorkspaceStreams, 128},
-		{"ADMISSION_GLOBAL_STREAMS", l.GlobalStreams, 256},
+		{"ADMISSION_GLOBAL_STREAMS", l.GlobalStreams, MaxGlobalStreams},
 	} {
 		if v.value < 1 || v.value > v.max {
 			return fmt.Errorf("%s must be an integer between 1 and %d", v.name, v.max)
@@ -74,9 +77,46 @@ type admissionCount struct {
 // session advisory lock rejects other writer processes; this is not safe to
 // turn into a multi-writer deployment merely by adding a connection pool.
 func (a *App) checkAdmissionLocked(workspaceID, modelID, kind string) error {
-	counts, err := a.admissionCountsLocked(workspaceID)
+	workspaceLimit, modelLimit := a.config.Admission.WorkspaceTasks, a.config.Admission.ModelTasks
+	if kind == "chat" {
+		workspaceLimit, modelLimit = a.config.Admission.WorkspaceRuns, a.config.Admission.ModelRuns
+	}
+	workspaceFull, modelFull, err := a.admissionAtLimitLocked(workspaceID, modelID, kind, workspaceLimit, modelLimit)
 	if err != nil {
 		return err
+	}
+	if workspaceFull {
+		return failure(429, "ADMISSION_WORKSPACE_LIMIT", "当前工作区待完成生成已达上限；本次未受理，请等待任务完成或核实待处理任务")
+	}
+	if modelFull {
+		return failure(429, "ADMISSION_MODEL_LIMIT", "当前工作区此模型待完成生成已达上限；本次未受理，请稍后再试")
+	}
+	return nil
+}
+
+// This predicate also appears in migration 004's partial indexes.
+const activeAdmissionSQL = `document->>'status' NOT IN ('SUCCEEDED','COMPLETED','FAILED','CANCELLED','INTERRUPTED','PARTIAL')`
+
+func (a *App) admissionAtLimitLocked(workspaceID, modelID, kind string, workspaceLimit, modelLimit int) (bool, bool, error) {
+	if a.store != nil && workspaceID != "" {
+		// Both thresholds must use the same database snapshot. The two probes
+		// need only the matching index entries up to their respective limits.
+		table := "studio_tasks"
+		if kind == "chat" {
+			table = "studio_runs"
+		}
+		from := " FROM " + table + " WHERE workspace_id=$1 AND " + activeAdmissionSQL
+		query := "SELECT EXISTS(SELECT 1" + from + " OFFSET $3 LIMIT 1)," +
+			" EXISTS(SELECT 1" + from + " AND document->>'model_id'=$2 OFFSET $4 LIMIT 1)"
+		var workspaceFull, modelFull bool
+		err := a.store.do(func(ctx context.Context, conn *pgx.Conn) error {
+			return conn.QueryRow(ctx, query, workspaceID, modelID, workspaceLimit-1, modelLimit-1).Scan(&workspaceFull, &modelFull)
+		})
+		return workspaceFull, modelFull, err
+	}
+	counts, err := a.admissionCountsLocked(workspaceID)
+	if err != nil {
+		return false, false, err
 	}
 	workspaceActive, modelActive := 0, 0
 	for _, count := range counts {
@@ -88,17 +128,7 @@ func (a *App) checkAdmissionLocked(workspaceID, modelID, kind string) error {
 			modelActive += count.Active
 		}
 	}
-	workspaceLimit, modelLimit := a.config.Admission.WorkspaceTasks, a.config.Admission.ModelTasks
-	if kind == "chat" {
-		workspaceLimit, modelLimit = a.config.Admission.WorkspaceRuns, a.config.Admission.ModelRuns
-	}
-	if workspaceActive >= workspaceLimit {
-		return failure(429, "ADMISSION_WORKSPACE_LIMIT", "当前工作区待完成生成已达上限；本次未受理，请等待任务完成或核实待处理任务")
-	}
-	if modelActive >= modelLimit {
-		return failure(429, "ADMISSION_MODEL_LIMIT", "当前工作区此模型待完成生成已达上限；本次未受理，请稍后再试")
-	}
-	return nil
+	return workspaceActive >= workspaceLimit, modelActive >= modelLimit, nil
 }
 
 func (a *App) admissionSnapshot(workspaceID string) (AdmissionSnapshot, error) {
@@ -195,10 +225,10 @@ func (s *postgresStore) admissionCounts(workspaceID string) ([]admissionCount, e
 		rows, err := conn.Query(ctx, `
 		SELECT model_id,kind,count(*),count(*) FILTER (WHERE status='QUEUED'),min(created_at) FILTER (WHERE status='QUEUED') FROM (
 		 SELECT document->>'model_id' AS model_id,'chat' AS kind,document->>'status' AS status,(document->>'created_at')::timestamptz AS created_at
-		 FROM studio_runs WHERE workspace_id=$1 AND document->>'status' NOT IN ('SUCCEEDED','COMPLETED','FAILED','CANCELLED','INTERRUPTED','PARTIAL')
+		 FROM studio_runs WHERE workspace_id=$1 AND `+activeAdmissionSQL+`
 		 UNION ALL
 		 SELECT document->>'model_id',document->>'kind',document->>'status',(document->>'created_at')::timestamptz
-		 FROM studio_tasks WHERE workspace_id=$1 AND document->>'status' NOT IN ('SUCCEEDED','COMPLETED','FAILED','CANCELLED','INTERRUPTED','PARTIAL')
+		 FROM studio_tasks WHERE workspace_id=$1 AND `+activeAdmissionSQL+`
 		) AS active GROUP BY model_id,kind`, workspaceID)
 		if err != nil {
 			return err

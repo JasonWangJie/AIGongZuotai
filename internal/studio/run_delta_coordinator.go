@@ -10,8 +10,8 @@ import (
 const (
 	runDeltaGroupDelay   = 2 * time.Millisecond
 	runDeltaQueueTimeout = 5 * time.Second
-	// Execution admission already limits callers to at most 64 local and
-	// 4*64 child executions. These limits include items already in storage.
+	// The staging budget is independent of the number of execution slots.
+	// It includes writes in storage. Additional callers wait for space.
 	runDeltaPendingItems = 320
 	runDeltaPendingBytes = 8 << 20
 )

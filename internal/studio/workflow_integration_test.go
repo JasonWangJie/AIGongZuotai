@@ -263,7 +263,7 @@ func newWorkflowIntegrationFixture(t *testing.T) *workflowIntegrationFixture {
 func (f *workflowIntegrationFixture) open(t *testing.T) (*App, *httptest.Server) {
 	t.Helper()
 	cfg := f.cfg
-	cfg.mediaProvider = deliveryTestProvider(t, f.gateway, cfg.AssetDir, AssetStorageConfig{}, 1)
+	cfg.mediaProvider = deliveryTestProvider(t, f.gateway, cfg.AssetDir, cfg.AssetStorage, 1)
 	a, server := testApp(t, cfg)
 	a.chat = f.chat
 	return a, server

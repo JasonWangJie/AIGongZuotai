@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_on": "2026-11-22",
+  "updated_on": "2026-11-24",
   "modules": [
     {
       "id": "H01",
@@ -188,12 +188,17 @@
         {
           "path": "docs/wiki/repository-layout.md",
           "note": "统一docs/db规则、旧路径映射与双入口治理"
+        },
+        {
+          "path": "docs/changes/2026-11-22-230-todo-entry-acceptance.md",
+          "note": "根任务导航显示已验证子项与最新台账"
         }
       ],
       "ledgers": [
         "docs/changes/2026-11-13-009-batch-tracking.md",
         "docs/changes/2026-11-14-063-document-layout.md",
-        "docs/changes/2026-11-14-064-sql-layout.md"
+        "docs/changes/2026-11-14-064-sql-layout.md",
+        "docs/changes/2026-11-22-230-todo-entry-acceptance.md"
       ],
       "completed_on": "2026-11-13",
       "blocker": null
@@ -1117,7 +1122,7 @@
     {
       "id": "V13",
       "title": "订单、支付与退款",
-      "status": "in_progress",
+      "status": "blocked",
       "modules": [
         "H01",
         "H05",
@@ -1186,6 +1191,10 @@
         {
           "path": "docs/changes/2026-11-22-177-order-payment-integration.md",
           "note": "真实账户状态页及恢复证据"
+        },
+        {
+          "path": "docs/changes/2026-11-22-231-payment-channel-deferred.md",
+          "note": "按用户选择暂缓正式支付接入"
         }
       ],
       "ledgers": [
@@ -1197,10 +1206,11 @@
         "docs/changes/2026-11-22-174-order-payment-store.md",
         "docs/changes/2026-11-22-175-order-payment-status-http.md",
         "docs/changes/2026-11-22-176-order-payment-workbench.md",
-        "docs/changes/2026-11-22-177-order-payment-integration.md"
+        "docs/changes/2026-11-22-177-order-payment-integration.md",
+        "docs/changes/2026-11-22-231-payment-channel-deferred.md"
       ],
       "completed_on": null,
-      "blocker": null
+      "blocker": "用户已明确暂缓正式支付接入。恢复时需先选定渠道、测试商户、验签与权威查询协议、退款和已履约权益策略及受控测试窗口。已有本地账务验收保留。"
     },
     {
       "id": "V14",
@@ -1531,6 +1541,10 @@
         {
           "path": "docs/changes/2026-11-22-221-account-composer-scope.md",
           "note": "账户切换后的首个草稿输入"
+        },
+        {
+          "path": "docs/changes/2026-11-22-227-local-acceptance.md",
+          "note": "对应固定制品在隔离数据库的串行验收进度。"
         }
       ],
       "ledgers": [
@@ -1563,7 +1577,8 @@
         "docs/changes/2026-11-22-129-credit-risk-workbench.md",
         "docs/changes/2026-11-22-130-credit-risk-integration.md",
         "docs/changes/2026-11-22-165-content-appeal-fixture-completion.md",
-        "docs/changes/2026-11-22-221-account-composer-scope.md"
+        "docs/changes/2026-11-22-221-account-composer-scope.md",
+        "docs/changes/2026-11-22-227-local-acceptance.md"
       ],
       "completed_on": null,
       "blocker": null
@@ -2128,7 +2143,7 @@
           "label": "V17-E 单个活跃回复持续30分钟、交互和原库重开",
           "status": "passed",
           "command": "标准服务2100秒，真实PG、Chromium、1801个定时增量、独立SSE与30次输入滚动、租约和重开",
-          "note": "035 正式服务对本机兼容端发出一次请求。1,801 个增量持续 1,800.26 秒，Chromium 独立接收序号 1 至 1,802。30 次逐分钟采样均显示新增正文，输入至两帧的 P95 为 30.2 毫秒，滚动至实际位移的 P95 为 31.2 毫秒。PostgreSQL 独立观察 120 次租约，确认终态后从原库、原私有目录重开，25,214 字节回复逐字相同。"
+          "note": "035 正式服务对本机兼容端发出一次请求。1,801 个增量持续 1,800.26 秒，Chromium 独立接收序号 1 至 1,802。30 次逐分钟采样均显示新增正文，输入至两帧的 P95 为 30.2 毫秒，滚动至实际位移的 P95 为 31.2 毫秒。PostgreSQL 独立观察 120 次租约，确认终态后从原库、原私有目录重开，25,214 字节回复逐字相同。 037 复测 1806.51 秒通过，1802 个连续序号，P95 输入 29.8 ms、滚动 32.5 ms，原库重开核对 25214 字节。"
         },
         {
           "label": "V17-F1 已支持分支的可变高消息列表与有界分页读取",
@@ -2192,27 +2207,75 @@
         },
         {
           "label": "V17-J3 慢 TCP 读者、原游标与默认共享订阅上限",
-          "status": "pending",
+          "status": "passed",
           "command": "go test -p 1 -count=1 -timeout=120s -run '^TestPostgresSSESocket' -v ./internal/studio",
-          "note": "真实本机 TCP 停读、核验实际写截止和快端完整输出；同库授权恢复、五账户及全局/工作区订阅释放由集成人串行验证。"
+          "note": "真实本机 TCP 停读、核验实际写截止和快端完整输出；同库授权恢复、五账户及全局/工作区订阅释放由集成人串行验证。 两项真实 PG 与 OS 套接字专项通过（8.00 秒、3.38 秒）。五工作区占满 128 位；正常流及原游标回读校验通过，结束占位 0。"
         },
         {
           "label": "V17-J4 共享会话复核与 192 个同时在线的授权订阅",
-          "status": "pending",
+          "status": "passed",
           "command": "真实 PG；正常账户、独立回放和授权读连接、192 个真实订阅、撤销指定会话、复核失败关闭及原游标接续",
-          "note": "默认128，扩展档使用有界全局/工作区槽、按会话分组的授权复核和独立读连接。实际 192 客户端及原模型请求以验收数据为准。"
+          "note": "默认128，扩展档使用有界全局/工作区槽、按会话分组的授权复核和独立读连接。实际 192 客户端及原模型请求以验收数据为准。 228 修正位置列后 192 个已鉴权订阅实测通过（96 个运行、96 个项目）。注销关闭 64 个，复核连接故障关闭其余 128 个，随后重新接入 2 个。慢读者实测 5000.32 ms 触发写截止；原游标补回 12 个增量，缓冲丢弃 0。 040 同制品串行通过 512/1,024 档。1,024 个原模型连接均实测续租、结算和原键核对，普通读者交付 P95/P99 为 193.28/242.55 毫秒。"
         },
         {
           "label": "V17-J4 联合运行的模型、增量日志和订阅",
-          "status": "pending",
+          "status": "passed",
           "command": "STUDIO_CHAT_CHILD_ACCEPTANCE=integrated-pilot / integrated；go test -p 1 -count=1 -run '^TestPostgresChatChildAcceptance$' -v ./internal/studio",
-          "note": "同一标准制品与数据库同时启用托管模型、批写与扩展订阅；实证模型连接、原库事件、物理提交、普通/迟读者交付与权益。"
+          "note": "同一标准制品与数据库同时启用托管模型、批写与扩展订阅；实证模型连接、原库事件、物理提交、普通/迟读者交付与权益。 038 服务程序 SHA256 1cbdd80631db03eba728d6d55bea8abaeb0af84aa5e01cb971f657f62747544f。80 个模型连接、240 个普通授权订阅与 1 个迟读订阅同时在线，960 个原始增量由 37 个真实 PG 事务提交。2880 份普通增量送达 P95 16.45 ms、P99 23.21 ms。80 次正常结算，无意外重复 POST。"
         },
         {
           "label": "固定容量环境的万活跃流、媒体在途与24小时稳态",
           "status": "blocked",
           "command": "分层 P95/P99、CPU/RSS/FD/GC、数据库等待、慢订阅者、24小时与突发故障",
-          "note": "本机标准服务现已实测两个托管子进程各 40 个同时活跃的会话与跨运行批写；全部 SSE 仍共用单控制器的 128 个连接槽。继续验证真实慢订阅与准入、扩展持久订阅和执行容量，再在专用环境核验业务万活跃流、目标媒体在途及 24 小时稳态。"
+          "note": "一万授权项目订阅读者以及本机 1,024 个业务模型连接分别通过。040 同一渠道以每秒 320 项到期、200ms 服务实测最高 159.41 次/秒，尚有本地调度和持久化差距。本机 60,000 项正常在途已通过。259 从两个工作区每秒受理 1 项，10 分钟稳态平均在途 604.78 项，实测每秒 57.52 次原 GET。持续 6,000 次原 GET/秒、万活跃模型和固定环境的 24 小时稳态各待实测。"
+        },
+        {
+          "label": "万级授权订阅准入、分页会话复核与断线恢复",
+          "status": "passed",
+          "command": "STUDIO_SSE_FANOUT=full，go test -p 1 -parallel 1 -count=1 -timeout=20m -run '^TestPostgresTenThousandProjectSubscribers$' -v ./internal/studio",
+          "note": "039 本机 PG 16.14，80 工作区×125 个真实 HTTP 读者，共 320 会话。两轮 640 次会话复核；全体收到首次广播，32 个注销读者见 EOF，同项目 93 个邻居继续；原游标回放成功，占位归零。建连 6846ms、广播 1117ms，专项 30.04s。"
+        },
+        {
+          "label": "264 个受管模型连接的业务联合验收",
+          "status": "passed",
+          "command": "STUDIO_CHAT_CHILD_ACCEPTANCE=integrated-264，TestPostgresChatChildAcceptance",
+          "note": "8 个实际子进程各 33 条模型连接，6 个冻结模型各 44 条，5 个工作区共 264 个正常读者和 1 个迟读者。3,168 个原始增量、110 个插入事务、264 次结算、0 次意外重提。普通读者 P95/P99 37.11/75.38 毫秒，用例 50.25 秒。"
+        },
+        {
+          "label": "原 handle 查询的 PostgreSQL 到期迟滞",
+          "status": "passed",
+          "command": "STUDIO_MEDIA_QUERY_MEASURE=1，go test -p 1 -count=1 -run '^TestPostgresMediaOriginalQueryCapacity$' -v ./internal/studio",
+          "note": "PG 16.14，40/s 投放，每档 128 个唯一原 GET 且零 POST；2/16 个 worker 的完成率为 9.48/37.77 次每秒，到期至写出 P95 为 9672.21/34.67 毫秒。用例 23.14 秒。"
+        },
+        {
+          "label": "有界查询租约连接池与慢 GET",
+          "status": "passed",
+          "command": "STUDIO_MEDIA_QUERY_MEASURE=1，go test -p 1 -parallel 1 -count=1 -timeout=240s -run '^TestPostgresPooled' -v ./internal/studio",
+          "note": "6 项本机 PG 专项 26.930 秒。32 查询执行位共享 4 条数据库连接，128 个原 GET、零 POST，200ms 响应下完成 37.81 次/秒，实际峰值 11。已知回应、超时、锁等待、取消与旧租约失效均已复核。"
+        },
+        {
+          "label": "高并发原任务查询与工作区公平派发",
+          "status": "passed",
+          "command": "真 PG、原 handle、慢 GET、到期迟滞与 SQL 池、满工作区旁路及空闲轮询上界",
+          "note": "040 正常派发达 256 个实际同时等待的原 GET，四条查询数据库连接可同时借出。32/64/128 位、每秒 320 到期的三档分别完成 129.27/149.61/159.41 次每秒；最高速档到期至发出 P95 1317.95 毫秒。公平场景消除一轮 4 秒的额外等待。"
+        },
+        {
+          "label": "039 到 040 的在途媒体及未知受理恢复",
+          "status": "passed",
+          "command": "MEDIA_QUERY_UPGRADE_TEST=1，配套 039 服务、PG、pg_dump 与 pg_restore",
+          "note": "真实 039 程序建立三份上游请求。040 升级、旧制品拒绝写、停写联备、独立恢复后两次原 GET、零新 POST、零重叠探测，一份受理未知持续冻结待核实。38.85 秒。"
+        },
+        {
+          "label": "正式受理的在途媒体配额与重开",
+          "status": "passed",
+          "command": "STUDIO_MEDIA_ADMISSION_TASKS=128/512/4096/60000，各档独立串行",
+          "note": "128、512、4,096、60,000 四档通过。16 个正常注册工作区通过平台接口受理 60,000 项媒体任务，重开前后各重放 60,000 个原键。469 页恢复 59,999 个原句柄和最多 512 项缓存，1 项无句柄的未知受理继续占位，重开后 2 个原 GET、0 个新生成 POST。首次受理与超限检查 1,471.601 秒，全档 2,940.880 秒。"
+        },
+        {
+          "label": "原任务查询从预选到提交的分段测量",
+          "status": "passed",
+          "command": "STUDIO_MEDIA_QUERY_TIMINGS=1，go test -p 1 -count=1 -timeout=5m -run '^TestPostgresQueryStage.*248$' -v ./internal/studio",
+          "note": "PG 16.14，三档与实际心跳共 34.400 秒。128 档 512 个原 GET，执行入口到首次续租 P95 233.79ms、已知结果等 App.mu P95 271.76ms、控制保存事务 P95 5.93ms、租约池等待 P95 4.61ms。各阶段窗口会重叠。"
         }
       ],
       "evidence": [
@@ -2435,6 +2498,190 @@
         {
           "path": "docs/changes/2026-11-22-220-integrated-chat-sse-acceptance.md",
           "note": "80 个模型流、241 个订阅与批量持久化联合验收"
+        },
+        {
+          "path": "docs/changes/2026-11-22-227-local-acceptance.md",
+          "note": "对应固定制品在隔离数据库的串行验收进度。"
+        },
+        {
+          "path": "docs/wiki/assets/performance-long-reply-037.json",
+          "note": "037 实际单流半小时、浏览器交互、租约及原库重开"
+        },
+        {
+          "path": "docs/changes/2026-11-22-228-stream-session-batch-positions.md",
+          "note": "共享会话批量复核的返回位置"
+        },
+        {
+          "path": "docs/wiki/assets/performance-integrated-chat-038.json",
+          "note": "038 联合实测，区分源事件、数据库事务与下游交付副本"
+        },
+        {
+          "path": "docs/changes/2026-11-23-232-paged-stream-session-admission.md",
+          "note": "授权订阅的分页会话复核"
+        },
+        {
+          "path": "docs/changes/2026-11-23-233-project-sse-fanout.md",
+          "note": "真实项目 SSE 广播与断线恢复"
+        },
+        {
+          "path": "docs/wiki/assets/performance-project-sse-320.json",
+          "note": "320 个不同授权会话在 80 个工作区同时读项目事件的实测"
+        },
+        {
+          "path": "docs/changes/2026-11-23-237-shared-project-feed.md",
+          "note": "项目事件按游标共享已提交的通知页"
+        },
+        {
+          "path": "docs/changes/2026-11-23-240-managed-chat-capacity.md",
+          "note": "受管模型执行容量与 264 路联合入口"
+        },
+        {
+          "path": "docs/changes/2026-11-23-241-media-original-query-capacity.md",
+          "note": "媒体原 handle 查询的到期与发起延迟"
+        },
+        {
+          "path": "docs/wiki/media-original-query-capacity.md",
+          "note": "媒体在途、每秒到期、HTTP并发和应用派发迟滞的测量口径"
+        },
+        {
+          "path": "docs/wiki/assets/performance-project-sse-10000-039.json",
+          "note": "真实10,000条项目SSE连接、逐作用域广播、撤权与原游标报告"
+        },
+        {
+          "path": "docs/wiki/assets/media-original-query-capacity-2026-11-23.json",
+          "note": "两种存储的worker档、真实HTTP、到期至各阶段分位及投放守恒"
+        },
+        {
+          "path": "docs/wiki/assets/performance-integrated-chat-264-039.json",
+          "note": "264 个真实模型连接、265 个同时授权订阅、业务与账务的联合实测"
+        },
+        {
+          "path": "docs/changes/2026-11-23-242-query-lease-pool.md",
+          "note": "查询执行与数据库连接预算及其故障验收"
+        },
+        {
+          "path": "docs/wiki/assets/media-pooled-query-capacity-039.json",
+          "note": "32 个原查询执行位和 4 条数据库连接的 128 次 HTTP 到期实测"
+        },
+        {
+          "path": "docs/changes/2026-11-23-243-format-039-regression.md",
+          "note": "039 同源服务、前端、离线工具的本机累计回归"
+        },
+        {
+          "path": "docs/changes/2026-11-23-244-large-original-query.md",
+          "note": "大档原任务查询与有界派发"
+        },
+        {
+          "path": "docs/changes/2026-11-23-245-media-query-format-restore.md",
+          "note": "039 至 040 的原任务恢复与渠道探测"
+        },
+        {
+          "path": "docs/changes/2026-11-23-246-normal-media-admission-capacity.md",
+          "note": "经正式接口受理的媒体在途任务"
+        },
+        {
+          "path": "docs/wiki/assets/media-query-rate-curve-040.json",
+          "note": "32/64/128 原查询位在每秒320个到期下的真实 GET、延迟与积压"
+        },
+        {
+          "path": "docs/wiki/assets/media-normal-admission-040.json",
+          "note": "128、512、4,096、60,000 四个正常 API 在途配额档的原库、原键与重开核验数据"
+        },
+        {
+          "path": "docs/changes/2026-11-23-248-query-stage-timing.md",
+          "note": "查询库等待、续租、原 GET、应用锁及保存事务分别计时"
+        },
+        {
+          "path": "docs/wiki/assets/media-query-stage-timing-040.json",
+          "note": "原 GET 分段、样本、占用和重叠墙钟"
+        },
+        {
+          "path": "docs/changes/2026-11-23-249-large-query-entry-pin.md",
+          "note": "原任务查询的并发登记"
+        },
+        {
+          "path": "docs/changes/2026-11-23-250-known-query-save-batch.md",
+          "note": "原查询结果合批的实库对照"
+        },
+        {
+          "path": "docs/wiki/assets/media-query-entry-040.json",
+          "note": "大档原任务执行登记后的三档分段与到期情况"
+        },
+        {
+          "path": "docs/wiki/assets/media-query-save-batch-040.json",
+          "note": "原结果八项合批与逐项保存的实际终态提交和到期差异"
+        },
+        {
+          "path": "docs/changes/2026-11-23-252-admission-thresholds-and-recovery.md",
+          "note": "准入配额与原库恢复扫描"
+        },
+        {
+          "path": "docs/wiki/assets/media-admission-thresholds-040.json",
+          "note": "旧查询与阈值查询各4096项普通受理的用时、原键与恢复实扫"
+        },
+        {
+          "path": "docs/changes/2026-11-23-253-managed-chat-512.md",
+          "note": "受管模型全执行位联合验收"
+        },
+        {
+          "path": "docs/wiki/assets/performance-integrated-chat-512-040.json",
+          "note": "512个实际模型连接、513个授权SSE与原键结算核对"
+        },
+        {
+          "path": "docs/changes/2026-11-23-251-format-040-regression.md",
+          "note": "040 同源程序累计回归"
+        },
+        {
+          "path": "docs/changes/2026-11-24-254-normal-admission-60000.md",
+          "note": "六万项正常媒体受理及原库重开"
+        },
+        {
+          "path": "docs/wiki/assets/format-040-regression.json",
+          "note": "040 主树累计复验、原视频测试时钟及六组同制品冒烟的结果"
+        },
+        {
+          "path": "docs/changes/2026-11-24-255-original-query-page.md",
+          "note": "原查询预选的公平页对照"
+        },
+        {
+          "path": "docs/wiki/assets/media-query-page-255.json",
+          "note": "原查询公平页的真实 ABBA 对照、五种页的 SQL 往返与候选补丁散列"
+        },
+        {
+          "path": "docs/changes/2026-11-24-256-mixed-service-soak.md",
+          "note": "同一服务的混合运行与重启核验"
+        },
+        {
+          "path": "docs/changes/2026-11-24-257-recurring-original-query.md",
+          "note": "正常受理任务的多轮原查询"
+        },
+        {
+          "path": "docs/wiki/assets/mixed-service-pilot-040.json",
+          "note": "6 个真实混合窗口、原服务中断和恢复、两工作区原键复核"
+        },
+        {
+          "path": "docs/wiki/assets/recurring-media-query-040.json",
+          "note": "25 项正常受理、24 个原 handle 三轮的查询到期及网关时间窗"
+        },
+        {
+          "path": "docs/changes/2026-11-24-258-managed-chat-1024.md",
+          "note": "受管聊天 1,024 路并发对照"
+        },
+        {
+          "path": "docs/wiki/assets/performance-integrated-chat-1024-040.json",
+          "note": "从同一标准制品实测 512 与 1,024 个原模型连接、授权读者与原租约、权益回放及进程回收"
+        },
+        {
+          "path": "docs/changes/2026-11-24-259-openloop-media-lifecycle.md",
+          "note": "定速媒体受理与完整生命周期"
+        },
+        {
+          "path": "docs/wiki/assets/media-openloop-040.json",
+          "note": "两个工作区每秒新建 1 个媒体任务，10 分钟预热后继续投放 10 分钟。稳态平均在途 604.78 项，原句柄实测 57.52 GET/秒。全程 69,312 次原 GET，1,200 次正常受理均排空并取得原键收据，终态为受控上游明确失败。"
+        },
+        {
+          "path": "docs/wiki/assets/format-040-regression-interrupted.json",
+          "note": "040 全量复跑中断前的测试数、辅助连接认证超时、Windows 重启与原进程核对。"
         }
       ],
       "ledgers": [
@@ -2477,7 +2724,31 @@
         "docs/changes/2026-11-22-214-sse-socket-acceptance.md",
         "docs/changes/2026-11-22-218-stream-session-batches.md",
         "docs/changes/2026-11-22-219-authenticated-sse-sessions.md",
-        "docs/changes/2026-11-22-220-integrated-chat-sse-acceptance.md"
+        "docs/changes/2026-11-22-220-integrated-chat-sse-acceptance.md",
+        "docs/changes/2026-11-22-227-local-acceptance.md",
+        "docs/changes/2026-11-22-228-stream-session-batch-positions.md",
+        "docs/changes/2026-11-23-232-paged-stream-session-admission.md",
+        "docs/changes/2026-11-23-233-project-sse-fanout.md",
+        "docs/changes/2026-11-23-237-shared-project-feed.md",
+        "docs/changes/2026-11-23-240-managed-chat-capacity.md",
+        "docs/changes/2026-11-23-241-media-original-query-capacity.md",
+        "docs/changes/2026-11-23-242-query-lease-pool.md",
+        "docs/changes/2026-11-23-243-format-039-regression.md",
+        "docs/changes/2026-11-23-244-large-original-query.md",
+        "docs/changes/2026-11-23-245-media-query-format-restore.md",
+        "docs/changes/2026-11-23-246-normal-media-admission-capacity.md",
+        "docs/changes/2026-11-23-248-query-stage-timing.md",
+        "docs/changes/2026-11-23-249-large-query-entry-pin.md",
+        "docs/changes/2026-11-23-250-known-query-save-batch.md",
+        "docs/changes/2026-11-23-252-admission-thresholds-and-recovery.md",
+        "docs/changes/2026-11-23-253-managed-chat-512.md",
+        "docs/changes/2026-11-23-251-format-040-regression.md",
+        "docs/changes/2026-11-24-254-normal-admission-60000.md",
+        "docs/changes/2026-11-24-255-original-query-page.md",
+        "docs/changes/2026-11-24-256-mixed-service-soak.md",
+        "docs/changes/2026-11-24-257-recurring-original-query.md",
+        "docs/changes/2026-11-24-258-managed-chat-1024.md",
+        "docs/changes/2026-11-24-259-openloop-media-lifecycle.md"
       ],
       "completed_on": null,
       "blocker": null
@@ -2523,15 +2794,15 @@
         },
         {
           "label": "V18-E 跨格式回退与升级窗口收据对账",
-          "status": "pending",
+          "status": "passed",
           "command": "node scripts/release/cross-format-drill.mjs --run --previous-source <冻结036> --candidate-source <冻结037> --stage-parent <本机暂存路径> --bin-dir <PG16工具>",
-          "note": "复核两份真实制品、物理命名恢复点、私有文件与升级窗口两笔写入，维护入口保持封流；尚待集成人串行执行。"
+          "note": "复核两份真实制品、物理命名恢复点、私有文件与升级窗口两笔写入，维护入口保持封流；尚待集成人串行执行。 本机固定 036→037→036 实测 44229 毫秒；窗口两次成功写入仅保留在新版，旧恢复点缺两份对应收据，自动重提 0。回放停在目标 LSN，目录字节与数据库 UUID 一致，入口最终保持维护。"
         },
         {
           "label": "V18-F 同步备机接管与工作台收据",
-          "status": "pending",
+          "status": "passed",
           "command": "node scripts/recovery/workbench-sync-standby.mjs --artifact <已核对的本机037 baseline包>",
-          "note": "核实主备的同步落盘和回放、旧进程及写锁退出、独立端口提升、原账户与收据和本机恢复时间。独立可用区仍需另验。"
+          "note": "核实主备的同步落盘和回放、旧进程及写锁退出、独立端口提升、原账户与收据和本机恢复时间。独立可用区仍需另验。 同机 PG16 remote_apply 同步复制。原写进程退出、三锁释放后升主，时间线 1→2，5 份确认收据全部恢复；从停写至业务核对 3639 毫秒，原库已隔离。"
         },
         {
           "label": "分环境部署、灰度/回滚、真实跨可用区放行",
@@ -2564,6 +2835,18 @@
         {
           "path": "docs/changes/2026-11-22-217-postgresql-sync-standby.md",
           "note": "同步备机切换与原业务收据"
+        },
+        {
+          "path": "docs/changes/2026-11-22-227-local-acceptance.md",
+          "note": "对应固定制品在隔离数据库的串行验收进度。"
+        },
+        {
+          "path": "docs/wiki/assets/recovery-cross-format-037.json",
+          "note": "036 到 037 的升级窗口及 036 恢复点实测"
+        },
+        {
+          "path": "docs/wiki/assets/recovery-sync-standby-037.json",
+          "note": "同步备机接管与业务五份原收据"
         }
       ],
       "ledgers": [
@@ -2576,7 +2859,8 @@
         "docs/changes/2026-11-22-142-release-handoff-integration.md",
         "docs/changes/2026-11-22-143-release-operations.md",
         "docs/changes/2026-11-22-216-cross-format-recovery.md",
-        "docs/changes/2026-11-22-217-postgresql-sync-standby.md"
+        "docs/changes/2026-11-22-217-postgresql-sync-standby.md",
+        "docs/changes/2026-11-22-227-local-acceptance.md"
       ],
       "completed_on": null,
       "blocker": null
@@ -2677,7 +2961,7 @@
     {
       "id": "V20",
       "title": "视频编辑与分镜创作",
-      "status": "in_progress",
+      "status": "blocked",
       "modules": [
         "H02",
         "H03",
@@ -2705,15 +2989,21 @@
         },
         {
           "label": "V20-B 固定分镜生成、原任务收据和单镜替换",
-          "status": "pending",
+          "status": "passed",
           "command": "单镜受理与权益、审核资产与剪辑并发、原库升级/联备；真实 Chromium 取回两个 MP4 并独立解码画面和音轨",
-          "note": "使用正常文生视频通路推进受控网关验收。已确认版本、原键回读、单独报价与显式剪辑提交，真实供应商效果以及原视频编辑/延长另验。"
+          "note": "使用正常文生视频通路推进受控网关验收。已确认版本、原键回读、单独报价与显式剪辑提交，真实供应商效果以及原视频编辑/延长另验。 已完成冻结来源、原键与权益原子性、037→038 升级、真实浏览器丢失两次应答及停写恢复。两版 MP4 各 54 帧、2250 ms，目标第二镜音调 440→880 Hz。"
         },
         {
           "label": "真实模型对原视频编辑、延长与逐镜生成",
           "status": "blocked",
           "command": "在用户配置且开通对应能力的真实供应端实测",
           "note": "需要模型协议、授权测试素材和受控真实执行环境；已交付的 V19 首帧视频生成继续独立保留。"
+        },
+        {
+          "label": "V20-C 私有原视频的编辑与延长",
+          "status": "passed",
+          "command": "开发受理、权限及不明结果门禁，真实浏览器、冻结正文和备份恢复",
+          "note": "039 本机 PG 16.14、FFmpeg、Chromium 与私有版本化对象服务验收。编辑和延长各显式报价并交付，截断正文后用原键 GET。无响应头时页面调用一次、浏览器发出两条同键同正文 HTTP，服务端只建一条任务、一次上游生成和一次结算。停写联备恢复仍取登记的原对象版本。真实模型另验。"
         }
       ],
       "evidence": [
@@ -2748,6 +3038,66 @@
         {
           "path": "docs/changes/2026-11-22-224-panel-video-workbench.md",
           "note": "工作台单镜生成与原键核对"
+        },
+        {
+          "path": "docs/changes/2026-11-22-227-local-acceptance.md",
+          "note": "对应固定制品在隔离数据库的串行验收进度。"
+        },
+        {
+          "path": "docs/wiki/assets/panel-video-decoded-038.json",
+          "note": "038 两版私有成片逐帧及音轨解码"
+        },
+        {
+          "path": "docs/changes/2026-11-22-229-panel-video-label-contrast.md",
+          "note": "单镜视频窄屏表单标签对比度"
+        },
+        {
+          "path": "docs/changes/2026-11-22-235-video-source-admission.md",
+          "note": "私有原视频编辑与延长受理"
+        },
+        {
+          "path": "docs/changes/2026-11-23-234-source-video-provider.md",
+          "note": "冻结私有原视频的网关请求"
+        },
+        {
+          "path": "docs/changes/2026-11-23-238-source-video-integration-restore.md",
+          "note": "原视频操作与停写联备验收"
+        },
+        {
+          "path": "docs/changes/2026-11-23-236-source-video-workbench.md",
+          "note": "视频工作室选择原片、报价和查询原收据"
+        },
+        {
+          "path": "docs/changes/2026-11-23-239-source-video-browser.md",
+          "note": "真实浏览器的原视频报价与受理恢复"
+        },
+        {
+          "path": "docs/wiki/assets/source-video-workbench-039.json",
+          "note": "浏览器报价、提交和原收据查询实测"
+        },
+        {
+          "path": "docs/wiki/assets/source-video-transport-039.json",
+          "note": "无响应头时页面、网络、任务、上游和结算次数"
+        },
+        {
+          "path": "docs/changes/2026-11-23-243-format-039-regression.md",
+          "note": "039 同源服务、前端、离线工具的本机累计回归"
+        },
+        {
+          "path": "docs/changes/2026-11-23-247-source-quote-narrow.md",
+          "note": "窄屏报价的完整原片编号"
+        },
+        {
+          "path": "docs/wiki/assets/format-039-regression.json",
+          "note": "039 完整回归、实库跳过项与两个原视频浏览器分支"
+        },
+        {
+          "path": "docs/changes/2026-11-23-251-format-040-regression.md",
+          "note": "040 同源程序累计回归"
+        },
+        {
+          "path": "docs/wiki/assets/format-040-regression.json",
+          "note": "040 主树累计复验、原视频测试时钟及六组同制品冒烟的结果"
         }
       ],
       "ledgers": [
@@ -2758,13 +3108,23 @@
         "docs/changes/2026-11-22-148-video-edit-integration.md",
         "docs/changes/2026-11-22-166-video-export-cleanup-verification.md",
         "docs/changes/2026-11-22-182-video-timeline-selection.md",
-        "docs/changes/2026-11-22-225-panel-video-integration.md",
         "docs/changes/2026-11-22-222-comic-panel-video.md",
         "docs/changes/2026-11-22-223-panel-video-timeline-replacement.md",
-        "docs/changes/2026-11-22-224-panel-video-workbench.md"
+        "docs/changes/2026-11-22-224-panel-video-workbench.md",
+        "docs/changes/2026-11-22-225-panel-video-integration.md",
+        "docs/changes/2026-11-22-227-local-acceptance.md",
+        "docs/changes/2026-11-22-229-panel-video-label-contrast.md",
+        "docs/changes/2026-11-23-234-source-video-provider.md",
+        "docs/changes/2026-11-22-235-video-source-admission.md",
+        "docs/changes/2026-11-23-236-source-video-workbench.md",
+        "docs/changes/2026-11-23-238-source-video-integration-restore.md",
+        "docs/changes/2026-11-23-239-source-video-browser.md",
+        "docs/changes/2026-11-23-243-format-039-regression.md",
+        "docs/changes/2026-11-23-247-source-quote-narrow.md",
+        "docs/changes/2026-11-23-251-format-040-regression.md"
       ],
       "completed_on": null,
-      "blocker": null
+      "blocker": "本机剪辑、逐镜生成与替换、原片编辑与延长均已验收。恢复真实验收需要供应商开通相应模型和协议、服务器配置、可授权使用的原片及受控测试窗口。按用户安排配置后的真实环境再验。"
     },
     {
       "id": "V21",

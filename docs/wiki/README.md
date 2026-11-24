@@ -4,6 +4,8 @@
 
 ## 当前状态
 
+039 原视频编辑与延长已通过本机工作室、授权收据、私有对象版本及停写联备验收。模型能力与方向须在服务端按规格开启。[039 原视频配置](decisions/0039-source-video.md)
+
 登录、找回和工作台共用四语界面，首次进入按 IP 归属选择语言。手动选项在同一浏览器中生效。[界面语言与可信代理](frontend.md#工作台语言与地区识别)
 
 035 累计 PostgreSQL 与 553 项前端测试通过。本人收退款与权益在本机合成通知下验收，作品库经过实际一万条索引读取和 30 个项目切换。[资金记录](decisions/0035-order-payments.md) · [资源测量](performance.md)。
@@ -265,6 +267,47 @@ Go31个测试函数及子用例、真实PostgreSQL18.7集成、Go vet、前端36
 文档必须区分“已实现”“当前限制”“计划”，测试结果写明实际命令与观察结果。未运行的测试、待确认的网关能力和性能假设不得写成已完成事实。[文档检查脚本](../../scripts/check-docs.mjs)检查文件、链接、台账结构及变更集合中的同步痕迹；语义是否正确、每项修改是否都被解释，仍需人工审阅。
 
 ## 最近变更
+
+- [259 · 定速媒体受理与完整生命周期](../changes/2026-11-24-259-openloop-media-lifecycle.md)
+- [258 · 受管聊天 1,024 路并发对照](../changes/2026-11-24-258-managed-chat-1024.md)
+- [257 · 正常受理任务的多轮原查询](../changes/2026-11-24-257-recurring-original-query.md)
+- [256 · 同一服务的混合运行与重启核验](../changes/2026-11-24-256-mixed-service-soak.md)
+- [255 · 原查询预选的公平页对照](../changes/2026-11-24-255-original-query-page.md)
+- [254 · 六万项正常媒体受理及原库重开](../changes/2026-11-24-254-normal-admission-60000.md)
+- [253 · 受管模型全执行位联合验收](../changes/2026-11-23-253-managed-chat-512.md)
+- [252 · 准入配额与原库恢复扫描](../changes/2026-11-23-252-admission-thresholds-and-recovery.md)
+- [251 · 040 同源程序累计回归](../changes/2026-11-23-251-format-040-regression.md)
+- [250 · 原查询结果合批的实库对照](../changes/2026-11-23-250-known-query-save-batch.md)
+- [249 · 原任务查询的并发登记](../changes/2026-11-23-249-large-query-entry-pin.md)
+- [248 · 原任务查询的分段耗时](../changes/2026-11-23-248-query-stage-timing.md)
+- [247 · 窄屏报价的完整原片编号](../changes/2026-11-23-247-source-quote-narrow.md)
+- [246 · 经正式接口受理的媒体在途任务](../changes/2026-11-23-246-normal-media-admission-capacity.md)
+- [245 · 039 至 040 的原任务恢复与渠道探测](../changes/2026-11-23-245-media-query-format-restore.md)
+- [244 · 大档原任务查询与有界派发](../changes/2026-11-23-244-large-original-query.md)
+- [243 · 039 本机累计回归](../changes/2026-11-23-243-format-039-regression.md)
+- [242 · 媒体原任务查询的独立 PostgreSQL 连接预算](../changes/2026-11-23-242-query-lease-pool.md)
+- [241 · 媒体原 handle 查询的到期与发起延迟](../changes/2026-11-23-241-media-original-query-capacity.md)
+- [240 · 受管模型执行容量与 264 路联合入口](../changes/2026-11-23-240-managed-chat-capacity.md)
+- [239 · 真实浏览器的原视频报价与受理恢复](../changes/2026-11-23-239-source-video-browser.md)
+- [238 · 原视频操作与停写联备验收](../changes/2026-11-23-238-source-video-integration-restore.md)
+- [237 · 项目事件按游标共享已提交的通知页](../changes/2026-11-23-237-shared-project-feed.md)
+
+- [236 · 视频工作室选择原片、报价和查询原收据](../changes/2026-11-23-236-source-video-workbench.md)
+- [234 · 冻结私有原视频的网关请求](../changes/2026-11-23-234-source-video-provider.md)
+- [233 · 真实项目 SSE 广播与断线恢复](../changes/2026-11-23-233-project-sse-fanout.md)
+- [232 · 授权订阅的分页会话复核](../changes/2026-11-23-232-paged-stream-session-admission.md)
+
+- [235 · 私有原视频编辑与延长受理](../changes/2026-11-22-235-video-source-admission.md)
+
+- [231 · 按用户选择暂缓正式支付接入](../changes/2026-11-22-231-payment-channel-deferred.md)
+
+- [230 · 根任务导航显示已验证子项与最新台账](../changes/2026-11-22-230-todo-entry-acceptance.md)
+
+- [229 · 单镜视频窄屏表单标签对比度](../changes/2026-11-22-229-panel-video-label-contrast.md)
+
+- [228 · 共享会话批量复核的返回位置](../changes/2026-11-22-228-stream-session-batch-positions.md)
+
+- [227 · 037 与 038 本地制品复验](../changes/2026-11-22-227-local-acceptance.md)
 
 - [222 · 已确认分镜的视频报价与受理](../changes/2026-11-22-222-comic-panel-video.md) · [223 · 分镜产物替换指定剪辑镜头](../changes/2026-11-22-223-panel-video-timeline-replacement.md) · [224 · 工作台单镜生成与原键核对](../changes/2026-11-22-224-panel-video-workbench.md)
 

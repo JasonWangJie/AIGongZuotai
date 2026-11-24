@@ -1,5 +1,7 @@
 # 媒体提交与查询交付通道
 
+040 为已登记上游 handle 的 GET 新增专用并发和 SQL 连接预算。原提交、交付和审核的限制继续适用。下文保留各阶段已测条件。[当前查询配置](media-original-query-capacity.md)
+
 本页保留A2的双通道交付范围；当前A3.1原生异步适配器新增独立delivery通道，见[持久私有交付](media-delivery.md)。原submit/query配置和租约保护继续有效，但当前默认预算为2+2+2；旧非phased provider仍可能在query步骤内执行导入。
 
 V16-A2 在现有单控制写者中隔离媒体提交与查询交付的执行预算、固定 worker 和租约连接。核心普通回归通过 7.529s，PG 租约/B2/lane 联合 20 函数通过 37.077s，静态检查通过；联合全量验收由根另记。实际记录见 [068 台账](../changes/2026-11-14-068-media-execution-lanes.md)；HTTP 池另见[媒体连接池](media-transport-lanes.md)。完整 V16 仍由[分批契约](../planning/v16-contract.md)及任务源管理。

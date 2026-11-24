@@ -30,6 +30,7 @@ type postgresStore struct {
 	conn          *pgx.Conn
 	replay        *runReplayPool
 	streamAuth    *runReplayPool
+	feedReads     *runReplayPool
 	failed        atomic.Bool
 	onFailure     func()
 }
@@ -135,12 +136,19 @@ func applyMigrationsFrom(ctx context.Context, tx pgx.Tx, files fs.FS) error {
 	return rows.Err()
 }
 
+const defaultStoreTimeout = 5 * time.Second
+
 func (s *postgresStore) do(fn func(context.Context, *pgx.Conn) error) error {
-	return s.doWithTimeout(5*time.Second, fn)
+	return s.doWithTimeout(defaultStoreTimeout, fn)
 }
 func (s *postgresStore) doWithTimeout(timeout time.Duration, fn func(context.Context, *pgx.Conn) error) error {
+	return s.doWithTimedLock(timeout, nil, fn)
+}
+func (s *postgresStore) doWithTimedLock(timeout time.Duration, timing *mediaQueryTiming, fn func(context.Context, *pgx.Conn) error) error {
+	started := timing.start()
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	timing.end(queryControlWait, started)
 	if s.failed.Load() {
 		return failure(503, "DATABASE_UNAVAILABLE", "数据库不可用，服务已停止执行；请恢复数据库后重启")
 	}
@@ -163,6 +171,9 @@ func (s *postgresStore) health() error {
 	return s.do(func(ctx context.Context, conn *pgx.Conn) error { return conn.Ping(ctx) })
 }
 func (s *postgresStore) close() {
+	if s.feedReads != nil {
+		s.feedReads.close()
+	}
 	if s.streamAuth != nil {
 		s.streamAuth.close()
 	}
@@ -369,8 +380,20 @@ func (s *postgresStore) createSourcedTask(t *taskRecord, index string, hash [32]
 		if err = checkWorkspaceGenerationSQL(ctx, tx, t.Task.WorkspaceID); err != nil {
 			return err
 		}
+		if sourceVideoOperation(t.Task.Operation) {
+			if actor == nil || actor.User == nil || actor.Workspace.ID != t.Task.WorkspaceID || t.Task.SourceVideo == nil || t.sourceVideo == nil {
+				return videoTimelineAssetUnavailable()
+			}
+			current, e := sourceVideoInfoSQL(ctx, tx, subscriptionScope{t.Task.WorkspaceID, t.Task.ProjectID}, *t.Task.SourceVideo)
+			if e != nil {
+				return e
+			}
+			if current.taskID != t.sourceVideo.taskID || !sameMediaDeliveryReceipt(&current.info, &t.sourceVideo.info) {
+				return videoTimelineAssetUnavailable()
+			}
+		}
 		if t.Task.BillingQuoteID != "" {
-			t.Task.Billing, err = reserveLedgerSQL(ctx, tx, LedgerReservationRequest{ActorUserID: riskActorID(actor), QuoteID: t.Task.BillingQuoteID, WorkspaceID: t.Task.WorkspaceID, ProjectID: t.Task.ProjectID, ResourceType: "task", ResourceID: t.Task.ID, ModelID: t.Task.ModelID, ModelVersion: t.Task.ModelVersion, ProviderMode: t.Task.ProviderMode, RequestHash: t.Task.BillingRequestHash})
+			t.Task.Billing, err = reserveLedgerSQL(ctx, tx, LedgerReservationRequest{RequireOwnedQuote: t.sourceVideo != nil, ActorUserID: riskActorID(actor), QuoteID: t.Task.BillingQuoteID, WorkspaceID: t.Task.WorkspaceID, ProjectID: t.Task.ProjectID, ResourceType: "task", ResourceID: t.Task.ID, ModelID: t.Task.ModelID, ModelVersion: t.Task.ModelVersion, ProviderMode: t.Task.ProviderMode, RequestHash: t.Task.BillingRequestHash})
 			if err != nil {
 				return err
 			}
@@ -381,6 +404,14 @@ func (s *postgresStore) createSourcedTask(t *taskRecord, index string, hash [32]
 		submission, _ := json.Marshal(t.Submission)
 		if _, err = tx.Exec(ctx, "INSERT INTO studio_tasks(id,workspace_id,project_id,document,input,handle,submission,next_poll) VALUES($1,$2,$3,$4,$5,$6,$7,$8)", t.Task.ID, t.Task.WorkspaceID, t.Task.ProjectID, doc, input, handle, submission, t.NextPoll); err != nil {
 			return err
+		}
+		if source := t.sourceVideo; source != nil {
+			ref := t.Task.SourceVideo
+			_, err = tx.Exec(ctx, `INSERT INTO studio_task_video_sources(task_id,workspace_id,project_id,operation,asset_id,asset_revision,source_task_id,artifact_id,content_version,actor_id)
+   VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, t.Task.ID, t.Task.WorkspaceID, t.Task.ProjectID, t.Task.Operation, ref.AssetID, ref.AssetRevision, source.taskID, source.info.ID, source.info.SHA256, actor.User.ID)
+			if err != nil {
+				return err
+			}
 		}
 		for position, referenceID := range t.Task.ReferenceAssetIDs {
 			if _, err = tx.Exec(ctx, "INSERT INTO studio_task_references(task_id,position,reference_id,workspace_id,project_id) VALUES($1,$2,$3,$4,$5)", t.Task.ID, position, referenceID, t.Task.WorkspaceID, t.Task.ProjectID); err != nil {
@@ -415,6 +446,13 @@ func (s *postgresStore) createSourcedTask(t *taskRecord, index string, hash [32]
 				return err
 			}
 		}
+		if t.sourceVideo != nil {
+			// Row locks protect the source and the session from concurrent changes.
+			// Time still passes while waiting on billing, outbox or storage rows.
+			if err = checkOrdinaryAccountSQL(ctx, tx, actor); err != nil {
+				return err
+			}
+		}
 		return tx.Commit(ctx)
 	})
 	if err == nil {
@@ -435,7 +473,14 @@ func (s *postgresStore) saveTask(t *taskRecord, events ...AuditEvent) error {
 	next.ReviewDispatch = cloneMediaReviewDispatch(t.ReviewDispatch)
 	next.Schedule = cloneMediaTaskSchedule(t.Schedule)
 	t = &next
-	err := s.do(func(ctx context.Context, conn *pgx.Conn) error {
+	var timing *mediaQueryTiming
+	if t.Lease != nil {
+		timing = t.Lease.queryTiming
+	}
+	err := s.doWithTimedLock(defaultStoreTimeout, timing, func(ctx context.Context, conn *pgx.Conn) error {
+		if timing != nil {
+			defer timing.end(querySaveTransaction, timing.start())
+		}
 		tx, err := conn.Begin(ctx)
 		if err != nil {
 			return err

@@ -23,16 +23,23 @@ type ParameterPreset struct {
 	Resolution  string `json:"resolution,omitempty"`
 	Seconds     int    `json:"seconds,omitempty"`
 }
+
+func (p ParameterPreset) matches(parameters TaskParameters) bool {
+	return p.AspectRatio == parameters.AspectRatio && p.Size == parameters.Size &&
+		p.Resolution == parameters.Resolution && p.Seconds == parameters.Seconds
+}
+
 type ModelCapabilities struct {
-	ContextWindowTokens      int               `json:"context_window_tokens,omitempty"`
-	MaxOutputTokens          int               `json:"max_output_tokens,omitempty"`
-	ImageEditSupported       bool              `json:"image_edit_supported"`
-	VideoFirstFrameSupported bool              `json:"video_first_frame_supported,omitempty"`
-	MaxReferenceImages       int               `json:"max_reference_images"`
-	CancelSupported          bool              `json:"cancel_supported"`
-	MaxCount                 int               `json:"max_count"`
-	MaxPromptBytes           int               `json:"max_prompt_bytes"`
-	ParameterPresets         []ParameterPreset `json:"parameter_presets"`
+	ContextWindowTokens      int                      `json:"context_window_tokens,omitempty"`
+	MaxOutputTokens          int                      `json:"max_output_tokens,omitempty"`
+	ImageEditSupported       bool                     `json:"image_edit_supported"`
+	VideoFirstFrameSupported bool                     `json:"video_first_frame_supported,omitempty"`
+	SourceVideo              *SourceVideoCapabilities `json:"source_video,omitempty"`
+	MaxReferenceImages       int                      `json:"max_reference_images"`
+	CancelSupported          bool                     `json:"cancel_supported"`
+	MaxCount                 int                      `json:"max_count"`
+	MaxPromptBytes           int                      `json:"max_prompt_bytes"`
+	ParameterPresets         []ParameterPreset        `json:"parameter_presets"`
 }
 type Model struct {
 	ID                 string            `json:"id"`
@@ -74,14 +81,15 @@ type catalogConfigModel struct {
 	Capabilities         catalogConfigCapabilities `json:"capabilities"`
 }
 type catalogConfigCapabilities struct {
-	ContextWindowTokens      int               `json:"context_window_tokens,omitempty"`
-	MaxOutputTokens          int               `json:"max_output_tokens,omitempty"`
-	ImageEditSupported       bool              `json:"image_edit_supported,omitempty"`
-	VideoFirstFrameSupported bool              `json:"video_first_frame_supported,omitempty"`
-	MaxReferenceImages       int               `json:"max_reference_images,omitempty"`
-	MaxCount                 int               `json:"max_count"`
-	MaxPromptBytes           int               `json:"max_prompt_bytes"`
-	ParameterPresets         []ParameterPreset `json:"parameter_presets"`
+	ContextWindowTokens      int                      `json:"context_window_tokens,omitempty"`
+	MaxOutputTokens          int                      `json:"max_output_tokens,omitempty"`
+	ImageEditSupported       bool                     `json:"image_edit_supported,omitempty"`
+	VideoFirstFrameSupported bool                     `json:"video_first_frame_supported,omitempty"`
+	SourceVideo              *SourceVideoCapabilities `json:"source_video,omitempty"`
+	MaxReferenceImages       int                      `json:"max_reference_images,omitempty"`
+	MaxCount                 int                      `json:"max_count"`
+	MaxPromptBytes           int                      `json:"max_prompt_bytes"`
+	ParameterPresets         []ParameterPreset        `json:"parameter_presets"`
 }
 
 var catalogID = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,63}$`)
@@ -148,6 +156,7 @@ func loadModelCatalog(c Config) (*modelCatalog, error) {
 			model.Reason = "provider_not_configured"
 		}
 		model.Capabilities.VideoFirstFrameSupported = raw.Capabilities.VideoFirstFrameSupported
+		model.Capabilities.SourceVideo = raw.Capabilities.SourceVideo.clone()
 		// The private binding affects the opaque version but is never serialized
 		// in the public catalog. Credentials and provider URLs are not hashed here.
 		model.Version = contentVersion(struct {
@@ -232,6 +241,9 @@ func validateCatalogModel(m catalogConfigModel) error {
 		return invalid("upstream_model must contain 1 to 128 safe bytes")
 	}
 	cap := m.Capabilities
+	if err := cap.SourceVideo.validate(m.Kind, cap.ParameterPresets); err != nil {
+		return invalid(err.Error())
+	}
 	if cap.VideoFirstFrameSupported && m.Kind != "video" {
 		return invalid("video_first_frame_supported requires a video model")
 	}
@@ -339,7 +351,7 @@ func resolveTaskParameters(input TaskParameters, model Model) (TaskParameters, e
 		return TaskParameters{}, failure(422, "INVALID_MODEL_PARAMETERS", "数量超出当前模型支持范围")
 	}
 	for _, p := range model.Capabilities.ParameterPresets {
-		if input.AspectRatio == p.AspectRatio && input.Size == p.Size && input.Resolution == p.Resolution && input.Seconds == p.Seconds {
+		if p.matches(input) {
 			return input, nil
 		}
 	}

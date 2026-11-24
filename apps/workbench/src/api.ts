@@ -149,6 +149,7 @@ export const api = {
   },
   tasks: (projectId: string, offset = 0, signal?: AbortSignal) => request<HistoryPage<Task>>(`/tasks?limit=50&offset=${offset}`, { headers: projectHeaders(projectId), signal }),
   task: (id: string, projectId: string, signal?: AbortSignal) => request<Task>('/tasks/' + encodeURIComponent(id), { headers: projectHeaders(projectId), signal }),
+  taskReceipt: (project: string, key: string) => request<Task>('/tasks/receipt', { headers: { ...projectHeaders(project), 'Idempotency-Key': key } }),
   createTask: (body: TaskInput, key: string) => request<Task>('/tasks', { method: 'POST', body: JSON.stringify(body), headers: { 'Idempotency-Key': key } }),
   cancelTask: (id: string, projectId: string) => request<Task>('/tasks/' + encodeURIComponent(id) + '/cancel', { method: 'POST', headers: projectHeaders(projectId) }),
   reconcileTask: (id: string, projectId: string) => request<Task>('/tasks/' + encodeURIComponent(id) + '/reconcile', { method: 'POST', headers: projectHeaders(projectId) }),

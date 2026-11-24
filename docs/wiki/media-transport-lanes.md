@@ -1,5 +1,7 @@
 # 媒体提交与查询连接池
 
+040 保留独立的提交与查询 HTTP 连接池。提交最多 32 个执行位；原 handle 查询在 PostgreSQL 配置短时租约连接池后可显式扩至 1,536 个执行位。下文的 1—32 为 V16-A2 交付口径。[当前配置与实测](media-original-query-capacity.md)
+
 V16-A2 将异步媒体适配器的生成提交和原任务查询拆成两个独立 HTTP Transport。普通 JSON 生图/视频与 multipart 图片编辑共享提交池；已知 handle 的 GET 使用查询池。慢 POST 不再占用 GET 的连接预算，慢 GET 也不占用 POST 的连接预算。执行线程和数据库领取属于同批次的调度层，见 [V16 契约](../planning/v16-contract.md)；本页与 [069 台账](../changes/2026-11-14-069-media-transport-lanes.md)只记录适配器实现及其验证。
 
 ## 配置与连接归属

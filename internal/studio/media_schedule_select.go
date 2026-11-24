@@ -143,7 +143,7 @@ func (a *App) selectMediaScheduleCandidate(ctx context.Context, conn *pgx.Conn, 
 			if leased, exists := leases[s.TaskID]; !exists || leased {
 				continue
 			}
-			selected = &mediaScheduleCandidate{TaskID: s.TaskID, WorkspaceID: s.WorkspaceID, ProviderMode: s.ProviderMode, Lane: lane, ChannelKey: s.ChannelKey, ProjectionVersion: s.Version, ChannelVersion: r.Version, EffectiveLimit: r.EffectiveLimit, HardLimit: min(a.config.MediaScheduling.ChannelConcurrency, a.mediaScheduler.laneLimit(lane))}
+			selected = &mediaScheduleCandidate{TaskID: s.TaskID, WorkspaceID: s.WorkspaceID, ProviderMode: s.ProviderMode, Lane: lane, ChannelKey: s.ChannelKey, ProjectionVersion: s.Version, ChannelVersion: r.Version, EffectiveLimit: r.EffectiveLimit, HardLimit: a.mediaScheduler.channelLimit(lane)}
 			break
 		}
 		if _, err = tx.Exec(ctx, `UPDATE studio_workspace_schedule SET task_cursor=$4 WHERE lane=$1 AND provider_mode=$2 AND workspace_id=$3`, name, mode, w.id, w.cursor); err != nil {
@@ -179,7 +179,7 @@ func (a *App) mediaScheduleCandidateByID(ctx context.Context, q sqlQueryRower, l
 	if r.Parked || time.Now().Before(r.CooldownUntil) || r.ProbeID != "" && r.ProbeUntil != nil && time.Now().Before(*r.ProbeUntil) {
 		return nil, nil
 	}
-	return &mediaScheduleCandidate{TaskID: s.TaskID, WorkspaceID: s.WorkspaceID, ProviderMode: s.ProviderMode, Lane: lane, ChannelKey: s.ChannelKey, ProjectionVersion: s.Version, ChannelVersion: r.Version, EffectiveLimit: r.EffectiveLimit, HardLimit: min(a.config.MediaScheduling.ChannelConcurrency, a.mediaScheduler.laneLimit(lane))}, nil
+	return &mediaScheduleCandidate{TaskID: s.TaskID, WorkspaceID: s.WorkspaceID, ProviderMode: s.ProviderMode, Lane: lane, ChannelKey: s.ChannelKey, ProjectionVersion: s.Version, ChannelVersion: r.Version, EffectiveLimit: r.EffectiveLimit, HardLimit: a.mediaScheduler.channelLimit(lane)}, nil
 }
 
 func scheduleClaimChanged(err error) bool { return errors.Is(err, pgx.ErrNoRows) || isLeaseLost(err) }

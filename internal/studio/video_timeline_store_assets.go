@@ -8,6 +8,7 @@ import (
 )
 
 type timelineVideoAsset struct {
+	taskID   string
 	revision uint64
 	info     AssetInfo
 }
@@ -54,6 +55,7 @@ func videoTimelineAssetsSQL(ctx context.Context, tx pgx.Tx, scope subscriptionSc
 		if id != libraryID("generated", task, artifact) || json.Unmarshal(raw, &r.info) != nil || r.info.ID != artifact || !mediaContentHash.MatchString(r.info.SHA256) || r.info.ByteSize != size || r.info.ContentType != "video/mp4" {
 			continue
 		}
+		r.taskID = task
 		result[id] = r
 	}
 	return result, rows.Err()

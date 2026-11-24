@@ -48,7 +48,7 @@ func (a *App) selectMemoryScheduleLocked(lane mediaExecutionLane, id string) (*t
 		if r.Parked || now.Before(r.CooldownUntil) || r.ProbeID != "" && r.ProbeUntil != nil && now.Before(*r.ProbeUntil) {
 			return nil, nil
 		}
-		return t, &mediaScheduleCandidate{TaskID: id, WorkspaceID: q.WorkspaceID, ProviderMode: q.ProviderMode, Lane: lane, ChannelKey: q.ChannelKey, ProjectionVersion: q.Version, ChannelVersion: r.Version, EffectiveLimit: r.EffectiveLimit, HardLimit: min(s.config.ChannelConcurrency, s.laneLimit(lane))}
+		return t, &mediaScheduleCandidate{TaskID: id, WorkspaceID: q.WorkspaceID, ProviderMode: q.ProviderMode, Lane: lane, ChannelKey: q.ChannelKey, ProjectionVersion: q.Version, ChannelVersion: r.Version, EffectiveLimit: r.EffectiveLimit, HardLimit: s.channelLimit(lane)}
 	}
 	groups := map[string][]string{}
 	for taskID, t := range a.tasks {
@@ -92,7 +92,7 @@ func (a *App) selectMemoryScheduleLocked(lane mediaExecutionLane, id string) (*t
 				s.stats.Lanes[lane].CooldownDeferrals++
 				continue
 			}
-			return t, &mediaScheduleCandidate{TaskID: taskID, WorkspaceID: ws, ProviderMode: t.Task.ProviderMode, Lane: lane, ChannelKey: t.Schedule.ChannelKey, ProjectionVersion: t.Schedule.Version, ChannelVersion: r.Version, EffectiveLimit: r.EffectiveLimit, HardLimit: min(s.config.ChannelConcurrency, s.laneLimit(lane))}
+			return t, &mediaScheduleCandidate{TaskID: taskID, WorkspaceID: ws, ProviderMode: t.Task.ProviderMode, Lane: lane, ChannelKey: t.Schedule.ChannelKey, ProjectionVersion: t.Schedule.Version, ChannelVersion: r.Version, EffectiveLimit: r.EffectiveLimit, HardLimit: s.channelLimit(lane)}
 		}
 	}
 	return nil, nil
@@ -120,7 +120,7 @@ func (a *App) applyMemoryMediaSchedule(t *taskRecord) {
 		a.mediaScheduler.mu.Lock()
 		key := o.ChannelKey
 		r := a.mediaScheduler.memoryChannels[o.Lane][key]
-		limit := min(a.config.MediaScheduling.ChannelConcurrency, a.mediaScheduler.laneLimit(o.Lane))
+		limit := a.mediaScheduler.channelLimit(o.Lane)
 		r = applyMediaChannelObservation(r, o, t.ScheduleClaim, limit)
 		if r.Version > 0 {
 			a.mediaScheduler.memoryChannels[o.Lane][key] = r

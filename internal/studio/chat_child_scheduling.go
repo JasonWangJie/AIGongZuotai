@@ -2,19 +2,34 @@ package studio
 
 import (
 	"errors"
+	"fmt"
 	"time"
+)
+
+const (
+	maxChatChildProcesses = 16
+	maxChatChildSlots     = 64
 )
 
 type ChatChildConfig struct {
 	Processes, SlotsPerProcess int
 }
 
+// ValidateTopology checks an explicitly enabled topology. Omitting both
+// configuration values leaves managed execution disabled.
+func (c ChatChildConfig) ValidateTopology() error {
+	if c.Processes < 1 || c.Processes > maxChatChildProcesses || c.SlotsPerProcess < 1 || c.SlotsPerProcess > maxChatChildSlots {
+		return fmt.Errorf("CHAT_CHILD_PROCESSES must be 1–%d and CHAT_CHILD_SLOTS must be 1–%d", maxChatChildProcesses, maxChatChildSlots)
+	}
+	return nil
+}
+
 func (c ChatChildConfig) validate(app Config) error {
 	if c == (ChatChildConfig{}) {
 		return nil
 	}
-	if c.Processes < 1 || c.Processes > 4 || c.SlotsPerProcess < 1 || c.SlotsPerProcess > 64 {
-		return errors.New("managed chat requires 1 to 4 children and 1 to 64 slots per child")
+	if err := c.ValidateTopology(); err != nil {
+		return err
 	}
 	if app.DatabaseURL == "" || app.AuthMode != "required" || app.Mode != "live" || app.BaseURL == "" || app.APIKey == "" {
 		return errors.New("managed chat requires PostgreSQL, authenticated accounts and a configured live chat provider")

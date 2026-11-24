@@ -15,6 +15,9 @@ func taskOperation(input TaskInput) (string, error) {
 	if op == "" {
 		op = "generate"
 	}
+	if sourceVideoOperation(op) || input.Inputs.SourceVideo != nil || input.Inputs.ExtensionDirection != "" {
+		return sourceVideoInputOperation(input)
+	}
 	refs := len(input.Inputs.ReferenceAssetIDs)
 	frame := input.Inputs.FirstFrame
 	if input.Kind == "image" || input.Kind == "video" {
@@ -54,6 +57,10 @@ func (a *App) firstFrameInfo(project subscriptionScope, input TaskInput, model M
 }
 
 func (a *App) firstFrameSource(ctx context.Context, expected AssetInfo) MediaEditSource {
+	return a.privateMediaSource(ctx, expected, "image")
+}
+
+func (a *App) privateMediaSource(ctx context.Context, expected AssetInfo, kind string) MediaEditSource {
 	return MediaEditSource{ContentType: expected.ContentType, ByteSize: expected.ByteSize, SHA256: expected.SHA256, Open: func() (io.ReadCloser, error) {
 		f, actual, err := OpenMediaModerationAsset(ctx, a.assets, expected.ID)
 		if err != nil {
@@ -63,10 +70,16 @@ func (a *App) firstFrameSource(ctx context.Context, expected AssetInfo) MediaEdi
 			f.Close()
 			return nil, referencePreparationError()
 		}
-		contentType, err := validateAssetEncoding(f, "image", actual.ByteSize)
+		contentType, err := validateAssetEncoding(f, kind, actual.ByteSize)
 		if err != nil || contentType != expected.ContentType {
 			f.Close()
 			return nil, referencePreparationError()
+		}
+		if kind == "video" {
+			if err = checkSourceMP4(f, actual.ByteSize); err != nil {
+				f.Close()
+				return nil, referencePreparationError()
+			}
 		}
 		if _, err = f.Seek(0, io.SeekStart); err != nil {
 			f.Close()

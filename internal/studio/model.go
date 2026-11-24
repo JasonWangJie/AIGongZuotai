@@ -24,6 +24,8 @@ type Task struct {
 	BillingQuoteID     string             `json:"-"`
 	Operation          string             `json:"operation,omitempty"`
 	ReferenceAssetIDs  []string           `json:"reference_asset_ids,omitempty"`
+	SourceVideo        *SourceVideoRef    `json:"source_video,omitempty"`
+	ExtensionDirection string             `json:"extension_direction,omitempty"`
 	FirstFrame         *WorkflowCandidate `json:"first_frame,omitempty"`
 	ModelName          string             `json:"model_name,omitempty"`
 	ModelVersion       string             `json:"model_version,omitempty"`
@@ -94,10 +96,12 @@ type TaskInput struct {
 	Kind              string `json:"kind"`
 	ModelID           string `json:"model_id"`
 	Inputs            struct {
-		Prompt            string             `json:"prompt"`
-		ReferenceAssetIDs []string           `json:"reference_asset_ids,omitempty"`
-		WorkflowID        string             `json:"workflow_id,omitempty"`
-		FirstFrame        *WorkflowCandidate `json:"first_frame,omitempty"`
+		Prompt             string             `json:"prompt"`
+		ReferenceAssetIDs  []string           `json:"reference_asset_ids,omitempty"`
+		WorkflowID         string             `json:"workflow_id,omitempty"`
+		SourceVideo        *SourceVideoRef    `json:"source_video,omitempty"`
+		ExtensionDirection string             `json:"extension_direction,omitempty"`
+		FirstFrame         *WorkflowCandidate `json:"first_frame,omitempty"`
 	} `json:"inputs"`
 	Parameters TaskParameters `json:"parameters"`
 }
@@ -140,6 +144,10 @@ type Project struct {
 }
 
 func copyTask(t Task) Task {
+	if t.SourceVideo != nil {
+		v := *t.SourceVideo
+		t.SourceVideo = &v
+	}
 	if t.FirstFrame != nil {
 		source := *t.FirstFrame
 		t.FirstFrame = &source
@@ -168,6 +176,7 @@ func copyCapabilities(c *ModelCapabilities) *ModelCapabilities {
 		return nil
 	}
 	next := *c
+	next.SourceVideo = c.SourceVideo.clone()
 	next.ParameterPresets = append([]ParameterPreset{}, c.ParameterPresets...)
 	return &next
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -58,38 +59,46 @@ func parseDurableCursor(raw string, expected durableCursor) (durableCursor, erro
 }
 
 func (s *postgresStore) readEventPage(scope subscriptionScope, after uint64) (durablePage, error) {
+	return s.readFeedPage(context.Background(), scope, after)
+}
+
+func (s *postgresStore) readFeedPage(readCtx context.Context, scope subscriptionScope, after uint64) (durablePage, error) {
 	page := durablePage{Items: []DurableEvent{}}
-	err := s.do(func(ctx context.Context, conn *pgx.Conn) error {
-		tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	err := s.withVerifiedSnapshot(readCtx, s.feedReads, func(ctx context.Context, conn pgx.Tx) error {
+		// A single statement sees one MVCC snapshot, including scopes with no feed rows.
+		rows, err := conn.Query(ctx, `SELECT i.storage_id::text,coalesce(c.last_seq,0),coalesce(h.floor_seq,0),
+			coalesce(e.event_id,''),coalesce(e.project_seq,0),coalesce(e.kind,''),coalesce(e.resource_type,''),
+			coalesce(e.resource_id,''),coalesce(e.resource_version,0),coalesce(e.status,''),coalesce(e.action,'')
+			FROM studio_storage_identity i
+			LEFT JOIN studio_event_consumers c ON c.consumer='project-feed-v1' AND c.workspace_id=$1 AND c.project_id=$2
+			LEFT JOIN studio_event_heads h ON h.workspace_id=$1 AND h.project_id=$2
+			LEFT JOIN LATERAL (
+				SELECT o.event_id,f.project_seq,o.kind,o.resource_type,o.resource_id,o.resource_version,o.status,o.action
+				FROM studio_project_event_feed f JOIN studio_outbox_events o ON o.event_id=f.event_id
+				WHERE f.workspace_id=$1 AND f.project_id=$2 AND f.project_seq>$3 AND f.project_seq<=c.last_seq
+				ORDER BY f.project_seq LIMIT $4
+			) e ON true WHERE i.singleton ORDER BY e.project_seq`, scope.WorkspaceID, scope.ProjectID, after, outboxBatchSize)
 		if err != nil {
 			return err
 		}
-		defer tx.Rollback(ctx)
-		if err = tx.QueryRow(ctx, "SELECT storage_id::text FROM studio_storage_identity WHERE singleton").Scan(&page.StorageID); err != nil {
-			return err
-		}
-		if err = tx.QueryRow(ctx, `SELECT coalesce((SELECT last_seq FROM studio_event_consumers WHERE consumer='project-feed-v1' AND workspace_id=$1 AND project_id=$2),0),coalesce((SELECT floor_seq FROM studio_event_heads WHERE workspace_id=$1 AND project_id=$2),0)`, scope.WorkspaceID, scope.ProjectID).Scan(&page.High, &page.Floor); err != nil {
-			return err
-		}
-		rows, err := tx.Query(ctx, `SELECT e.event_id,e.project_seq,e.kind,e.resource_type,e.resource_id,e.resource_version,e.status,e.action FROM studio_project_event_feed f JOIN studio_outbox_events e ON e.event_id=f.event_id WHERE f.workspace_id=$1 AND f.project_id=$2 AND f.project_seq>$3 AND f.project_seq<=$4 ORDER BY f.project_seq LIMIT $5`, scope.WorkspaceID, scope.ProjectID, after, page.High, outboxBatchSize)
-		if err != nil {
-			return err
-		}
+		defer rows.Close()
 		for rows.Next() {
 			var e DurableEvent
 			e.WorkspaceID, e.ProjectID = scope.WorkspaceID, scope.ProjectID
-			if err = rows.Scan(&e.EventID, &e.Seq, &e.Kind, &e.ResourceType, &e.ResourceID, &e.ResourceVersion, &e.Status, &e.Action); err != nil {
-				rows.Close()
+			if err = rows.Scan(&page.StorageID, &page.High, &page.Floor, &e.EventID, &e.Seq, &e.Kind, &e.ResourceType, &e.ResourceID, &e.ResourceVersion, &e.Status, &e.Action); err != nil {
 				return err
 			}
-			page.Items = append(page.Items, e)
+			if e.Seq != 0 {
+				page.Items = append(page.Items, e)
+			}
 		}
-		err = rows.Err()
-		rows.Close()
-		if err != nil {
+		if err = rows.Err(); err != nil {
 			return err
 		}
-		return tx.Commit(ctx)
+		if page.StorageID == "" {
+			return pgx.ErrNoRows
+		}
+		return nil
 	})
 	return page, err
 }
@@ -103,9 +112,23 @@ func (a *App) durableWorkspaceEvents(w http.ResponseWriter, r *http.Request) {
 	r, stopAccountStream := a.accountStreamContext(r)
 	defer stopAccountStream()
 	scope := subscriptionScope{WorkspaceID: p.Workspace.ID, ProjectID: p.Project.ID}
-	wake, unsubscribe := a.store.subscribeOutbox(scope)
+	feed, wake, unsubscribe := a.store.notifications.subscribe(scope)
 	defer unsubscribe()
-	page, err := a.store.readEventPage(scope, 0)
+	read := func(after uint64) (durablePage, time.Time, error) {
+		if a.store.failed.Load() {
+			return durablePage{}, time.Time{}, a.store.stopOnDatabaseFailure()
+		}
+		page, expires, err := feed.page(r.Context(), after, a.store.readFeedPage)
+		var op *operationError
+		if errors.Is(err, context.DeadlineExceeded) || errors.As(err, &op) && op.code == "RUN_REPLAY_UNAVAILABLE" {
+			return durablePage{}, time.Time{}, failure(503, "PROJECT_FEED_UNAVAILABLE", "暂时无法读取项目通知，请保留原游标后重连")
+		}
+		return page, expires, err
+	}
+	page, expires, err := read(0)
+	if r.Context().Err() != nil {
+		return
+	}
 	if err != nil {
 		writeError(w, err)
 		return
@@ -125,22 +148,25 @@ func (a *App) durableWorkspaceEvents(w http.ResponseWriter, r *http.Request) {
 			writeError(w, err)
 			return
 		}
-		if cursor.Seq > page.High {
-			writeError(w, failure(409, "EVENT_CURSOR_AHEAD", "通知游标超出持久记录，请重新同步项目"))
+		page, expires, err = read(cursor.Seq)
+		if r.Context().Err() != nil {
 			return
 		}
-		page, err = a.store.readEventPage(scope, cursor.Seq)
 		if err != nil {
 			writeError(w, err)
 			return
 		}
+		if cursor.Seq > page.High {
+			writeError(w, failure(409, "EVENT_CURSOR_AHEAD", "通知游标超出持久记录，请重新同步项目"))
+			return
+		}
 	}
-	if !startSSE(w) {
+	if r.Context().Err() != nil || !startSSE(w) {
 		return
 	}
 	heartbeat := time.NewTicker(a.config.Heartbeat)
 	defer heartbeat.Stop()
-	fallback := time.NewTicker(time.Second)
+	fallback := time.NewTimer(time.Until(expires))
 	defer fallback.Stop()
 
 	for {
@@ -177,26 +203,24 @@ func (a *App) durableWorkspaceEvents(w http.ResponseWriter, r *http.Request) {
 			if e.Kind == "task.updated" {
 				// Compatibility snapshot has its own Task.Version and can be newer than
 				// this notification. Clients must not depend on receiving both frames.
-				record, loadErr := a.store.loadTask(e.ResourceID)
+				payload, loadErr := feed.taskFrame(r.Context(), e.ResourceID, a.store.readFeedTask)
 				if loadErr != nil {
 					return
 				}
-				if record.Task.WorkspaceID != scope.WorkspaceID || record.Task.ProjectID != scope.ProjectID {
-					return
-				}
-				payload, _ := json.Marshal(map[string]any{"task": record.Task})
 				if r.Context().Err() != nil || !writeSSE(w, event{Cursor: token, Name: "task.updated", Data: payload}) {
 					return
 				}
 			}
 		}
 		if len(page.Items) == outboxBatchSize {
-			page, err = a.store.readEventPage(scope, cursor.Seq)
+			page, expires, err = read(cursor.Seq)
 			if err != nil {
 				return
 			}
 			continue
 		}
+		// Every reader checks at the shared snapshot deadline, even if a wake hint was lost.
+		fallback.Reset(time.Until(expires))
 		select {
 		case <-r.Context().Done():
 			return
@@ -218,7 +242,7 @@ func (a *App) durableWorkspaceEvents(w http.ResponseWriter, r *http.Request) {
 			}
 			_ = controller.SetWriteDeadline(time.Time{})
 		}
-		page, err = a.store.readEventPage(scope, cursor.Seq)
+		page, expires, err = read(cursor.Seq)
 		if err != nil {
 			return
 		}

@@ -1,0 +1,172 @@
+{
+  "schema": "040",
+  "implementation": "existing selector including 249; candidate 255 excluded",
+  "postgresql": "16.14",
+  "measurements": {
+    "Workspaces": 2,
+    "QueryWorkers": 64,
+    "QueryDBConnections": 4,
+    "ServiceMS": 200,
+    "WindowMS": 3000,
+    "Accepted": 25,
+    "UniquePOST": 25,
+    "UnknownWithoutHandle": 1,
+    "KnownHandles": 24,
+    "GETs": 72,
+    "Terminals": 3,
+    "Running": 21,
+    "RepeatedPOST": 0,
+    "Unexpected": 0,
+    "PeakHTTP": 22,
+    "AdmissionWindowMS": 425.8947,
+    "QueryWindowMS": 7727.7373,
+    "GETsPerSecond": 9.317086904597547,
+    "API202Latency": {
+      "MeanMS": 17.035788,
+      "P50MS": 13.5713,
+      "P95MS": 42.5158,
+      "P99MS": 56.5484,
+      "MaxMS": 56.5484
+    },
+    "CreatedToFirstWire": {
+      "MeanMS": 6123.3548083333335,
+      "P50MS": 6111.721,
+      "P95MS": 6333.1026,
+      "P99MS": 6392.6853,
+      "MaxMS": 6392.6853
+    },
+    "Rounds": [
+      {
+        "Number": 1,
+        "GETs": 24,
+        "Advanced": 24,
+        "Unchanged": 0,
+        "Terminal": 0,
+        "EligibleToWire": {
+          "MeanMS": 50.9067125,
+          "P50MS": 41.5373,
+          "P95MS": 113.4819,
+          "P99MS": 119.5863,
+          "MaxMS": 119.5863
+        },
+        "EffectiveToWire": {
+          "MeanMS": 50.9067125,
+          "P50MS": 41.5373,
+          "P95MS": 113.4819,
+          "P99MS": 119.5863,
+          "MaxMS": 119.5863
+        },
+        "WireToHeaders": {
+          "MeanMS": 200.92120833333334,
+          "P50MS": 200.6374,
+          "P95MS": 202.1839,
+          "P99MS": 205.5008,
+          "MaxMS": 205.5008
+        },
+        "HandlerService": {
+          "MeanMS": 200.4791375,
+          "P50MS": 200.403,
+          "P95MS": 201.0417,
+          "P99MS": 201.0524,
+          "MaxMS": 201.0524
+        }
+      },
+      {
+        "Number": 2,
+        "GETs": 24,
+        "Advanced": 6,
+        "Unchanged": 18,
+        "Terminal": 0,
+        "EligibleToWire": {
+          "MeanMS": 23.639470833333334,
+          "P50MS": 22.4193,
+          "P95MS": 42.5477,
+          "P99MS": 47.1384,
+          "MaxMS": 47.1384
+        },
+        "EffectiveToWire": {
+          "MeanMS": 23.639470833333334,
+          "P50MS": 22.4193,
+          "P95MS": 42.5477,
+          "P99MS": 47.1384,
+          "MaxMS": 47.1384
+        },
+        "WireToHeaders": {
+          "MeanMS": 200.39159583333333,
+          "P50MS": 200.3631,
+          "P95MS": 201.0253,
+          "P99MS": 201.0538,
+          "MaxMS": 201.0538
+        },
+        "HandlerService": {
+          "MeanMS": 200.34681666666665,
+          "P50MS": 200.3631,
+          "P95MS": 200.7141,
+          "P99MS": 200.9179,
+          "MaxMS": 200.9179
+        }
+      },
+      {
+        "Number": 3,
+        "GETs": 24,
+        "Advanced": 6,
+        "Unchanged": 15,
+        "Terminal": 3,
+        "EligibleToWire": {
+          "MeanMS": 19.259279166666666,
+          "P50MS": 17.2965,
+          "P95MS": 42.3266,
+          "P99MS": 49.1439,
+          "MaxMS": 49.1439
+        },
+        "EffectiveToWire": {
+          "MeanMS": 19.259279166666666,
+          "P50MS": 17.2965,
+          "P95MS": 42.3266,
+          "P99MS": 49.1439,
+          "MaxMS": 49.1439
+        },
+        "WireToHeaders": {
+          "MeanMS": 200.36220416666666,
+          "P50MS": 200.2865,
+          "P95MS": 200.7875,
+          "P99MS": 201.1887,
+          "MaxMS": 201.1887
+        },
+        "HandlerService": {
+          "MeanMS": 200.29397500000002,
+          "P50MS": 200.2744,
+          "P95MS": 200.5922,
+          "P99MS": 200.6944,
+          "MaxMS": 200.6944
+        }
+      }
+    ],
+    "Windows": [
+      {
+        "Window": 1,
+        "StartMS": 0,
+        "EndMS": 3000,
+        "Eligible": 24,
+        "Written": 24,
+        "Responded": 24
+      },
+      {
+        "Window": 2,
+        "StartMS": 3000,
+        "EndMS": 6000,
+        "Eligible": 24,
+        "Written": 24,
+        "Responded": 24
+      },
+      {
+        "Window": 3,
+        "StartMS": 6000,
+        "EndMS": 7727.7373,
+        "Eligible": 24,
+        "Written": 24,
+        "Responded": 24
+      }
+    ]
+  }
+}

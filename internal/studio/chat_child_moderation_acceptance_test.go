@@ -68,7 +68,7 @@ func observeChildModeration(t *testing.T, ctx context.Context, f childFixture, g
 	app.moderation.http.client.Transport.(*http.Transport).TLSClientConfig.RootCAs = certs
 	server := httptest.NewServer(app.Handler())
 	defer server.Close()
-	run := childAcceptTurn(t, ctx, server.URL, f.scopes[0], lane)
+	run := f.acceptTurn(t, ctx, server.URL, f.scopes[0], lane)
 	childGate(t, ctx, g.lanes[lane].entered)
 	g.mu.Lock()
 	peer := g.lanes[lane].peerPort

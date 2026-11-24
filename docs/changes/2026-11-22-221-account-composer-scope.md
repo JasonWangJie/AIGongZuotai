@@ -36,3 +36,7 @@ V14-C2b 累计真实浏览器验收在限制账户之前超时。图像工作室
 ## 文档同步
 
 集成人同步顶层 README、Wiki、台账索引、任务源、生成 TODO 和进度，并追加实际 PostgreSQL 复跑结果。
+
+## 恢复后的实库复验
+
+在当前 038 源运行 TestPostgresAccountGovernanceBrowserAndRestore，19.91 秒通过。登录、账户限制、申诉、驳回、解除、原键回读、未发送草稿及数据库恢复均执行。

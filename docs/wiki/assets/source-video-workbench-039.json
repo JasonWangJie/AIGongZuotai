@@ -1,0 +1,16 @@
+{
+  "workbench": "视频工作室",
+  "operations": [
+    "编辑原视频",
+    "延长原视频"
+  ],
+  "confirmation": "确认额度并提交",
+  "lost_response": "受理状态待确认",
+  "recovery": "查询原任务收据",
+  "quotes": 2,
+  "task_posts": 2,
+  "receipt_gets": 1,
+  "source_operation_supplier_posts": 2,
+  "delivered": 2,
+  "settled_credit_micros": 550000
+}

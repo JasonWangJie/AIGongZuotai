@@ -1,0 +1,19 @@
+{
+  "broadcast_ms": 781,
+  "checked_full_rounds": 2,
+  "distinct_session_checks": 640,
+  "first_broadcast_verified": 320,
+  "http_issued_sessions": 4,
+  "opening_ms": 885,
+  "prepared_sessions": 316,
+  "profile": "pilot",
+  "readers_per_workspace": 4,
+  "released_all_slots": true,
+  "resumed_original_cursor": true,
+  "revoked_server_eofs": 1,
+  "scope": "loopback HTTP/1 project SSE with PostgreSQL authentication",
+  "second_draft_live_readers": 3,
+  "simultaneous_http_readers": 320,
+  "unique_sessions": 320,
+  "workspaces": 80
+}

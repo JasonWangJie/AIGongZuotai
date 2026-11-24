@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"runtime"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -113,10 +114,10 @@ func TestExpandedStreamAdmissionConfig(t *testing.T) {
 			t.Fatal("configuration did not fail before connecting")
 		}
 	}
-	for _, n := range []int{1, 128, 192, 256, 257, -1} {
+	for _, n := range []int{1, 128, 192, 256, 257, 10_000, MaxGlobalStreams, MaxGlobalStreams + 1, -1} {
 		limits := AdmissionLimits{GlobalStreams: n}
 		limits.defaults()
-		if (limits.validate() == nil) != (n >= 1 && n <= 256) {
+		if (limits.validate() == nil) != (n >= 1 && n <= MaxGlobalStreams) {
 			t.Fatalf("unexpected global admission for %d", n)
 		}
 	}
@@ -198,5 +199,184 @@ func TestStreamSessionMonitorShutdownCancelsReadersWhileValidationIsBusy(t *test
 	defer releaseLate()
 	if late.Err() != context.Canceled {
 		t.Fatal("admitted a reader after shutdown")
+	}
+}
+
+func syntheticStreamSession(n int) *principal {
+	id := strconv.Itoa(n)
+	hash := sha256.Sum256([]byte(id))
+	return &principal{User: &User{ID: "owner-" + id}, SessionHash: hash[:], SessionID: id, CredentialVersion: 1}
+}
+
+func TestStreamSessionMonitorFullAdmissionPagedPositions(t *testing.T) {
+	const total = 10_000
+	readers := make(map[string]context.Context, total)
+	visited := make(map[string]bool, total)
+	pages := 0
+	var firstDeadline time.Time
+	m := newStreamSessionMonitor(t.Context(), 5*time.Second, func(ctx context.Context, keys []streamSessionKey) ([]bool, error) {
+		n := min(total-len(visited), streamSessionPageSize)
+		if n == 0 || len(keys) != n {
+			t.Fatalf("invalid SQL batch size %d; expected %d", len(keys), n)
+		}
+		deadline, ok := ctx.Deadline()
+		if !ok || pages > 0 && !deadline.Equal(firstDeadline) {
+			t.Fatal("page received a fresh deadline")
+		}
+		firstDeadline = deadline
+		pages++
+		valid := make([]bool, n)
+		for i, k := range keys {
+			if _, duplicate := visited[k.id]; duplicate || k.user != "owner-"+k.id || k.version != 1 {
+				t.Fatal("duplicated or cross-account reader")
+			}
+			valid[i] = i != 0 && i != n-1
+			visited[k.id] = valid[i]
+		}
+		return valid, nil
+	})
+	for i := range total {
+		p := syntheticStreamSession(i)
+		reader, release := m.subscribe(t.Context(), p)
+		readers[p.SessionID] = reader
+		t.Cleanup(release)
+	}
+	m.check()
+	if len(visited) != total || pages != 40 || m.checked.Load() != total || m.rounds.Load() != 1 {
+		t.Fatal("incomplete ten-thousand-session round")
+	}
+	for id, reader := range readers {
+		if (reader.Err() == nil) != visited[id] {
+			t.Fatal("reader authorization applied to the wrong page or position")
+		}
+	}
+}
+
+func TestStreamSessionMonitorFailedPageClosesUnverifiedSuffix(t *testing.T) {
+	for _, failure := range []string{"error", "short", "deadline"} {
+		t.Run(failure, func(t *testing.T) {
+			const count = 2*streamSessionPageSize + 1
+			checked := make(map[string]bool)
+			started, resume := make(chan struct{}), make(chan struct{})
+			var pages int
+			period := time.Second
+			if failure == "deadline" {
+				period = 100 * time.Millisecond
+			}
+			m := newStreamSessionMonitor(t.Context(), period, func(ctx context.Context, keys []streamSessionKey) ([]bool, error) {
+				pages++
+				valid := make([]bool, len(keys))
+				for i, k := range keys {
+					valid[i] = true
+					if pages == 1 {
+						checked[k.id] = true
+					}
+				}
+				if pages == 1 {
+					return valid, nil
+				}
+				if pages != 2 {
+					t.Error("attempted another page after failure")
+					return nil, errors.New("unexpected extra page")
+				}
+				close(started)
+				switch failure {
+				case "error":
+					return nil, errors.New("test failure")
+				case "short":
+					return valid[1:], nil
+				}
+				<-ctx.Done()
+				<-resume // simulate transport cleanup outliving the SQL deadline
+				return valid, nil
+			})
+			readers := make(map[string]context.Context, count)
+			for i := range count {
+				p := syntheticStreamSession(i)
+				reader, release := m.subscribe(t.Context(), p)
+				t.Cleanup(release)
+				readers[p.SessionID] = reader
+			}
+			done := make(chan struct{})
+			go func() { defer close(done); m.check() }()
+			defer func() { close(resume); <-done }()
+			select {
+			case <-started:
+			case <-time.After(3 * time.Second):
+				t.Fatal("second page never started")
+			}
+			end := time.After(3 * time.Second)
+			for id, reader := range readers {
+				if checked[id] {
+					if reader.Err() != nil {
+						t.Fatal("prior valid session lost")
+					}
+				} else {
+					select {
+					case <-reader.Done():
+					case <-end:
+						t.Fatal("unverified session remained authorized")
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestStreamSessionExpiryDoesNotWaitForValidation(t *testing.T) {
+	m := newStreamSessionMonitor(t.Context(), 5*time.Second, func(context.Context, []streamSessionKey) ([]bool, error) {
+		t.Fatal("should not need a verification tick")
+		return nil, nil
+	})
+	p := syntheticStreamSession(1)
+	p.sessionDeadline = time.Now().Add(20 * time.Millisecond)
+	one, release := m.subscribe(t.Context(), p)
+	defer release()
+	select {
+	case <-one.Done():
+	case <-time.After(time.Second):
+		t.Fatal("session outlived its database deadline")
+	}
+	two, releaseTwo := m.subscribe(t.Context(), p)
+	defer releaseTwo()
+	if two.Err() == nil {
+		t.Fatal("accepted an expired principal")
+	}
+}
+
+func TestStreamSessionMonitorStuckPageCannotStarveLaterRounds(t *testing.T) {
+	life, cancel := context.WithCancel(t.Context())
+	entered, unwind := make(chan struct{}), make(chan struct{})
+	var calls atomic.Int32
+	m := newStreamSessionMonitor(life, 35*time.Millisecond, func(ctx context.Context, keys []streamSessionKey) ([]bool, error) {
+		if calls.Add(1) == 1 {
+			close(entered)
+		}
+		<-ctx.Done()
+		<-unwind
+		return []bool{true}, nil
+	})
+	first, endFirst := m.subscribe(life, syntheticStreamSession(1))
+	defer endFirst()
+	stopped := make(chan struct{})
+	go func() { defer close(stopped); m.run() }()
+	defer func() { cancel(); close(unwind); <-stopped }()
+	select {
+	case <-entered:
+	case <-time.After(2 * time.Second):
+		t.Fatal("no SQL lookup started")
+	}
+	late, endLate := m.subscribe(life, syntheticStreamSession(2))
+	defer endLate()
+	expire := time.After(2 * time.Second)
+	for _, r := range []context.Context{first, late} {
+		select {
+		case <-r.Done():
+		case <-expire:
+			t.Fatal("a stale reader survived blocked physical cleanup")
+		}
+	}
+	if calls.Load() != 1 {
+		t.Fatal("multiple physical lookups ran during failed cleanup")
 	}
 }

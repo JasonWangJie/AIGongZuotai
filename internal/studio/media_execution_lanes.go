@@ -5,14 +5,20 @@ import (
 	"sync/atomic"
 )
 
+// MaxMediaQueryWorkers caps simultaneous original-handle queries in one controller.
+const MaxMediaQueryWorkers = 1536
+
 // These execution budgets are separate from accepted-resource admission limits.
 type MediaSchedulingConfig struct {
-	WorkspaceConcurrency int `json:"workspace_concurrency"`
-	ChannelConcurrency   int `json:"channel_concurrency"`
-	ReviewWorkers        int `json:"review_workers"`
-	DeliveryWorkers      int `json:"delivery_workers"`
-	SubmitWorkers        int `json:"submit_workers"`
-	QueryWorkers         int `json:"query_workers"`
+	WorkspaceConcurrency      int `json:"workspace_concurrency"`
+	ChannelConcurrency        int `json:"channel_concurrency"`
+	ReviewWorkers             int `json:"review_workers"`
+	DeliveryWorkers           int `json:"delivery_workers"`
+	SubmitWorkers             int `json:"submit_workers"`
+	QueryWorkers              int `json:"query_workers"`
+	QueryDBConnections        int `json:"query_db_connections,omitempty"`
+	QueryWorkspaceConcurrency int `json:"query_workspace_concurrency,omitempty"`
+	QueryChannelConcurrency   int `json:"query_channel_concurrency,omitempty"`
 }
 
 func (c *MediaSchedulingConfig) normalize(legacyWorkers int) error {
@@ -37,7 +43,16 @@ func (c *MediaSchedulingConfig) normalize(legacyWorkers int) error {
 	if c.QueryWorkers == 0 {
 		c.QueryWorkers = max(1, legacyWorkers/2)
 	}
-	if c.SubmitWorkers < 1 || c.SubmitWorkers > 32 || c.QueryWorkers < 1 || c.QueryWorkers > 32 || c.DeliveryWorkers < 1 || c.DeliveryWorkers > 16 || c.ReviewWorkers < 1 || c.ReviewWorkers > 2 {
+	if c.QueryWorkspaceConcurrency < 0 || c.QueryWorkspaceConcurrency > MaxMediaQueryWorkers || c.QueryChannelConcurrency < 0 || c.QueryChannelConcurrency > MaxMediaQueryWorkers {
+		return errors.New("query scope ceilings must be between 0 and 1536")
+	}
+	if c.QueryWorkers > 32 && c.QueryDBConnections == 0 {
+		return errors.New("more than 32 query workers requires a bounded query database pool")
+	}
+	if c.QueryDBConnections < 0 || c.QueryDBConnections > min(c.QueryWorkers, 32) {
+		return errors.New("query database connections must fit the query worker budget")
+	}
+	if c.SubmitWorkers < 1 || c.SubmitWorkers > 32 || c.QueryWorkers < 1 || c.QueryWorkers > MaxMediaQueryWorkers || c.DeliveryWorkers < 1 || c.DeliveryWorkers > 16 || c.ReviewWorkers < 1 || c.ReviewWorkers > 2 {
 		return errors.New("invalid media execution limits")
 	}
 	return nil
@@ -60,26 +75,28 @@ func mediaLaneForHandle(handle MediaHandle) mediaExecutionLane {
 }
 
 type MediaExecutionSnapshot struct {
-	ReviewInFlight   int
-	ReviewLimit      int
-	ReviewSteps      uint64
-	DeliveryInFlight int
-	DeliveryLimit    int
-	DeliverySteps    uint64
-	SubmitInFlight   int
-	QueryInFlight    int
-	SubmitLimit      int
-	QueryLimit       int
-	SubmitSteps      uint64
-	QuerySteps       uint64
+	QueryDispatchAttempts uint64
+	ReviewInFlight        int
+	ReviewLimit           int
+	ReviewSteps           uint64
+	DeliveryInFlight      int
+	DeliveryLimit         int
+	DeliverySteps         uint64
+	SubmitInFlight        int
+	QueryInFlight         int
+	SubmitLimit           int
+	QueryLimit            int
+	SubmitSteps           uint64
+	QuerySteps            uint64
 }
 
 // A reservation starts before selecting/claiming work and ends only when the
 // entire step returns, including heartbeat shutdown, review and persistence.
 // It never requires App.mu, and full lanes never spawn a waiting goroutine.
 type mediaExecutionLanes struct {
-	slots [4]chan struct{}
-	steps [4]atomic.Uint64
+	queryDispatchAttempts atomic.Uint64
+	slots                 [4]chan struct{}
+	steps                 [4]atomic.Uint64
 	// App.mu protects these attempt identities; no task body or credential.
 	memoryAttempts map[string]string
 }
@@ -163,7 +180,7 @@ func (m *mediaExecutionLanes) reserve(lane mediaExecutionLane) (func(), bool) {
 }
 
 func (m *mediaExecutionLanes) snapshot() MediaExecutionSnapshot {
-	return MediaExecutionSnapshot{SubmitInFlight: len(m.slots[mediaSubmitLane]), QueryInFlight: len(m.slots[mediaQueryLane]), SubmitLimit: cap(m.slots[mediaSubmitLane]), QueryLimit: cap(m.slots[mediaQueryLane]), SubmitSteps: m.steps[mediaSubmitLane].Load(), QuerySteps: m.steps[mediaQueryLane].Load(), DeliveryInFlight: len(m.slots[mediaDeliveryLane]), DeliveryLimit: cap(m.slots[mediaDeliveryLane]), DeliverySteps: m.steps[mediaDeliveryLane].Load(), ReviewInFlight: len(m.slots[mediaReviewLane]), ReviewLimit: cap(m.slots[mediaReviewLane]), ReviewSteps: m.steps[mediaReviewLane].Load()}
+	return MediaExecutionSnapshot{QueryDispatchAttempts: m.queryDispatchAttempts.Load(), SubmitInFlight: len(m.slots[mediaSubmitLane]), QueryInFlight: len(m.slots[mediaQueryLane]), SubmitLimit: cap(m.slots[mediaSubmitLane]), QueryLimit: cap(m.slots[mediaQueryLane]), SubmitSteps: m.steps[mediaSubmitLane].Load(), QuerySteps: m.steps[mediaQueryLane].Load(), DeliveryInFlight: len(m.slots[mediaDeliveryLane]), DeliveryLimit: cap(m.slots[mediaDeliveryLane]), DeliverySteps: m.steps[mediaDeliveryLane].Load(), ReviewInFlight: len(m.slots[mediaReviewLane]), ReviewLimit: cap(m.slots[mediaReviewLane]), ReviewSteps: m.steps[mediaReviewLane].Load()}
 }
 
 func mediaLaneForTask(t *taskRecord) mediaExecutionLane {

@@ -1,0 +1,258 @@
+{
+  "date": "2026-11-23",
+  "processor": "Intel(R) Core(TM) Ultra 7 155U",
+  "cores": 12,
+  "logical_processors": 14,
+  "profiles": [
+    {
+      "LeaseQueryConnections": 0,
+      "Storage": "memory",
+      "GoVersion": "go1.26.11",
+      "GOOS": "windows",
+      "GOARCH": "amd64",
+      "Workers": 2,
+      "QueryConnections": 2,
+      "WorkspaceLimit": 16,
+      "ChannelLimit": 16,
+      "Processors": 14,
+      "OfferedPerSecond": 40,
+      "ServiceMS": 200,
+      "IdlePollMS": 20,
+      "Scheduled": 128,
+      "Completed": 128,
+      "UniqueGETs": 128,
+      "PeakHTTP": 2,
+      "Posts": 0,
+      "Unexpected": 0,
+      "WindowSeconds": 13.0203597,
+      "CompletedPerSecond": 9.830757594200719,
+      "ScheduleToDispatch": {
+        "MeanMS": 4895.74848984375,
+        "P50MS": 4834.033,
+        "P95MS": 9206.3157,
+        "P99MS": 9637.49,
+        "MaxMS": 9662.49
+      },
+      "ScheduleToWire": {
+        "MeanMS": 4895.7878828125,
+        "P50MS": 4834.033,
+        "P95MS": 9206.3157,
+        "P99MS": 9637.49,
+        "MaxMS": 9662.49
+      },
+      "WireToHeaders": {
+        "MeanMS": 200.58472265625,
+        "P50MS": 200.4453,
+        "P95MS": 201.6582,
+        "P99MS": 202.8443,
+        "MaxMS": 203.7633
+      },
+      "ScheduleToHandler": {
+        "MeanMS": 4895.92230390625,
+        "P50MS": 4834.033,
+        "P95MS": 9207.2347,
+        "P99MS": 9637.49,
+        "MaxMS": 9662.49
+      },
+      "HandlerService": {
+        "MeanMS": 200.397971875,
+        "P50MS": 200.3651,
+        "P95MS": 200.9417,
+        "P99MS": 201.7184,
+        "MaxMS": 202.296
+      },
+      "Examined": 1025,
+      "Claims": 128,
+      "CapacityDeferrals": 0
+    },
+    {
+      "LeaseQueryConnections": 0,
+      "Storage": "memory",
+      "GoVersion": "go1.26.11",
+      "GOOS": "windows",
+      "GOARCH": "amd64",
+      "Workers": 16,
+      "QueryConnections": 16,
+      "WorkspaceLimit": 16,
+      "ChannelLimit": 16,
+      "Processors": 14,
+      "OfferedPerSecond": 40,
+      "ServiceMS": 200,
+      "IdlePollMS": 20,
+      "Scheduled": 128,
+      "Completed": 128,
+      "UniqueGETs": 128,
+      "PeakHTTP": 10,
+      "Posts": 0,
+      "Unexpected": 0,
+      "WindowSeconds": 3.3906917,
+      "CompletedPerSecond": 37.750409451853145,
+      "ScheduleToDispatch": {
+        "MeanMS": 11.0824671875,
+        "P50MS": 8.5514,
+        "P95MS": 31.7692,
+        "P99MS": 38.9734,
+        "MaxMS": 54.4846
+      },
+      "ScheduleToWire": {
+        "MeanMS": 11.203325,
+        "P50MS": 8.5514,
+        "P95MS": 31.7692,
+        "P99MS": 38.9734,
+        "MaxMS": 56.4926
+      },
+      "WireToHeaders": {
+        "MeanMS": 201.489359375,
+        "P50MS": 200.5109,
+        "P95MS": 205.479,
+        "P99MS": 217.1333,
+        "MaxMS": 228.9819
+      },
+      "ScheduleToHandler": {
+        "MeanMS": 11.53460703125,
+        "P50MS": 8.5514,
+        "P95MS": 32.2294,
+        "P99MS": 40.9826,
+        "MaxMS": 56.4926
+      },
+      "HandlerService": {
+        "MeanMS": 200.95304765625,
+        "P50MS": 200.3798,
+        "P95MS": 202.9181,
+        "P99MS": 213.584,
+        "MaxMS": 224.9491
+      },
+      "Examined": 16945,
+      "Claims": 128,
+      "CapacityDeferrals": 0
+    },
+    {
+      "PGVersion": "16.14",
+      "Fsync": "on",
+      "SynchronousCommit": "on",
+      "LeaseQueryConnections": 2,
+      "Storage": "postgres",
+      "GoVersion": "go1.26.11",
+      "GOOS": "windows",
+      "GOARCH": "amd64",
+      "Workers": 2,
+      "QueryConnections": 2,
+      "WorkspaceLimit": 16,
+      "ChannelLimit": 16,
+      "Processors": 14,
+      "OfferedPerSecond": 40,
+      "ServiceMS": 200,
+      "IdlePollMS": 20,
+      "Scheduled": 128,
+      "Completed": 128,
+      "UniqueGETs": 128,
+      "PeakHTTP": 2,
+      "Posts": 0,
+      "Unexpected": 0,
+      "WindowSeconds": 13.5013865,
+      "CompletedPerSecond": 9.480507798217612,
+      "ScheduleToDispatch": {
+        "MeanMS": 5135.8008046875,
+        "P50MS": 5082.2264,
+        "P95MS": 9672.2065,
+        "P99MS": 10117.4629,
+        "MaxMS": 10141.9349
+      },
+      "ScheduleToWire": {
+        "MeanMS": 5135.84335,
+        "P50MS": 5082.2264,
+        "P95MS": 9672.2065,
+        "P99MS": 10117.4629,
+        "MaxMS": 10141.9349
+      },
+      "WireToHeaders": {
+        "MeanMS": 200.41858515625,
+        "P50MS": 200.2993,
+        "P95MS": 201.0652,
+        "P99MS": 201.9112,
+        "MaxMS": 204.5131
+      },
+      "ScheduleToHandler": {
+        "MeanMS": 5135.91670625,
+        "P50MS": 5083.2432,
+        "P95MS": 9672.2065,
+        "P99MS": 10117.4629,
+        "MaxMS": 10141.9349
+      },
+      "HandlerService": {
+        "MeanMS": 200.32330234375,
+        "P50MS": 200.2753,
+        "P95MS": 200.6753,
+        "P99MS": 201.0652,
+        "MaxMS": 202.7545
+      },
+      "Examined": 769,
+      "Claims": 128,
+      "CapacityDeferrals": 0
+    },
+    {
+      "PGVersion": "16.14",
+      "Fsync": "on",
+      "SynchronousCommit": "on",
+      "LeaseQueryConnections": 16,
+      "Storage": "postgres",
+      "GoVersion": "go1.26.11",
+      "GOOS": "windows",
+      "GOARCH": "amd64",
+      "Workers": 16,
+      "QueryConnections": 16,
+      "WorkspaceLimit": 16,
+      "ChannelLimit": 16,
+      "Processors": 14,
+      "OfferedPerSecond": 40,
+      "ServiceMS": 200,
+      "IdlePollMS": 20,
+      "Scheduled": 128,
+      "Completed": 128,
+      "UniqueGETs": 128,
+      "PeakHTTP": 10,
+      "Posts": 0,
+      "Unexpected": 0,
+      "WindowSeconds": 3.3886415,
+      "CompletedPerSecond": 37.773249250473974,
+      "ScheduleToDispatch": {
+        "MeanMS": 15.4325390625,
+        "P50MS": 12.4078,
+        "P95MS": 34.6666,
+        "P99MS": 48.0382,
+        "MaxMS": 54.7676
+      },
+      "ScheduleToWire": {
+        "MeanMS": 15.5169453125,
+        "P50MS": 12.4078,
+        "P95MS": 34.6666,
+        "P99MS": 48.0382,
+        "MaxMS": 54.7676
+      },
+      "WireToHeaders": {
+        "MeanMS": 200.42918359375,
+        "P50MS": 200.4033,
+        "P95MS": 200.9061,
+        "P99MS": 201.0715,
+        "MaxMS": 202.1473
+      },
+      "ScheduleToHandler": {
+        "MeanMS": 15.57111796875,
+        "P50MS": 12.4078,
+        "P95MS": 34.6666,
+        "P99MS": 48.0382,
+        "MaxMS": 54.7676
+      },
+      "HandlerService": {
+        "MeanMS": 200.3750109375,
+        "P50MS": 200.3806,
+        "P95MS": 200.6502,
+        "P99MS": 200.8058,
+        "MaxMS": 202.1473
+      },
+      "Examined": 14478,
+      "Claims": 128,
+      "CapacityDeferrals": 0
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import { terminal } from './types';
 import { moderationMediaBlocked, moderationErrorMessage } from './moderation';
 import { buildModelTaskInput, CatalogCache, catalogScope, modelCapability, promptBytes, validCatalog } from './modelCatalog';
 import type { ModelSelection } from './modelCatalog';
+import { isSourceOperation, matchesSourceTask, sourcePending, sourceUnknownText, validSourceSelection, type SourceSelection } from './sourceVideo';
 import { RequestScope } from './scope';
 import { browserProjectStorage, readProjectPreference, rememberProject } from './projectPreference';
 import { PendingRequests, SubmissionFlights } from './pendingRequests';
@@ -16,7 +17,7 @@ import { keepUnknown } from './requestFeedback';
 import type { ResourceHint } from './durableEvents';
 import { boundedReads, DurableFeedSync, parseResourceChanged, resourceHintCovered, validStreamReset } from './durableEvents';
 import type { ScopeToken } from './scope';
-import type { AuthSession, Bootstrap, Project, Run, Task, ImageOperation } from './types';
+import type { AuthSession, Bootstrap, Project, Run, Task, CreationOperation } from './types';
 
 type Pending = PendingOperation;
 const unknownMessage = '本次请求可能已受理；请刷新当前项目历史核对，或使用“原请求重试”，不会创建新的操作键。';
@@ -132,8 +133,9 @@ export function useStudio() {
       rememberProject({ auth_enabled: data.auth_enabled || false, user: data.user || null, projects: data.projects || [data.project] }, data.project.id, browserProjectStorage());
       setSession(old => ({ ...old, auth_enabled: data.auth_enabled ?? old?.auth_enabled ?? false, user: data.user ?? old?.user ?? null, account_security: data.account_security ?? old?.account_security, workspace: data.workspace, project: data.project, projects: data.projects }));
       setAuthState('ready');
-      const oldPending = pendingByProject.current.get(data.user?.id || 'demo', data.project.id) || null;
-      setPending(oldPending); if (oldPending) setError(unknownMessage);
+      const held = pendingByProject.current.get(data.user?.id || 'demo', data.project.id);
+      const oldPending = held && (!held.workspaceId || held.workspaceId === data.workspace.id) ? held : null;
+      setPending(oldPending); if (oldPending) setError(sourcePending(oldPending) ? sourceUnknownText : unknownMessage);
       setSubmitting(inflight.current.has(data.project.id)); await refreshFor(token);
     } catch (cause) { failure(cause, token); }
     finally { if (current(token)) setLoading(false); }
@@ -323,24 +325,37 @@ export function useStudio() {
     };
     void start(); return () => { closed = true; closeSource(); window.clearTimeout(batchTimer); };
   }, [bootstrap?.project.id, bootstrap?.workspace.id, selectedRun, reconnect, current, failure, inspectSession, updateRun]);
-  const submitPending = useCallback(async (operation: Pending) => {
+  const submitPending = useCallback(async (operation: Pending, receiptOnly = false) => {
     const token = scope.current.capture(), projectId = operation.body.project_id;
     if (!current(token) || projectId !== token.projectId || operation.ownerId !== (bootstrapRef.current?.user?.id || 'demo') || inflight.current.has(projectId)) return false;
-    const priorUnknown = pendingByProject.current.get(operation.ownerId, projectId)?.key === operation.key;
+    if (operation.workspaceId && operation.workspaceId !== bootstrapRef.current?.workspace.id) return false;
+    const held = pendingByProject.current.get(operation.ownerId, projectId);
+    if (held && held.key !== operation.key) return false;
+    const priorUnknown = held?.key === operation.key;
     // A session can expire while this POST is still in flight. Keep its identity before sending.
     pendingByProject.current.remember(operation);
     const flight = inflight.current.claim(projectId, operation.key, token.revision); setSubmitting(true); setError('');
     try {
-      if (operation.kind === 'task') { const task = await api.createTask(operation.body, operation.key); if (scope.current.accepts(token, task)) setTasks(old => current(token) ? mergeTask(old, task) : old); }
+      if (operation.kind === 'task') {
+        const source = isSourceOperation(operation.body.operation);
+        const task = source && (receiptOnly || priorUnknown)
+          ? await api.taskReceipt(projectId, operation.key)
+          : await api.createTask(operation.body, operation.key);
+        if (source) {
+          if (!current(token)) return false;
+          if (!matchesSourceTask(task, operation.body, operation.workspaceId!)) throw new ApiError({ ui: '原视频任务回执与请求不符，请继续核对原收据。' }, 0, true);
+        }
+        if (scope.current.accepts(token, task)) setTasks(old => current(token) ? mergeTask(old, task) : old);
+      }
       else { const run = await api.createRun(operation.body, operation.key); if (scope.current.accepts(token, run)) { updateRun(run, token); setSelectedRun(run.id); } }
       pendingByProject.current.acknowledge(operation);
       if (current(token)) { setPending(null); setSubmissionRetryAt(0); } return current(token);
     } catch (cause) {
-      const uncertain = keepUnknown(priorUnknown, cause instanceof ApiError ? cause : {});
+      const uncertain = keepUnknown(priorUnknown || receiptOnly, cause instanceof ApiError ? cause : {});
       pendingByProject.current.failed(operation, uncertain, current(token));
       if (!current(token)) return false;
       if (cause instanceof ApiError && cause.status === 401) { failure(cause, token); return false; }
-      if (current(token)) { setPending(uncertain ? operation : null); setErrorText({ message: cause instanceof Error ? cause : '提交失败', unknown: uncertain }); setRequestError(cause instanceof ApiError ? cause : null); setSubmissionRetryAt(cause instanceof ApiError ? cause.retryAt : 0); }
+      if (current(token)) { setPending(uncertain ? operation : null); setErrorText({ message: receiptOnly && cause instanceof ApiError && cause.status === 404 ? '尚未查到原任务收据，原请求已保留。' : cause instanceof Error ? cause : '提交失败', unknown: uncertain }); setRequestError(cause instanceof ApiError ? cause : null); setSubmissionRetryAt(cause instanceof ApiError ? cause.retryAt : 0); }
       return false;
     } finally {
       inflight.current.release(projectId, flight);
@@ -390,7 +405,7 @@ export function useStudio() {
     const token = scope.current.capture();
     try { const project = await api.createProject(name); if (!current(token)) return false; await loadProject(project.id); return true; } catch (cause) { failure(cause, token); return false; }
   };
-  const create = async (kind: 'chat' | 'image' | 'video', selection: ModelSelection, prompt: string, operation: ImageOperation = 'generate', referenceIds: string[] = [], quoted?: QuotedRequest) => {
+  const create = async (kind: 'chat' | 'image' | 'video', selection: ModelSelection, prompt: string, operation: CreationOperation = 'generate', referenceIds: string[] = [], quoted?: QuotedRequest, source?: SourceSelection) => {
     const data = bootstrapRef.current; if (!data || pending || Date.now() < submissionRetryAt) return false;
     if (kind !== 'chat' && moderationMediaBlocked(data.moderation)) { setError(moderationErrorMessage('MODERATION_MEDIA_UNSUPPORTED')!); return false; }
     const model = data.models.find(item => item.kind === kind && item.id === selection.modelId), declared = modelCapability(data, model);
@@ -400,11 +415,12 @@ export function useStudio() {
     const preset = declared.parameter_presets.find(item => item.id === selection.presetId);
     if (kind !== 'chat' && (!preset || !Number.isInteger(selection.count) || selection.count < 1 || selection.count > declared.max_count || kind === 'video' && selection.count !== 1)) { setError('所选规格已不适用，请刷新模型目录并重新选择。'); return false; }
     if (operation === 'edit' && (kind !== 'image' || !declared.image_edit_supported || referenceIds.length < 1 || referenceIds.length > declared.max_reference_images || new Set(referenceIds).size !== referenceIds.length)) { setError('请使用支持图片编辑的模型，并选择符合数量要求的已上传参考图。'); return false; }
-    const request: QuoteRequest = kind === 'chat' ? { resource_type: 'run', run_input: { project_id: data.project.id, model_id: model.id, ...(model.version ? { model_version: model.version } : {}), input: prompt } } : { resource_type: 'task', task_input: buildModelTaskInput(data.project.id, model, prompt, preset!, selection.count, operation, referenceIds) };
+    if (isSourceOperation(operation) && (!preset || !validSourceSelection(model, preset.id, operation, source))) { setError('请核对原视频修订、模型规格和延长方向。'); return false; }
+    const request: QuoteRequest = kind === 'chat' ? { resource_type: 'run', run_input: { project_id: data.project.id, model_id: model.id, ...(model.version ? { model_version: model.version } : {}), input: prompt } } : { resource_type: 'task', task_input: buildModelTaskInput(data.project.id, model, prompt, preset!, selection.count, operation, referenceIds, source) };
     if (billingEnabled(data) && !quoteMatches(quoted, billingScope(data), request)) { setError('请为当前输入重新获取并确认报价。原待确认请求请使用原请求重试。'); return false; }
     const quoteId = billingEnabled(data) ? quoted!.quote.id : undefined;
     const key = crypto.randomUUID(), ownerId = data.user?.id || 'demo';
-    return submitPending(request.resource_type === 'run' ? { kind: 'run', ownerId, key, body: { ...request.run_input, ...(quoteId ? { quote_id: quoteId } : {}) } } : { kind: 'task', ownerId, key, body: { ...(request as Extract<QuoteRequest, { resource_type: 'task' }>).task_input, ...(quoteId ? { quote_id: quoteId } : {}) } });
+    return submitPending(request.resource_type === 'run' ? { kind: 'run', ownerId, key, body: { ...request.run_input, ...(quoteId ? { quote_id: quoteId } : {}) } } : { kind: 'task', ownerId, workspaceId: data.workspace.id, key, body: { ...(request as Extract<QuoteRequest, { resource_type: 'task' }>).task_input, ...(quoteId ? { quote_id: quoteId } : {}) } });
   };
   const refreshTask = async (id: string) => {
     const token = scope.current.capture(); if (!token.projectId || taskRefreshes.current.has(id)) return;
@@ -444,8 +460,8 @@ export function useStudio() {
   };
   return { bootstrap, session, authState, authBusy, authError: messageText(authError), authIssue, authenticate, logout, expireSession, refreshIdentity, projects, createProject, switchProject: loadProject,
     updates, syncNotice, historyOffsets, historyLoading, loadMore, catalogLoading, catalogError, catalogUpdatedAt, refreshCatalog,
-    receiveRun: (run: Run) => updateRun(run, scope.current.capture()), tasks, runs, selectedRun, setSelectedRun, loading, submitting, error: messageText(error.message) + (error.unknown ? ' ' + uiText(unknownMessage) : ''), setError, requestError, submissionRetryAt, pending, taskConnection, runConnection,
-    connect, create, cancel, reconcileTask, refreshTask, retry: () => pending && Date.now() >= submissionRetryAt && submitPending(pending),
+    receiveRun: (run: Run) => updateRun(run, scope.current.capture()), tasks, runs, selectedRun, setSelectedRun, loading, submitting, error: messageText(error.message) + (error.unknown ? ' ' + uiText(sourcePending(pending) ? sourceUnknownText : unknownMessage) : ''), setError, requestError, submissionRetryAt, pending, taskConnection, runConnection,
+    connect, create, cancel, reconcileTask, refreshTask, retry: () => pending && Date.now() >= submissionRetryAt && submitPending(pending, sourcePending(pending)),
     refresh: async () => { feedSync.current?.resume(); const token = scope.current.capture(); try { await refreshFor(token); if (current(token) && !pending) setError(''); } catch (cause) { failure(cause, token); } },
     recover: () => { feedSync.current?.resume(); setReconnect(n => n + 1); },
   };

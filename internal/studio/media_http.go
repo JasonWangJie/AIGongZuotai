@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -121,7 +122,7 @@ func NewAsyncMediaProvider(config AsyncMediaConfig) (*AsyncMediaProvider, error)
 	if queryConcurrency == 0 {
 		queryConcurrency = 2
 	}
-	if submitConcurrency < 1 || submitConcurrency > 32 || queryConcurrency < 1 || queryConcurrency > 32 {
+	if submitConcurrency < 1 || submitConcurrency > 32 || queryConcurrency < 1 || queryConcurrency > MaxMediaQueryWorkers {
 		return nil, errors.New("asynchronous media submit and query concurrency must each be between 1 and 32")
 	}
 	u, err := url.Parse(config.BaseURL)
@@ -211,6 +212,9 @@ func (p *AsyncMediaProvider) Prepare(input TaskInput) (MediaSubmission, error) {
 // fills parameters from mutable provider defaults or consults the catalog.
 // Persist the returned bytes with the task before calling SubmitPrepared.
 func (p *AsyncMediaProvider) PrepareModel(input TaskInput, upstreamModel string) (MediaSubmission, error) {
+	if sourceVideoEndpoint(input.Operation) != "" {
+		return MediaSubmission{}, &MediaProviderError{Code: "MEDIA_CAPABILITY_UNAVAILABLE", Message: "source video requires an immutable file submission"}
+	}
 	if input.Operation == "first_frame" || input.Inputs.FirstFrame != nil || input.Inputs.WorkflowID != "" {
 		return MediaSubmission{}, &MediaProviderError{Code: "MEDIA_CAPABILITY_UNAVAILABLE", Message: "first-frame video requires an immutable file submission"}
 	}
@@ -285,6 +289,9 @@ func (p *AsyncMediaProvider) SubmitPrepared(ctx context.Context, submission Medi
 	expectedEndpoint := imageGenerationEndpoint
 	if submission.Kind == "video" {
 		expectedEndpoint = videoGenerationEndpoint
+		if endpoint := sourceVideoEndpoint(submission.InputType); endpoint != "" {
+			expectedEndpoint = endpoint
+		}
 	} else if submission.BodyFileID != "" {
 		expectedEndpoint = imageEditEndpoint
 	}
@@ -432,6 +439,15 @@ func (p *AsyncMediaProvider) queryStatus(ctx context.Context, handle MediaHandle
 	}
 	req.Header.Set("Authorization", "Bearer "+p.key)
 	req.Header.Set("Accept", "application/json")
+	if valid, ok := ctx.Value(queryWireGuardKey{}).(func() bool); ok {
+		if !valid() || ctx.Err() != nil {
+			return MediaResult{}, nil, leaseLost()
+		}
+		// Checking out a transport connection may block past an otherwise
+		// successful renewal. The guard cancels this request on expiry.
+		trace := &httptrace.ClientTrace{GotConn: func(httptrace.GotConnInfo) { valid() }}
+		req = req.WithContext(httptrace.WithClientTrace(ctx, trace))
+	}
 	response, err := p.queryClient.Do(req)
 	if err != nil {
 		observation = mediaNetworkObservation("gateway", ctx)

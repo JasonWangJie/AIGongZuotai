@@ -1,0 +1,106 @@
+{
+  "format": "039",
+  "local_date": "2026-11-23",
+  "platform": "windows/amd64",
+  "go": "go1.26.11",
+  "postgresql": "16.14",
+  "artifacts_sha256": {
+    "service": "16c44bf284c015ef6fbf9db75d824494ade794aab227a95e001a199e4839c843",
+    "order_reconcile": "3119fd59aa586400f9eb5e09c754f0886665b595d7462b0a44bd58e376382c58"
+  },
+  "npm_check": {
+    "exit_code": 0,
+    "vitest_files": 57,
+    "vitest_pass": 609,
+    "vite_modules": 183
+  },
+  "npm_test_db": {
+    "exit_code": 0,
+    "top_level": {
+      "pass": 754,
+      "skip": 23,
+      "fail": 0
+    },
+    "studio_package_seconds": 1948.94,
+    "skipped_top_level": [
+      "TestPostgresStreamJournalCapacity",
+      "TestPostgresStreamJournalCommitAndEpoch",
+      "TestPostgresActiveStreamCapacity",
+      "TestPostgresBatchedDeltaAcceptance",
+      "TestPostgresBatchedDeltaBusinessBoundaries",
+      "TestPostgresCanvasPanBrowser037",
+      "TestPostgresChatChildAcceptance",
+      "TestChatChildKernelPeerHelper",
+      "TestPostgresDeepConversationHistory036",
+      "TestPostgresDeepConversationQuoteModerationAndFrozenRequest036",
+      "TestPostgresLibraryTenThousandBrowserResources",
+      "TestLongReplyProcessFixture",
+      "TestMediaOriginalQueryCapacity",
+      "TestPostgresMediaOriginalQueryCapacity",
+      "TestPostgresPooledOriginalQueryCapacity",
+      "TestPostgresMediaSchedulerLargePlan",
+      "TestPostgresMediaSchedulerLargeUpgrade019",
+      "TestPostgresMixedWorkspaceWorkload",
+      "TestLoopbackNetworkCalibrationChromium",
+      "TestPostgresWorkbenchNetworkBrowser",
+      "TestPostgresBoundedCacheCompleteStartup",
+      "TestPostgresRecoveryNewLargeBacklog",
+      "TestPostgresTenThousandProjectSubscribers"
+    ]
+  },
+  "smoke": {
+    "smoke": {
+      "exit": 0,
+      "seconds": 14.39
+    },
+    "smoke:runtime": {
+      "exit": 0,
+      "seconds": 3.77
+    },
+    "smoke:catalog": {
+      "exit": 0,
+      "seconds": 8.58
+    },
+    "smoke:references": {
+      "exit": 0,
+      "seconds": 9.5
+    },
+    "smoke:library": {
+      "exit": 0,
+      "seconds": 9.52
+    },
+    "smoke:conversations": {
+      "exit": 0,
+      "seconds": 4.17
+    }
+  },
+  "source_video_workbench": {
+    "workbench": "视频工作室",
+    "operations": [
+      "编辑原视频",
+      "延长原视频"
+    ],
+    "confirmation": "确认额度并提交",
+    "lost_response": "受理状态待确认",
+    "recovery": "查询原任务收据",
+    "quotes": 2,
+    "task_posts": 2,
+    "receipt_gets": 1,
+    "source_operation_supplier_posts": 2,
+    "delivered": 2,
+    "settled_credit_micros": 550000
+  },
+  "source_video_transport": {
+    "accepted_responses_dropped_before_headers": 1,
+    "browser_receipt_gets": 0,
+    "charged_credit_micros": 350000,
+    "extension_tasks": 1,
+    "idempotency_replayed_responses": 1,
+    "independent_original_receipt_gets": 1,
+    "outcome": "transport_replay",
+    "page_task_fetch_calls": 1,
+    "settled_reservations": 1,
+    "supplier_extension_posts": 1,
+    "task_http_posts": 2
+  }
+}

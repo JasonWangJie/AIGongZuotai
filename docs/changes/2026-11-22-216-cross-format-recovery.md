@@ -74,3 +74,6 @@ node scripts/release/cross-format-drill.mjs --run --previous-source .runtime/v17
 
 集成人依据实际运行结果登记 README、值班 Wiki、任务进度与台账索引。本记录不改变 V18 真实多可用区的外部验收状态。
 
+## 集成人正式运行
+
+本机固定 036→037→036 实测 44229 毫秒；窗口两次成功写入仅保留在新版，旧恢复点缺两份对应收据，自动重提 0。回放停在目标 LSN，目录字节与数据库 UUID 一致，入口最终保持维护。 [原始汇总](../wiki/assets/recovery-cross-format-037.json)

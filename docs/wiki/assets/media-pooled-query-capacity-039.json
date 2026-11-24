@@ -1,0 +1,64 @@
+{
+  "PGVersion": "16.14",
+  "Fsync": "on",
+  "SynchronousCommit": "on",
+  "LeaseQueryConnections": 4,
+  "Storage": "postgres",
+  "GoVersion": "go1.26.11",
+  "GOOS": "windows",
+  "GOARCH": "amd64",
+  "Workers": 32,
+  "QueryConnections": 32,
+  "WorkspaceLimit": 16,
+  "ChannelLimit": 16,
+  "Processors": 14,
+  "OfferedPerSecond": 40,
+  "ServiceMS": 200,
+  "IdlePollMS": 20,
+  "Scheduled": 128,
+  "Completed": 128,
+  "UniqueGETs": 128,
+  "PeakHTTP": 11,
+  "Posts": 0,
+  "Unexpected": 0,
+  "WindowSeconds": 3.3850455,
+  "CompletedPerSecond": 37.81337651148264,
+  "ScheduleToDispatch": {
+    "MeanMS": 11.7313515625,
+    "P50MS": 7.6832,
+    "P95MS": 39.5307,
+    "P99MS": 73.8652,
+    "MaxMS": 87.9582
+  },
+  "ScheduleToWire": {
+    "MeanMS": 11.8539421875,
+    "P50MS": 7.6832,
+    "P95MS": 39.5307,
+    "P99MS": 73.8652,
+    "MaxMS": 87.9582
+  },
+  "WireToHeaders": {
+    "MeanMS": 200.3558265625,
+    "P50MS": 200.3306,
+    "P95MS": 200.9192,
+    "P99MS": 201.2874,
+    "MaxMS": 201.3465
+  },
+  "ScheduleToHandler": {
+    "MeanMS": 11.9194171875,
+    "P50MS": 7.8851,
+    "P95MS": 39.5307,
+    "P99MS": 73.8652,
+    "MaxMS": 87.9582
+  },
+  "HandlerService": {
+    "MeanMS": 200.28703046875,
+    "P50MS": 200.2787,
+    "P95MS": 200.5569,
+    "P99MS": 200.8169,
+    "MaxMS": 200.9192
+  },
+  "Examined": 29696,
+  "Claims": 128,
+  "CapacityDeferrals": 0
+}

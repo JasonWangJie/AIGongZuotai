@@ -139,18 +139,7 @@ func (p *AsyncMediaProvider) prepareMultipart(ctx context.Context, input TaskInp
 		return writer.Close()
 	})
 	if err != nil {
-		if ctx.Err() != nil {
-			return MediaSubmission{}, ctx.Err()
-		}
-		if errors.Is(err, ErrReferenceBusy) {
-			return MediaSubmission{}, &MediaProviderError{Code: "REFERENCE_PREPARATION_BUSY", Message: "reference preparation capacity is temporarily exhausted"}
-		}
-		if errors.Is(err, ErrReferenceStorageFull) {
-			return MediaSubmission{}, &MediaProviderError{Code: "REFERENCE_STORAGE_FULL", Message: "private reference storage capacity is exhausted"}
-		}
-		// Filesystem errors can contain private absolute paths. Never expose them
-		// through a task error or HTTP response.
-		return MediaSubmission{}, referencePreparationError()
+		return MediaSubmission{}, bodyPreparationError(ctx, err, referencePreparationError())
 	}
 	if stored.ID == "" || len(stored.ID) > 128 || strings.ContainsAny(stored.ID, "/\\\x00\r\n") || stored.ContentType != contentType || stored.ByteSize < 1 || stored.ByteSize > maxMediaEditBodyBytes || !mediaContentHash.MatchString(stored.SHA256) {
 		return MediaSubmission{}, referencePreparationError()
@@ -175,6 +164,20 @@ func referenceExtension(contentType string) string {
 	default:
 		return ""
 	}
+}
+
+func bodyPreparationError(ctx context.Context, err, fallback error) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	if errors.Is(err, ErrReferenceBusy) {
+		return &MediaProviderError{Code: "REFERENCE_PREPARATION_BUSY", Message: "reference preparation capacity is temporarily exhausted"}
+	}
+	if errors.Is(err, ErrReferenceStorageFull) {
+		return &MediaProviderError{Code: "REFERENCE_STORAGE_FULL", Message: "private reference storage capacity is exhausted"}
+	}
+	// Filesystem errors can contain private paths.
+	return fallback
 }
 
 func writeMediaReference(ctx context.Context, writer *multipart.Writer, field, filename string, ref MediaEditSource) error {
@@ -228,10 +231,8 @@ func (p *AsyncMediaProvider) openSubmissionBody(ctx context.Context, submission 
 		}
 		return io.NopCloser(bytes.NewReader(submission.Body)), "application/json", int64(len(submission.Body)), nil
 	}
-	mediaType, params, err := mime.ParseMediaType(submission.ContentType)
-	edit := submission.Kind == "image" && submission.Endpoint == imageEditEndpoint && submission.InputType == ""
-	firstFrame := submission.Kind == "video" && submission.Endpoint == videoGenerationEndpoint && submission.InputType == "first_frame"
-	if err != nil || mediaType != "multipart/form-data" || len(params) != 1 || len(params["boundary"]) < 1 || len(params["boundary"]) > 70 || strings.ContainsAny(submission.ContentType, "\r\n") || p.bodies == nil || len(submission.Body) != 0 || (!edit && !firstFrame) || submission.BodySize < 1 || submission.BodySize > maxMediaEditBodyBytes || !mediaContentHash.MatchString(submission.BodySHA256) {
+	prefix, limit := fileSubmissionShape(submission)
+	if limit == 0 || p.bodies == nil || len(submission.Body) != 0 || submission.BodySize < 1 || submission.BodySize > limit || !mediaContentHash.MatchString(submission.BodySHA256) {
 		return nil, "", 0, submissionIdentityError()
 	}
 	file, err := p.bodies.OpenBody(submission.BodyFileID)
@@ -248,9 +249,7 @@ func (p *AsyncMediaProvider) openSubmissionBody(ctx context.Context, submission 
 	if err != nil || !stat.Mode().IsRegular() || stat.Size() != submission.BodySize {
 		return nil, "", 0, submissionIdentityError()
 	}
-	// A changed multipart boundary header is incompatible with the saved bytes.
-	// Check it before doing any upstream I/O, then hash from the same open file.
-	prefix := []byte("--" + params["boundary"] + "\r\n")
+	// Verify the frozen format, then hash and send from this same descriptor.
 	actualPrefix := make([]byte, len(prefix))
 	if _, err = io.ReadFull(file, actualPrefix); err != nil || !bytes.Equal(actualPrefix, prefix) {
 		return nil, "", 0, submissionIdentityError()
@@ -271,4 +270,21 @@ func (p *AsyncMediaProvider) openSubmissionBody(ctx context.Context, submission 
 	}
 	valid = true
 	return file, submission.ContentType, submission.BodySize, nil
+}
+
+func fileSubmissionShape(submission MediaSubmission) ([]byte, int64) {
+	if endpoint := sourceVideoEndpoint(submission.InputType); endpoint != "" {
+		if submission.Kind == "video" && submission.Endpoint == endpoint && submission.ContentType == "application/json" {
+			return []byte(`{"model":`), maxSourceVideoBodyBytes
+		}
+		return nil, 0
+	}
+	edit := submission.Kind == "image" && submission.Endpoint == imageEditEndpoint && submission.InputType == ""
+	firstFrame := submission.Kind == "video" && submission.Endpoint == videoGenerationEndpoint && submission.InputType == "first_frame"
+	mediaType, params, err := mime.ParseMediaType(submission.ContentType)
+	boundary := params["boundary"]
+	if (!edit && !firstFrame) || err != nil || mediaType != "multipart/form-data" || len(params) != 1 || len(boundary) < 1 || len(boundary) > 70 || strings.ContainsAny(submission.ContentType, "\r\n") {
+		return nil, 0
+	}
+	return []byte("--" + boundary + "\r\n"), maxMediaEditBodyBytes
 }

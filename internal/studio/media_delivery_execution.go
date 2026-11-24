@@ -20,7 +20,7 @@ func (a *App) saveDeliveryClaim(ctx context.Context, t *taskRecord, complete boo
 		}
 		err := a.persistTaskClaim(t, complete)
 		a.mu.Unlock()
-		if !isEventBacklog(err) {
+		if !isEventBacklog(err) && !isQueryLeaseBusy(err) {
 			return err
 		}
 		if !waitTaskPoll(ctx, 250*time.Millisecond) {

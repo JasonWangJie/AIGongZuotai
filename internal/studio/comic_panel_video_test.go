@@ -316,14 +316,16 @@ func TestPostgresPanelVideoUpgrade037PreservesExistingCanvasAndTasks(t *testing.
 	 VALUES('prj_demo','ws_demo',1,'usr_before',decode(repeat('01',32),'hex'),decode(repeat('02',32),'hex'),'旧画布',1,0,
 	 '{"title":"旧画布","nodes":[{"id":"n1","title":"原镜头","x":0,"y":0}],"edges":[],"groups":[]}');
 	 INSERT INTO studio_tasks(id,workspace_id,project_id,document,input,handle,next_poll)
-	 VALUES('task_before','ws_demo','prj_demo','{"id":"task_before","kind":"video","status":"SUCCEEDED"}','{}','null',clock_timestamp())`)
+	 VALUES('task_before','ws_demo','prj_demo',
+	 '{"id":"task_before","workspace_id":"ws_demo","project_id":"prj_demo","provider_mode":"demo","kind":"video","status":"SUCCEEDED","version":3,"progress":100}',
+	 '{"project_id":"prj_demo","kind":"video","model_id":"original-video"}','null',clock_timestamp())`)
 	if e != nil {
 		t.Fatal(e)
 	}
 	if e = tx.Commit(ctx); e != nil {
 		t.Fatal(e)
 	}
-	tables := []string{"studio_canvas_versions", "studio_tasks", "studio_projects", "studio_comic_versions", "studio_ledger_quotes", "studio_ledger_reservations"}
+	tables := []string{"studio_canvas_versions", "studio_tasks", "studio_task_schedule", "studio_projects", "studio_comic_versions", "studio_ledger_quotes", "studio_ledger_reservations"}
 	before := schedulerOriginalSnapshot(t, admin, tables)
 	store, e := openPostgres(db)
 	if e != nil {

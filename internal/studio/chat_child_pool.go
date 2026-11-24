@@ -51,7 +51,7 @@ func startChatChildPool(ctx context.Context, cfg Config) (*chatChildPool, error)
 // application always launches its own executable with the fixed argument.
 func launchChatChildPool(ctx context.Context, cfg Config, command func() *exec.Cmd) (*chatChildPool, error) {
 	n, k := cfg.ChatChildren.Processes, cfg.ChatChildren.SlotsPerProcess
-	if n < 1 || n > 4 || k < 1 || k > 64 {
+	if cfg.ChatChildren.ValidateTopology() != nil {
 		return nil, errChildProtocol
 	}
 	if cfg.Mode == "live" && (len(cfg.BaseURL) > 4096 || len(cfg.APIKey) > 4096) {

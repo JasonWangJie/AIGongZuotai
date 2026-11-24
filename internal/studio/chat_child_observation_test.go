@@ -16,7 +16,7 @@ import (
 )
 
 func TestChatChildGatewayContract(t *testing.T) {
-	g := newChildAcceptanceGateway(t.Context(), 4)
+	g := newChildAcceptanceGateway(t.Context(), childAcceptanceProfile("pilot"))
 	for _, tick := range g.ticks {
 		close(tick)
 	}
@@ -32,7 +32,7 @@ func TestChatChildGatewayContract(t *testing.T) {
 	payload := func(model, prompt string) string {
 		return fmt.Sprintf(`{"model":%q,"stream":true,"max_tokens":128,"messages":[{"role":"user","content":%q}],"stream_options":{"include_usage":true}}`, model, prompt)
 	}
-	valid := payload(childUpstream(0), activePrompt(0))
+	valid := payload(g.upstream(0), activePrompt(0))
 	res := send(valid)
 	next := 0
 	usage, err := parseOpenAIStreamUsage(res.Body, func(delta string) error {
@@ -45,7 +45,7 @@ func TestChatChildGatewayContract(t *testing.T) {
 	if err != nil || res.Code != 200 || next != activeStreamSteps || usage.TotalTokens != 5 || !usage.Complete {
 		t.Fatal("actual upstream decoder rejected fixture contract")
 	}
-	if send(valid).Code != 409 || send(payload(childUpstream(4), activePrompt(4))).Code != 409 || send(payload("wrong", activePrompt(1))).Code != 400 || g.invalid != 3 {
+	if send(valid).Code != 409 || send(payload(g.upstream(4), activePrompt(4))).Code != 409 || send(payload("wrong", activePrompt(1))).Code != 400 || g.invalid != 3 {
 		t.Fatal("fixture accepted replay, queue dispatch, or wrong frozen model")
 	}
 }

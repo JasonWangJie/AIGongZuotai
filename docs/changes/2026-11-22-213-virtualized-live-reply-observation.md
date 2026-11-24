@@ -37,3 +37,9 @@
 ## 集成源已有程序的取消专项
 
 在含 205–212 的 037 冻结集成源上指定本次构建的 LONG_REPLY_CANCEL_TEST_SERVER，重新运行 node --test scripts/perf/long-reply.test.mjs，7 项全部通过、0 跳过。
+
+## 037 半小时正式复测
+
+在 037 冻结集成源执行 `npm run test:db`，启用 `LONG_REPLY_BROWSER_TEST=full`。其中 `TestPostgresLongReplyBrowserAndReopen` 通过，耗时 1,806.51 秒。此次结论限于该具名用例。归档时重新计算服务二进制、55 个前端文件的目录及入口 HTML 摘要，与试具记录一致。
+
+本机模型端收到一次 POST。Chromium 连续读到序号 1—1,802，覆盖 1,801 个增量和一次终态，首末增量间隔 1,800.26 秒。浏览器完成 30 次输入和滚动采样，并重新滚回原提示，验证整份助手回复和未提交草稿。PostgreSQL 独立采样租约 120 次，观察到截止时间前移 119 次；终态释放租约，回放窗口保留 256 个事件。重开原库后读回同一 Run 的 25,214 字节，试具、浏览器与数据库的正文摘要一致。此项使用本机 PostgreSQL、Chromium 和回环模型端。归档 JSON 保留测量值和制品摘要，SHA-256 为 `8eaee9aee0ecade05ce668cccff219c9c3ef2fcd04593f5c0b9a4ee5091c0b09`。[037 半小时报告](../wiki/assets/performance-long-reply-037.json)

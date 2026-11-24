@@ -451,6 +451,28 @@ paths:
         '403':
           $ref: '#/components/responses/Error'
           description: GENERATION_RESTRICTED：当前新请求确定未受理，原键已受理重放仍返回原资源；以前未知请求仍须保留原body/key。
+  /api/v1/tasks/receipt:
+    get:
+      operationId: getSourceVideoTaskReceipt
+      description: 按当前登录账户、原项目和原幂等键读取已受理的原视频编辑或延长任务。查询不会重新提交，未查到时保留原请求供后续核对。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - in: header
+        name: X-Project-ID
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 原视频操作的当前公开任务快照
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: 未找到当前账户在此项目的原操作
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/tasks/{id}:
     parameters:
     - $ref: '#/components/parameters/ResourceID'
@@ -10106,6 +10128,17 @@ components:
           type: string
           maxLength: 128
           description: credits模式新请求必须使用完整原输入对应的有效报价；旧键重放须保留原quote_id和正文，先于过期/余额检查。disabled模式不得提供。
+    SourceVideoRef:
+      type: object
+      additionalProperties: false
+      required: [asset_id, asset_revision]
+      properties:
+        asset_id:
+          type: string
+          pattern: '^lib_[a-f0-9]{64}$'
+        asset_revision:
+          type: integer
+          minimum: 1
     TaskInput:
       type: object
       additionalProperties: false
@@ -10144,6 +10177,11 @@ components:
               description: 仅首帧视频步骤，绑定原工作流身份。
             first_frame:
               $ref: '#/components/schemas/WorkflowCandidate'
+            source_video:
+              $ref: '#/components/schemas/SourceVideoRef'
+            extension_direction:
+              type: string
+              description: 仅延长操作可指定，须为当前模型声明的方向。
             reference_asset_ids:
               type: array
               maxItems: 4
@@ -10162,7 +10200,9 @@ components:
           - generate
           - edit
           - first_frame
-          description: generate 为默认，edit 需同项目 1 至 4 个有序私有参考。first_frame 只能由工作流视频步骤受理，报价绑定该流程已选原件。
+          - video_edit
+          - video_extend
+          description: video_edit 和 video_extend 均指定来源修订、模型版本和该操作允许的完整规格。generate 为默认，edit 需同项目 1 至 4 个有序私有参考。first_frame 只能由工作流视频步骤受理，报价绑定该流程已选原件。
         quote_id:
           type: string
           maxLength: 128
@@ -10365,9 +10405,15 @@ components:
           - generate
           - edit
           - first_frame
-          description: generate 为默认，edit 需同项目 1 至 4 个有序私有参考。first_frame 只能由工作流视频步骤受理，报价绑定该流程已选原件。
+          - video_edit
+          - video_extend
+          description: video_edit 和 video_extend 均指定来源修订、模型版本和该操作允许的完整规格。generate 为默认，edit 需同项目 1 至 4 个有序私有参考。first_frame 只能由工作流视频步骤受理，报价绑定该流程已选原件。
         first_frame:
           $ref: '#/components/schemas/WorkflowCandidate'
+        source_video:
+          $ref: '#/components/schemas/SourceVideoRef'
+        extension_direction:
+          type: string
         reference_asset_ids:
           type: array
           maxItems: 4
@@ -10836,6 +10882,26 @@ components:
           items:
             $ref: '#/components/schemas/ParameterPreset'
           maxItems: 32
+        source_video:
+          type: object
+          additionalProperties: false
+          description: 仅视频模型可显式声明 Data URI 输入，两种操作的预设 ID 引用本模型的 parameter_presets。
+          properties:
+            data_uri_edit_presets:
+              type: array
+              uniqueItems: true
+              maxItems: 32
+              items: {type: string}
+            data_uri_extend_presets:
+              type: array
+              uniqueItems: true
+              maxItems: 32
+              items: {type: string}
+            extension_directions:
+              type: array
+              uniqueItems: true
+              maxItems: 16
+              items: {type: string}
         video_first_frame_supported:
           type: boolean
           description: 视频模型在私有目录中单独启用首帧 multipart 支持，缺省关闭。

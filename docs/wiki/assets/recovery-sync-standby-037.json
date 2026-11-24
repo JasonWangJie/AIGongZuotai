@@ -1,0 +1,67 @@
+{
+  "scope": "Windows loopback PostgreSQL synchronous physical replication and planned single-writer cutover",
+  "postgres": "postgres (PostgreSQL) 16.14",
+  "artifact_sha256": "7cb5bd288463295aa8faebd65442b686ed202680def6547dbb05e310488ebf16",
+  "base_manifest_sha256": "d435b8665353e7d196d53377773c05bd4c3e736738cb6ee9ba3ac9bc88267197",
+  "replication": {
+    "before_business": {
+      "barrier": "0/4000060",
+      "commit": "remote_apply",
+      "senderState": "streaming",
+      "syncState": "sync",
+      "receiverState": "streaming",
+      "senders": 1,
+      "primaryFsync": true,
+      "standbyFsync": true,
+      "fullPageWrites": true,
+      "replicationHbaScram": true,
+      "senderFlush": "0/4000118",
+      "senderReplay": "0/4000118",
+      "receiverFlush": "0/4000118",
+      "receiverReplay": "0/4000118"
+    },
+    "after_ack_and_quiescence": {
+      "barrier": "0/4585168",
+      "commit": "remote_apply",
+      "senderState": "streaming",
+      "syncState": "sync",
+      "receiverState": "streaming",
+      "senders": 1,
+      "primaryFsync": true,
+      "standbyFsync": true,
+      "fullPageWrites": true,
+      "replicationHbaScram": true,
+      "senderFlush": "0/4585220",
+      "senderReplay": "0/4585220",
+      "receiverFlush": "0/4585220",
+      "receiverReplay": "0/4585220"
+    },
+    "timelines": {
+      "oldTimeline": "00000001",
+      "newTimeline": "00000002",
+      "replayedBeforePromotion": "0/50000A0",
+      "sameSystem": true,
+      "oldPIDExited": true,
+      "oldPortFree": true
+    }
+  },
+  "old_source_detached": true,
+  "confirmed_receipts": {
+    "confirmed": 5,
+    "recovered": 5,
+    "missing": 0,
+    "mismatched": 0
+  },
+  "original_cookie": true,
+  "original_credentials": true,
+  "private_original_sha256_verified": true,
+  "anonymous_denied": true,
+  "other_account_denied": true,
+  "shared_private_directories": true,
+  "cutover_ms": {
+    "original_service_exit_and_three_free_locks": 115,
+    "old_primary_fenced_and_new_promoted": 1820,
+    "same_binary_ready_and_locks_held": 3379,
+    "original_account_and_business_verified": 3639
+  }
+}

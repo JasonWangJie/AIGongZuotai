@@ -1,0 +1,623 @@
+[
+  {
+    "Workers": 32,
+    "QueryDBConnections": 4,
+    "Completed": 512,
+    "UniqueGETs": 512,
+    "WallMS": 5152.4147,
+    "Phases": {
+      "claim_return_to_executor": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 3.0663,
+        "WindowOccupancyMS": 3.0663,
+        "ActiveWallMS": 3.0663,
+        "MeanConcurrent": 0.0005951190225429641,
+        "P50MS": 0,
+        "P95MS": 0,
+        "P99MS": 0.3012
+      },
+      "control_mutex_wait": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 198.45570000000004,
+        "WindowOccupancyMS": 198.45570000000004,
+        "ActiveWallMS": 198.45570000000004,
+        "MeanConcurrent": 0.03851702775399659,
+        "P50MS": 0,
+        "P95MS": 0,
+        "P99MS": 17.1756
+      },
+      "control_save_transaction": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 2439.371599999997,
+        "WindowOccupancyMS": 2439.371599999997,
+        "ActiveWallMS": 2439.371599999997,
+        "MeanConcurrent": 0.47344240361708406,
+        "P50MS": 4.6045,
+        "P95MS": 6.559,
+        "P99MS": 8.1768
+      },
+      "due_to_wire": {
+        "Count": 512,
+        "PeakConcurrent": 345,
+        "TotalSampleMS": 888078.6693000003,
+        "WindowOccupancyMS": 888078.6693000003,
+        "ActiveWallMS": 4875.628500000001,
+        "MeanConcurrent": 172.36164420150425,
+        "P50MS": 1766.8258,
+        "P95MS": 3236.9139,
+        "P99MS": 3287.0954
+      },
+      "executor_entry_to_first_renew": {
+        "Count": 512,
+        "PeakConcurrent": 28,
+        "TotalSampleMS": 21952.927700000007,
+        "WindowOccupancyMS": 21952.927700000007,
+        "ActiveWallMS": 2099.9793999999997,
+        "MeanConcurrent": 4.260706674095935,
+        "P50MS": 33.1017,
+        "P95MS": 131.216,
+        "P99MS": 146.539
+      },
+      "first_renew_total": {
+        "Count": 512,
+        "PeakConcurrent": 28,
+        "TotalSampleMS": 1482.4789999999982,
+        "WindowOccupancyMS": 1482.4789999999982,
+        "ActiveWallMS": 362.2588999999999,
+        "MeanConcurrent": 0.2877250932460848,
+        "P50MS": 1.8236,
+        "P95MS": 7.6656,
+        "P99MS": 8.8367
+      },
+      "heartbeat_renew_total": {
+        "Count": 0,
+        "PeakConcurrent": 0,
+        "TotalSampleMS": 0,
+        "WindowOccupancyMS": 0,
+        "ActiveWallMS": 0,
+        "MeanConcurrent": 0,
+        "P50MS": 0,
+        "P95MS": 0,
+        "P99MS": 0
+      },
+      "known_result_app_mutex_wait": {
+        "Count": 512,
+        "PeakConcurrent": 27,
+        "TotalSampleMS": 24409.599799999985,
+        "WindowOccupancyMS": 24409.599799999985,
+        "ActiveWallMS": 2360.8048000000003,
+        "MeanConcurrent": 4.737506823742271,
+        "P50MS": 38.8014,
+        "P95MS": 131.2624,
+        "P99MS": 150.649
+      },
+      "known_result_save_total": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 2660.548299999996,
+        "WindowOccupancyMS": 2660.548299999996,
+        "ActiveWallMS": 2660.548299999996,
+        "MeanConcurrent": 0.5163692084024206,
+        "P50MS": 4.6869,
+        "P95MS": 7.434,
+        "P99MS": 22.3458
+      },
+      "renew_pool_wait": {
+        "Count": 512,
+        "PeakConcurrent": 25,
+        "TotalSampleMS": 832.3945000000006,
+        "WindowOccupancyMS": 832.3945000000006,
+        "ActiveWallMS": 117.02990000000003,
+        "MeanConcurrent": 0.16155425144641414,
+        "P50MS": 0,
+        "P95MS": 6.4436,
+        "P99MS": 7.6777
+      },
+      "renew_transaction": {
+        "Count": 512,
+        "PeakConcurrent": 4,
+        "TotalSampleMS": 642.5114000000004,
+        "WindowOccupancyMS": 642.5114000000004,
+        "ActiveWallMS": 355.4948999999998,
+        "MeanConcurrent": 0.12470102610335314,
+        "P50MS": 1.1035,
+        "P95MS": 1.9517,
+        "P99MS": 2.7612
+      },
+      "select_empty_or_error": {
+        "Count": 99,
+        "PeakConcurrent": 4,
+        "TotalSampleMS": 650.7782999999998,
+        "WindowOccupancyMS": 641.6977999999998,
+        "ActiveWallMS": 234.0221,
+        "MeanConcurrent": 0.12454311955906805,
+        "P50MS": 2.588,
+        "P95MS": 22.7082,
+        "P99MS": 25.849
+      },
+      "select_ready": {
+        "Count": 512,
+        "PeakConcurrent": 4,
+        "TotalSampleMS": 1346.034700000001,
+        "WindowOccupancyMS": 1346.034700000001,
+        "ActiveWallMS": 1086.7212000000004,
+        "MeanConcurrent": 0.2612434709496503,
+        "P50MS": 1.7848,
+        "P95MS": 6.1411,
+        "P99MS": 10.4321
+      },
+      "strict_claim": {
+        "Count": 512,
+        "PeakConcurrent": 3,
+        "TotalSampleMS": 880.0100999999989,
+        "WindowOccupancyMS": 880.0100999999989,
+        "ActiveWallMS": 842.9866999999992,
+        "MeanConcurrent": 0.17079566596221357,
+        "P50MS": 1.5799,
+        "P95MS": 2.5677,
+        "P99MS": 3.5218
+      },
+      "strict_claim_miss_or_error": {
+        "Count": 0,
+        "PeakConcurrent": 0,
+        "TotalSampleMS": 0,
+        "WindowOccupancyMS": 0,
+        "ActiveWallMS": 0,
+        "MeanConcurrent": 0,
+        "P50MS": 0,
+        "P95MS": 0,
+        "P99MS": 0
+      },
+      "transport_to_wire": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 39.66,
+        "WindowOccupancyMS": 39.66,
+        "ActiveWallMS": 39.65999999999999,
+        "MeanConcurrent": 0.007697361782622038,
+        "P50MS": 0,
+        "P95MS": 0.5373,
+        "P99MS": 1.0442
+      },
+      "upstream_service": {
+        "Count": 512,
+        "PeakConcurrent": 32,
+        "TotalSampleMS": 102571.9979999999,
+        "WindowOccupancyMS": 102571.9979999999,
+        "ActiveWallMS": 4969.737100000007,
+        "MeanConcurrent": 19.907558683116072,
+        "P50MS": 200.3134,
+        "P95MS": 200.6568,
+        "P99MS": 200.9812
+      },
+      "wire_to_response_headers": {
+        "Count": 512,
+        "PeakConcurrent": 32,
+        "TotalSampleMS": 102625.02629999994,
+        "WindowOccupancyMS": 102625.02629999994,
+        "ActiveWallMS": 4969.737100000007,
+        "MeanConcurrent": 19.917850614780665,
+        "P50MS": 200.3509,
+        "P95MS": 201.0165,
+        "P99MS": 201.4721
+      }
+    }
+  },
+  {
+    "Workers": 64,
+    "QueryDBConnections": 4,
+    "Completed": 512,
+    "UniqueGETs": 512,
+    "WallMS": 6988.804,
+    "Phases": {
+      "claim_return_to_executor": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 28.569100000000002,
+        "WindowOccupancyMS": 28.569100000000002,
+        "ActiveWallMS": 28.569100000000002,
+        "MeanConcurrent": 0.004087838205220808,
+        "P50MS": 0,
+        "P95MS": 0.5184,
+        "P99MS": 1.0149
+      },
+      "control_mutex_wait": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 922.808,
+        "WindowOccupancyMS": 922.808,
+        "ActiveWallMS": 922.808,
+        "MeanConcurrent": 0.13204090428061796,
+        "P50MS": 0,
+        "P95MS": 0,
+        "P99MS": 37.7586
+      },
+      "control_save_transaction": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 4482.429699999999,
+        "WindowOccupancyMS": 4482.429699999999,
+        "ActiveWallMS": 4482.429699999999,
+        "MeanConcurrent": 0.6413729301894857,
+        "P50MS": 6.2121,
+        "P95MS": 16.8582,
+        "P99MS": 60.6493
+      },
+      "due_to_wire": {
+        "Count": 512,
+        "PeakConcurrent": 423,
+        "TotalSampleMS": 1184302.5014,
+        "WindowOccupancyMS": 1184302.5014,
+        "ActiveWallMS": 6578.8513,
+        "MeanConcurrent": 169.45710616580462,
+        "P50MS": 2125.6366,
+        "P95MS": 5006.1984,
+        "P99MS": 5018.716
+      },
+      "executor_entry_to_first_renew": {
+        "Count": 512,
+        "PeakConcurrent": 48,
+        "TotalSampleMS": 95415.62149999996,
+        "WindowOccupancyMS": 95415.62149999996,
+        "ActiveWallMS": 5135.938099999997,
+        "MeanConcurrent": 13.652639493109259,
+        "P50MS": 125.4842,
+        "P95MS": 677.8916,
+        "P99MS": 1742.5687
+      },
+      "first_renew_total": {
+        "Count": 512,
+        "PeakConcurrent": 24,
+        "TotalSampleMS": 3131.3527999999997,
+        "WindowOccupancyMS": 3131.3527999999997,
+        "ActiveWallMS": 1296.813300000001,
+        "MeanConcurrent": 0.4480527426438057,
+        "P50MS": 3.2746,
+        "P95MS": 19.6723,
+        "P99MS": 25.5338
+      },
+      "heartbeat_renew_total": {
+        "Count": 0,
+        "PeakConcurrent": 0,
+        "TotalSampleMS": 0,
+        "WindowOccupancyMS": 0,
+        "ActiveWallMS": 0,
+        "MeanConcurrent": 0,
+        "P50MS": 0,
+        "P95MS": 0,
+        "P99MS": 0
+      },
+      "known_result_app_mutex_wait": {
+        "Count": 512,
+        "PeakConcurrent": 52,
+        "TotalSampleMS": 129727.93829999989,
+        "WindowOccupancyMS": 129727.93829999989,
+        "ActiveWallMS": 5421.506700000002,
+        "MeanConcurrent": 18.562251609860557,
+        "P50MS": 123.3353,
+        "P95MS": 1603.4467,
+        "P99MS": 1820.4315
+      },
+      "known_result_save_total": {
+        "Count": 512,
+        "PeakConcurrent": 2,
+        "TotalSampleMS": 5462.502699999998,
+        "WindowOccupancyMS": 5462.502699999998,
+        "ActiveWallMS": 5461.176799999998,
+        "MeanConcurrent": 0.7816076541851793,
+        "P50MS": 6.4792,
+        "P95MS": 39.8631,
+        "P99MS": 91.265
+      },
+      "renew_pool_wait": {
+        "Count": 512,
+        "PeakConcurrent": 20,
+        "TotalSampleMS": 1000.2829000000002,
+        "WindowOccupancyMS": 1000.2829000000002,
+        "ActiveWallMS": 205.51409999999998,
+        "MeanConcurrent": 0.1431264777206515,
+        "P50MS": 0,
+        "P95MS": 13.4714,
+        "P99MS": 19.4784
+      },
+      "renew_transaction": {
+        "Count": 512,
+        "PeakConcurrent": 4,
+        "TotalSampleMS": 2111.578299999999,
+        "WindowOccupancyMS": 2111.578299999999,
+        "ActiveWallMS": 1286.0820000000006,
+        "MeanConcurrent": 0.3021372898710565,
+        "P50MS": 3.1917,
+        "P95MS": 8.2737,
+        "P99MS": 12.8493
+      },
+      "select_empty_or_error": {
+        "Count": 111,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 286.9312000000001,
+        "WindowOccupancyMS": 286.2673000000001,
+        "ActiveWallMS": 286.2673000000001,
+        "MeanConcurrent": 0.04096084251325407,
+        "P50MS": 1.6796,
+        "P95MS": 7.1832,
+        "P99MS": 8.0409
+      },
+      "select_ready": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 2434.2522999999997,
+        "WindowOccupancyMS": 2434.2522999999997,
+        "ActiveWallMS": 2434.2522999999997,
+        "MeanConcurrent": 0.3483074214128769,
+        "P50MS": 2.6492,
+        "P95MS": 13.8147,
+        "P99MS": 48.3155
+      },
+      "strict_claim": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 1781.4385000000018,
+        "WindowOccupancyMS": 1781.4385000000018,
+        "ActiveWallMS": 1781.4385000000018,
+        "MeanConcurrent": 0.25489890688020467,
+        "P50MS": 2.1347,
+        "P95MS": 9.7816,
+        "P99MS": 26.6147
+      },
+      "strict_claim_miss_or_error": {
+        "Count": 0,
+        "PeakConcurrent": 0,
+        "TotalSampleMS": 0,
+        "WindowOccupancyMS": 0,
+        "ActiveWallMS": 0,
+        "MeanConcurrent": 0,
+        "P50MS": 0,
+        "P95MS": 0,
+        "P99MS": 0
+      },
+      "transport_to_wire": {
+        "Count": 512,
+        "PeakConcurrent": 2,
+        "TotalSampleMS": 74.90359999999994,
+        "WindowOccupancyMS": 74.90359999999994,
+        "ActiveWallMS": 74.3723,
+        "MeanConcurrent": 0.010717656411597741,
+        "P50MS": 0,
+        "P95MS": 1.041,
+        "P99MS": 1.1254
+      },
+      "upstream_service": {
+        "Count": 512,
+        "PeakConcurrent": 64,
+        "TotalSampleMS": 102620.72589999993,
+        "WindowOccupancyMS": 102620.72589999993,
+        "ActiveWallMS": 5204.136700000003,
+        "MeanConcurrent": 14.683589051860652,
+        "P50MS": 200.3163,
+        "P95MS": 201.0541,
+        "P99MS": 203.725
+      },
+      "wire_to_response_headers": {
+        "Count": 512,
+        "PeakConcurrent": 64,
+        "TotalSampleMS": 102726.72999999997,
+        "WindowOccupancyMS": 102726.72999999997,
+        "ActiveWallMS": 5205.641699999999,
+        "MeanConcurrent": 14.698756754374564,
+        "P50MS": 200.3983,
+        "P95MS": 202.0924,
+        "P99MS": 204.7494
+      }
+    }
+  },
+  {
+    "Workers": 128,
+    "QueryDBConnections": 4,
+    "Completed": 512,
+    "UniqueGETs": 512,
+    "WallMS": 3998.2419,
+    "Phases": {
+      "claim_return_to_executor": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 20.394900000000003,
+        "WindowOccupancyMS": 20.394900000000003,
+        "ActiveWallMS": 20.394900000000003,
+        "MeanConcurrent": 0.0051009670025217845,
+        "P50MS": 0,
+        "P95MS": 0.5164,
+        "P99MS": 0.5946
+      },
+      "control_mutex_wait": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 325.2174,
+        "WindowOccupancyMS": 325.2174,
+        "ActiveWallMS": 325.2174,
+        "MeanConcurrent": 0.0813401010078955,
+        "P50MS": 0,
+        "P95MS": 0,
+        "P99MS": 32.356
+      },
+      "control_save_transaction": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 2346.914800000001,
+        "WindowOccupancyMS": 2346.914800000001,
+        "ActiveWallMS": 2346.914800000001,
+        "MeanConcurrent": 0.586986695327264,
+        "P50MS": 4.3529,
+        "P95MS": 5.9291,
+        "P99MS": 7.0073
+      },
+      "due_to_wire": {
+        "Count": 512,
+        "PeakConcurrent": 416,
+        "TotalSampleMS": 775827.5615999994,
+        "WindowOccupancyMS": 775827.5615999994,
+        "ActiveWallMS": 3636.480400000002,
+        "MeanConcurrent": 194.0421767877525,
+        "P50MS": 1498.8236,
+        "P95MS": 1918.6551,
+        "P99MS": 1986.8848
+      },
+      "executor_entry_to_first_renew": {
+        "Count": 512,
+        "PeakConcurrent": 56,
+        "TotalSampleMS": 56927.29070000003,
+        "WindowOccupancyMS": 56927.29070000003,
+        "ActiveWallMS": 2348.773099999999,
+        "MeanConcurrent": 14.238080667405349,
+        "P50MS": 113.0024,
+        "P95MS": 233.7869,
+        "P99MS": 249.049
+      },
+      "first_renew_total": {
+        "Count": 512,
+        "PeakConcurrent": 12,
+        "TotalSampleMS": 1701.435700000001,
+        "WindowOccupancyMS": 1701.435700000001,
+        "ActiveWallMS": 797.7735999999999,
+        "MeanConcurrent": 0.4255459630894271,
+        "P50MS": 2.1931,
+        "P95MS": 10.0158,
+        "P99MS": 13.0583
+      },
+      "heartbeat_renew_total": {
+        "Count": 0,
+        "PeakConcurrent": 0,
+        "TotalSampleMS": 0,
+        "WindowOccupancyMS": 0,
+        "ActiveWallMS": 0,
+        "MeanConcurrent": 0,
+        "P50MS": 0,
+        "P95MS": 0,
+        "P99MS": 0
+      },
+      "known_result_app_mutex_wait": {
+        "Count": 512,
+        "PeakConcurrent": 58,
+        "TotalSampleMS": 71961.44879999997,
+        "WindowOccupancyMS": 71961.44879999997,
+        "ActiveWallMS": 2681.8516999999997,
+        "MeanConcurrent": 17.998272890892363,
+        "P50MS": 137.2746,
+        "P95MS": 271.7555,
+        "P99MS": 289.7203
+      },
+      "known_result_save_total": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 2691.649899999998,
+        "WindowOccupancyMS": 2691.649899999998,
+        "ActiveWallMS": 2691.649899999998,
+        "MeanConcurrent": 0.6732083669074646,
+        "P50MS": 4.3979,
+        "P95MS": 6.4455,
+        "P99MS": 36.5229
+      },
+      "renew_pool_wait": {
+        "Count": 512,
+        "PeakConcurrent": 9,
+        "TotalSampleMS": 378.0394999999999,
+        "WindowOccupancyMS": 378.0394999999999,
+        "ActiveWallMS": 111.77279999999999,
+        "MeanConcurrent": 0.09455143271846557,
+        "P50MS": 0,
+        "P95MS": 4.611,
+        "P99MS": 8.3626
+      },
+      "renew_transaction": {
+        "Count": 512,
+        "PeakConcurrent": 4,
+        "TotalSampleMS": 1312.6153,
+        "WindowOccupancyMS": 1312.6153,
+        "ActiveWallMS": 792.6009999999999,
+        "MeanConcurrent": 0.3282981202312946,
+        "P50MS": 2.1662,
+        "P95MS": 5.0815,
+        "P99MS": 6.6037
+      },
+      "select_empty_or_error": {
+        "Count": 177,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 242.34879999999998,
+        "WindowOccupancyMS": 242.34879999999998,
+        "ActiveWallMS": 242.34879999999998,
+        "MeanConcurrent": 0.06061384129859676,
+        "P50MS": 1.5396,
+        "P95MS": 2.2528,
+        "P99MS": 2.5306
+      },
+      "select_ready": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 1296.437599999999,
+        "WindowOccupancyMS": 1296.437599999999,
+        "ActiveWallMS": 1296.437599999999,
+        "MeanConcurrent": 0.3242519168237417,
+        "P50MS": 2.5733,
+        "P95MS": 3.7011,
+        "P99MS": 4.934
+      },
+      "strict_claim": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 882.9494000000008,
+        "WindowOccupancyMS": 882.9494000000008,
+        "ActiveWallMS": 882.9494000000008,
+        "MeanConcurrent": 0.2208344122450422,
+        "P50MS": 1.5837,
+        "P95MS": 2.6677,
+        "P99MS": 3.7081
+      },
+      "strict_claim_miss_or_error": {
+        "Count": 0,
+        "PeakConcurrent": 0,
+        "TotalSampleMS": 0,
+        "WindowOccupancyMS": 0,
+        "ActiveWallMS": 0,
+        "MeanConcurrent": 0,
+        "P50MS": 0,
+        "P95MS": 0,
+        "P99MS": 0
+      },
+      "transport_to_wire": {
+        "Count": 512,
+        "PeakConcurrent": 1,
+        "TotalSampleMS": 68.1309,
+        "WindowOccupancyMS": 68.1309,
+        "ActiveWallMS": 68.13089999999998,
+        "MeanConcurrent": 0.017040214600322207,
+        "P50MS": 0,
+        "P95MS": 1.0388,
+        "P99MS": 1.0973
+      },
+      "upstream_service": {
+        "Count": 512,
+        "PeakConcurrent": 68,
+        "TotalSampleMS": 102549.0993,
+        "WindowOccupancyMS": 102549.0993,
+        "ActiveWallMS": 2766.4430999999995,
+        "MeanConcurrent": 25.648548003061045,
+        "P50MS": 200.285,
+        "P95MS": 200.5163,
+        "P99MS": 200.9674
+      },
+      "wire_to_response_headers": {
+        "Count": 512,
+        "PeakConcurrent": 68,
+        "TotalSampleMS": 102591.43320000001,
+        "WindowOccupancyMS": 102591.43320000001,
+        "ActiveWallMS": 2766.443099999999,
+        "MeanConcurrent": 25.659136131808335,
+        "P50MS": 200.3407,
+        "P95MS": 200.9571,
+        "P99MS": 201.0417
+      }
+    }
+  }
+]

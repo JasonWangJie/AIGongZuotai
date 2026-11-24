@@ -1,0 +1,168 @@
+{
+  "active_per_frozen_model": [
+    44,
+    44,
+    44,
+    44,
+    44,
+    44
+  ],
+  "active_per_workspace": [
+    53,
+    53,
+    53,
+    53,
+    52
+  ],
+  "additional_paused_reader": 1,
+  "all_children_lost": {
+    "child_slots": [
+      1,
+      1
+    ],
+    "controller_remained_alive": true,
+    "interrupted_with_original_prefix": 2,
+    "local_slots_observed": 1,
+    "old_terminals_and_review_before_first_local_post": true,
+    "queued_first_dispatch_local": 2
+  },
+  "all_model_posts_including_moderation": 272,
+  "authorized_normal_readers": 264,
+  "controller_crash_with_review": 1,
+  "delta_latency_window": "original gateway frame write to receipt of the complete authorized SSE frame; terminal, replay and fault-phase reads excluded",
+  "joint_wave": {
+    "simultaneous_original_model_requests": 264,
+    "simultaneous_admitted_readers": 265,
+    "simultaneous_readers_per_workspace": [
+      54,
+      53,
+      53,
+      53,
+      52
+    ],
+    "configured_global_stream_limit": 265,
+    "observed_workspace_stream_limit": 64,
+    "configured_replay_read_connections": 2,
+    "steady_peak_session_rounds": 1,
+    "steady_peak_session_checks": 5,
+    "normal_readers_per_run": 1,
+    "normal_delta_deliveries": 3168,
+    "delayed_delta_deliveries": 12,
+    "normal_terminal_deliveries": 264,
+    "delayed_terminal_deliveries": 1,
+    "normal_reader_delta_deliveries_latency": {
+      "samples": 3168,
+      "p50_ms": 22.0041,
+      "p95_ms": 37.1103,
+      "p99_ms": 75.3845,
+      "max_ms": 1242.3947
+    },
+    "delayed_reader_delta_deliveries_latency": {
+      "samples": 12,
+      "p50_ms": 1937.3762,
+      "p95_ms": 2251.1118,
+      "p99_ms": 2251.1118,
+      "max_ms": 2251.1118
+    },
+    "all_reader_delta_deliveries_latency": {
+      "samples": 3180,
+      "p50_ms": 22.1153,
+      "p95_ms": 37.2099,
+      "p99_ms": 75.3845,
+      "max_ms": 2251.1118
+    },
+    "postgres_original_deltas": {
+      "delta_rows": 3168,
+      "distinct_runs": 264,
+      "distinct_delta_insert_xids": 110,
+      "transaction_shapes": [
+        {
+          "distinct_runs_per_transaction": 1,
+          "delta_events_per_transaction": 1,
+          "transactions": 1
+        },
+        {
+          "distinct_runs_per_transaction": 4,
+          "delta_events_per_transaction": 4,
+          "transactions": 2
+        },
+        {
+          "distinct_runs_per_transaction": 7,
+          "delta_events_per_transaction": 7,
+          "transactions": 1
+        },
+        {
+          "distinct_runs_per_transaction": 8,
+          "delta_events_per_transaction": 8,
+          "transactions": 9
+        },
+        {
+          "distinct_runs_per_transaction": 19,
+          "delta_events_per_transaction": 19,
+          "transactions": 1
+        },
+        {
+          "distinct_runs_per_transaction": 21,
+          "delta_events_per_transaction": 21,
+          "transactions": 1
+        },
+        {
+          "distinct_runs_per_transaction": 32,
+          "delta_events_per_transaction": 32,
+          "transactions": 95
+        }
+      ],
+      "ordered_fixture_sha256": "4d5f1cf7a3c9b6fde00752d76ddbabfef2b2a0b65866bcb6ae50465f3da9dce1",
+      "observed_events_per_wave_second": 1812.1637372307666
+    },
+    "coordinator": {
+      "confirmed_events": 3168,
+      "group_commits": 109,
+      "group_delta_events": 3167,
+      "single_attempts": 1
+    },
+    "first_wave_to_last_normal_delta_ms": 1748.1864
+  },
+  "kernel_probe": "windows_filtered_tcp_owner_and_process_parent",
+  "killed_child_with_review": 1,
+  "live_delta_latency": {
+    "samples": 3168,
+    "p50_ms": 22.0041,
+    "p95_ms": 37.1103,
+    "p99_ms": 75.3845,
+    "max_ms": 1242.3947
+  },
+  "matching_active_generation": true,
+  "measurement": "standard_controller_children_batched_deltas_authorized_sse",
+  "moderation_companion": {
+    "candidate_journal_deltas": 0,
+    "child": "actual_production_worker_entrypoint",
+    "controller": "same_package_test_host",
+    "credit_state": "REVIEW",
+    "decision": "BLOCKED",
+    "input_checks": 1,
+    "model_posts": 1,
+    "output_checks": 1
+  },
+  "new_generation_after_restart": true,
+  "peak_model_requests": 264,
+  "profile": "integrated-264",
+  "queued_cancel_without_post": 1,
+  "reader_pause_ms": 3482.8438,
+  "simultaneous_child_model_sockets": [
+    33,
+    33,
+    33,
+    33,
+    33,
+    33,
+    33,
+    33
+  ],
+  "standard_executable_model_posts": 271,
+  "started_cancel_with_review": 1,
+  "unexpected_or_repeated_posts": 0,
+  "verified_child_owners": 8,
+  "verified_settled_runs": 264,
+  "service_sha256": "89cf30d8eace86ac3db5f80f87db8c432580db6d5516592c1a6d644d10851594"
+}

@@ -117,3 +117,9 @@ V07 的5个新增编辑测试覆盖不可变multipart重放、进程重建后旧
 ## 图片编辑上线前配置
 
 工作台侧栏“图片编辑配置”可生成服务端目录条目或隔离实例示例。现有服务合并模型/白名单时需保留在途请求使用的原网关及稳定凭据标识。配置由用户在服务器应用，工作台可以刷新查看公开能力。真实模型开通和受控编辑通过后再记录供应商验收。[配置页操作](references.md#图片编辑配置页)
+
+## V20-C 原视频协议
+
+公开文档 §5.1、§5.3 的视频编辑和延长均使用 JSON。按模型可接收 Data URI、URL 或文件身份。当前开发选择服务端将有项目权限的私有 MP4 编成 Data URI；原任务 ID 不能充当视频文件身份。延长秒数、方向及尺寸以模型明示的规格为准。两种操作使用原提交身份和原路径/正文字节核对。真实开通情况仍需受控环境。[235](../changes/2026-11-22-235-video-source-admission.md)
+
+两个操作各自配置当前模型能使用的完整规格及价格。例如在已有视频模型的 capabilities 内添加 `"source_video":{"data_uri_edit_presets":["preset-1"],"data_uri_extend_presets":["preset-2"],"extension_directions":["backward"]}`，其中规格 ID 与方向必须与实际已开通模型一致。请求体采用固定的 `video_edit` 或 `video_extend` 操作，客户端只提交 `inputs.source_video.asset_id`、`asset_revision` 与显式规格。本人查询收据使用 `GET /api/v1/tasks/receipt`、原 `Idempotency-Key` 和 `X-Project-ID`。收到 404 时继续保留原请求。[协议适配验证](../changes/2026-11-23-234-source-video-provider.md) · [039 原件与联备](decisions/0039-source-video.md)

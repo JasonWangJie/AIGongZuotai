@@ -114,7 +114,7 @@ func loadPricingCatalog(c Config) (*pricingCatalog, error) {
 				return nil, errors.New("invalid output token price or both token prices zero")
 			}
 		case "image", "video":
-			validOperation := r.Operation == "generate" || r.Kind == "image" && r.Operation == "edit" || r.Kind == "video" && r.Operation == "first_frame"
+			validOperation := r.Operation == "generate" || r.Kind == "image" && r.Operation == "edit" || r.Kind == "video" && (r.Operation == "first_frame" || sourceVideoOperation(r.Operation))
 			if !validOperation || !catalogID.MatchString(r.PresetID) || r.InputPerMillionMicros != "" || r.OutputPerMillionMicros != "" {
 				return nil, errors.New("media prices require an exact preset and operation with artifact price only")
 			}
@@ -162,7 +162,7 @@ func (p *pricingCatalog) taskPrice(model Model, operation string, parameters Tas
 	}
 	presetID := ""
 	for _, preset := range model.Capabilities.ParameterPresets {
-		if preset.AspectRatio == parameters.AspectRatio && preset.Size == parameters.Size && preset.Resolution == parameters.Resolution && preset.Seconds == parameters.Seconds {
+		if preset.matches(parameters) {
 			presetID = preset.ID
 			break
 		}

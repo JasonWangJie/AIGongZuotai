@@ -205,6 +205,11 @@ func (a *App) createBillingQuote(r *http.Request, p *principal, in billingQuoteI
 		if !a.authorizeProject(p, input.ProjectID) {
 			return BillingQuote{}, failure(404, "PROJECT_NOT_FOUND", "项目不存在或不属于当前工作区")
 		}
+		if sourceVideoOperation(operation) {
+			if _, err = a.resolveSourceVideo(p, input, model.Model); err != nil {
+				return BillingQuote{}, err
+			}
+		}
 		if operation == "first_frame" {
 			if _, err = a.firstFrameInfo(subscriptionScope{p.Workspace.ID, input.ProjectID}, input, model.Model); err != nil {
 				return BillingQuote{}, err

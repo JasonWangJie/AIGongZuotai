@@ -15,20 +15,38 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func childAcceptanceProfile(mode string) (runs, readersPerRun int, integrated bool) {
+type childAcceptanceTopology struct {
+	normal, readers, processes, models, workspaces int
+	integrated                                     bool
+}
+
+func childAcceptanceProfile(mode string) childAcceptanceTopology {
 	switch mode {
 	case "pilot":
-		return 4, 1, false
+		return childAcceptanceTopology{4, 1, 2, 4, 5, false}
 	case "full":
-		return 80, 1, false
+		return childAcceptanceTopology{80, 1, 2, 4, 5, false}
 	case "integrated-pilot":
-		return 8, 3, true
+		return childAcceptanceTopology{8, 3, 2, 4, 5, true}
 	case "integrated":
-		return 80, 3, true
+		return childAcceptanceTopology{80, 3, 2, 4, 5, true}
+	case "integrated-264":
+		return childAcceptanceTopology{264, 1, 8, 6, 5, true}
+	case "integrated-512":
+		return childAcceptanceTopology{512, 1, 8, 8, 9, true}
+	case "integrated-1024":
+		return childAcceptanceTopology{1024, 1, 16, 16, 17, true}
 	default:
-		return 0, 0, false
+		return childAcceptanceTopology{}
 	}
 }
+
+func (p childAcceptanceTopology) upstream(lane int) string {
+	return fmt.Sprintf("child-model-%d", lane%p.models)
+}
+
+// The delayed reader has its own HTTP connection.
+func (p childAcceptanceTopology) streamLimit() int { return max(256, p.normal*p.readers+1) }
 
 // A reader has a stable identity within the same Run for the whole wave.
 // readCapacityStream independently checks the actual Run, sequence, text and terminal.
@@ -127,7 +145,7 @@ func childJointMetrics(t *testing.T, ctx context.Context, client *http.Client, b
 
 func observeChildJointOccupancy(t *testing.T, ctx context.Context, s *childAcceptanceServer, f childFixture, g *childAcceptanceGateway, token string, runsPerScope []int, copies int) childJointEvidence {
 	t.Helper()
-	e := childJointEvidence{NormalsPerRun: copies, GlobalLimit: 256, ReplayConnections: 2}
+	e := childJointEvidence{NormalsPerRun: copies, GlobalLimit: f.streamLimit(), ReplayConnections: 2}
 	sessions := 0
 	for i, scope := range f.scopes {
 		var runtime struct{ Streams struct{ Active, Limit int } }
@@ -220,10 +238,10 @@ func TestChatChildIntegratedReaderBarrier(t *testing.T) {
 		runs, copies int
 		joint        bool
 	}{
-		{"pilot", 4, 1, false}, {"full", 80, 1, false}, {"integrated-pilot", 8, 3, true}, {"integrated", 80, 3, true}, {"other", 0, 0, false},
+		{"pilot", 4, 1, false}, {"full", 80, 1, false}, {"integrated-pilot", 8, 3, true}, {"integrated", 80, 3, true}, {"integrated-264", 264, 1, true}, {"integrated-512", 512, 1, true}, {"integrated-1024", 1024, 1, true}, {"other", 0, 0, false},
 	} {
-		n, c, j := childAcceptanceProfile(tc.mode)
-		if n != tc.runs || c != tc.copies || j != tc.joint {
+		p := childAcceptanceProfile(tc.mode)
+		if p.normal != tc.runs || p.readers != tc.copies || p.integrated != tc.joint {
 			t.Fatalf("incorrect %s profile", tc.mode)
 		}
 	}
@@ -251,6 +269,82 @@ func TestChatChildIntegratedReaderBarrier(t *testing.T) {
 	for _, bad := range []childReaderEvent{{reader: -1}, {reader: 240}, {reader: 3, lane: 0}, {reader: 0, step: 1}} {
 		if bad.mark(make([]bool, 240), 0, copies) == nil {
 			t.Fatal("out-of-scope reader event accepted")
+		}
+	}
+}
+
+func TestChatChildExpandedIntegratedTopology(t *testing.T) {
+	p := childAcceptanceProfile("integrated-264")
+	f := childFixture{childAcceptanceTopology: p, scopes: make([]capacityScope, 5)}
+	g := newChildAcceptanceGateway(t.Context(), p)
+	cfg := f.settings(g, "http://127.0.0.1")
+	if cfg["CHAT_CHILD_PROCESSES"] != "8" || cfg["CHAT_CHILD_SLOTS"] != "33" || p.streamLimit() != 265 ||
+		cfg["CHAT_WORKSPACE_CONCURRENCY"] != "53" || cfg["ADMISSION_WORKSPACE_RUNS"] != "54" || cfg["CHAT_MODEL_CONCURRENCY"] != "44" {
+		t.Fatal("execution, queue or stream budget cannot support the expanded fixture")
+	}
+	models := map[string]int{}
+	workspace := make([]int, len(f.scopes))
+	for i := range p.normal {
+		models[f.upstream(i)]++
+		workspace[i%len(workspace)]++
+	}
+	if len(models) != 6 {
+		t.Fatal("need six distinct upstream identities")
+	}
+	for _, count := range models {
+		if count != 44 {
+			t.Fatal("expanded fixture would strand a frozen model")
+		}
+	}
+	for _, count := range workspace {
+		if count != 52 && count != 53 {
+			t.Fatal("expanded fixture would strand a workspace")
+		}
+	}
+}
+
+func TestChatChildFullCapacityProfile253(t *testing.T) {
+	p := childAcceptanceProfile("integrated-512")
+	if p.normal != 512 || p.processes != 8 || p.models != 8 || p.readers != 1 || !p.integrated || p.workspaces != 9 || p.streamLimit() != 513 {
+		t.Fatal("512 physical model streams and a separate delayed reader must fit")
+	}
+	f := childFixture{childAcceptanceTopology: p, scopes: make([]capacityScope, p.workspaces)}
+	cfg := f.settings(newChildAcceptanceGateway(t.Context(), p), "http://127.0.0.1")
+	if cfg["CHAT_CHILD_SLOTS"] != "64" || cfg["CHAT_MODEL_CONCURRENCY"] != "64" ||
+		cfg["CHAT_WORKSPACE_CONCURRENCY"] != "57" || cfg["ADMISSION_WORKSPACE_RUNS"] != "58" ||
+		cfg["ADMISSION_MODEL_RUNS"] != "32" || cfg["CHAT_WORKSPACE_QUEUE_SIZE"] != "3" {
+		t.Fatal("managed, workspace, model or wait budget differs from the fixture")
+	}
+	perModel := map[string]int{}
+	perWorkspace := make([]int, p.workspaces)
+	perPair := make(map[[2]int]int)
+	for lane := range p.normal {
+		workspace := lane % p.workspaces
+		perModel[p.upstream(lane)]++
+		perWorkspace[workspace]++
+		perPair[[2]int{workspace, lane % p.models}]++
+	}
+	if len(perModel) != 8 || len(perPair) != 72 || perWorkspace[8] != 56 || perWorkspace[0]+1 != 58 {
+		t.Fatal("a workspace or frozen model cannot hold its intended cohort")
+	}
+	for _, n := range perModel {
+		if n != 64 {
+			t.Fatal("expected a full frozen model")
+		}
+	}
+	for i, n := range perWorkspace {
+		if n != 57 && (i != 8 || n != 56) {
+			t.Fatal("workspace execution or subscription budget exhausted")
+		}
+	}
+	for _, n := range perPair {
+		if n != 7 && n != 8 {
+			t.Fatal("one workspace-model cohort would be rejected at admission")
+		}
+	}
+	for _, mode := range []string{"pilot", "full", "integrated-pilot", "integrated", "integrated-264"} {
+		if childAcceptanceProfile(mode).workspaces != 5 {
+			t.Fatal("historical profile lost its original registration cohort")
 		}
 	}
 }

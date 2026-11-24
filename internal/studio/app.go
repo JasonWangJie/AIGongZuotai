@@ -22,6 +22,7 @@ import (
 )
 
 type Config struct {
+	queryTiming                                                                                             *mediaQueryTiming
 	LocaleTrustedProxies                                                                                    string
 	RunDeltaBatching                                                                                        bool
 	LongConversationHistory                                                                                 bool
@@ -131,6 +132,7 @@ type runRecord struct {
 	Cancel         context.CancelFunc
 }
 type taskRecord struct {
+	sourceVideo       *timelineVideoAsset // admission only; durable provenance lives in studio_task_video_sources
 	ScheduleReconcile bool
 	Schedule          *mediaTaskSchedule
 	ScheduleOutcome   *mediaScheduleOutcome
@@ -189,6 +191,7 @@ type App struct {
 	mu                   sync.Mutex
 	runs                 map[string]*runRecord
 	tasks                map[string]*taskRecord
+	taskPinsMu           sync.Mutex // Lock order when both are needed: mu, then taskPinsMu.
 	activeTaskClaims     map[string]int
 	idem                 map[string]idemRecord
 	workspaceSubscribers map[chan event]subscriptionScope
@@ -244,6 +247,9 @@ func New(c Config) (*App, error) {
 	c.RunWorkers = c.ChatScheduling.Workers
 	if err := c.MediaScheduling.normalize(c.TaskWorkers); err != nil {
 		return nil, err
+	}
+	if c.MediaScheduling.QueryDBConnections > 0 && c.DatabaseURL == "" {
+		return nil, errors.New("separate query database connections require PostgreSQL")
 	}
 	c.TaskWorkers = c.MediaScheduling.SubmitWorkers + c.MediaScheduling.QueryWorkers + c.MediaScheduling.DeliveryWorkers + c.MediaScheduling.ReviewWorkers
 	moderation, err := newModerationEngine(c.Moderation, c.Mode)
@@ -476,6 +482,9 @@ func New(c Config) (*App, error) {
 		if err == nil && c.RunReplayReadConnections > 0 {
 			err = store.openRunReplayPool(a.ctx, c.RunReplayReadConnections)
 		}
+		if err == nil {
+			store.feedReads, err = store.newVerifiedReadPool(a.ctx, feedReadConnections)
+		}
 		if err == nil && c.Admission.GlobalStreams > 128 {
 			store.streamAuth, err = store.newVerifiedReadPool(a.ctx, 1)
 		}
@@ -528,9 +537,13 @@ func New(c Config) (*App, error) {
 		a.wg.Add(1)
 		go a.mediaTaskWorker(mediaSubmitLane)
 	}
-	for range c.MediaScheduling.QueryWorkers {
-		a.wg.Add(1)
-		go a.mediaTaskWorker(mediaQueryLane)
+	if c.MediaScheduling.QueryWorkers > 32 {
+		a.wg.Go(a.dispatchLargeQueryLane)
+	} else {
+		for range c.MediaScheduling.QueryWorkers {
+			a.wg.Add(1)
+			go a.mediaTaskWorker(mediaQueryLane)
+		}
 	}
 	for range c.MediaScheduling.DeliveryWorkers {
 		a.wg.Add(1)
@@ -772,6 +785,10 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 		if old.Hash != compareHash {
 			return Task{}, false, failure(409, "IDEMPOTENCY_CONFLICT", "相同幂等键已经用于其他请求")
 		}
+		if sourceVideoOperation(record.Task.Operation) {
+			receipt, e := a.sourceVideoReceipt(accountRequestPrincipal(ctx), input.ProjectID, key)
+			return receipt, e == nil, e
+		}
 		return copyTask(record.Task), true, nil
 	}
 	if err := a.checkGenerationAccessLocked(project.WorkspaceID); err != nil {
@@ -797,6 +814,13 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 	}
 	var refs []referenceRecord
 	var firstFrame *AssetInfo
+	var sourceVideo *timelineVideoAsset
+	if sourceVideoOperation(operation) {
+		sourceVideo, err = a.resolveSourceVideo(accountRequestPrincipal(ctx), input, model.Model)
+		if err != nil {
+			return Task{}, false, err
+		}
+	}
 	if operation == "first_frame" {
 		guard := workflowChildFrom(ctx)
 		if guard == nil || guard.kind != "video" || guard.id != input.Inputs.WorkflowID || guard.scope != (subscriptionScope{project.WorkspaceID, input.ProjectID}) {
@@ -823,6 +847,9 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 	if a.mediaModeration != nil {
 		approval.workspaceID = project.WorkspaceID
 		approval.firstFrame = firstFrame
+		if sourceVideo != nil {
+			approval.videoSource = &sourceVideo.info
+		}
 		if err := approval.prepare(input, parameters, model, refs); err != nil {
 			return Task{}, false, err
 		}
@@ -842,6 +869,11 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 	now := time.Now().UTC()
 	task := Task{ID: newID("task"), ProviderMode: a.config.Mode, WorkspaceID: project.WorkspaceID, ProjectID: input.ProjectID, Kind: input.Kind, ModelID: input.ModelID, Prompt: input.Inputs.Prompt, Status: "QUEUED", Version: 1, CreatedAt: now, UpdatedAt: now, Artifacts: []Artifact{}}
 	task.Operation = operation
+	if sourceVideo != nil {
+		ref := *input.Inputs.SourceVideo
+		task.SourceVideo = &ref
+		task.ExtensionDirection = input.Inputs.ExtensionDirection
+	}
 	if firstFrame != nil {
 		source := *input.Inputs.FirstFrame
 		task.FirstFrame = &source
@@ -851,15 +883,17 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 	task.ModelName, task.ModelVersion, task.ModelCapabilities, task.Parameters = model.Model.Name, model.Model.Version, copyCapabilities(&model.Model.Capabilities), &parameters
 	input.Parameters = parameters // The idempotency hash above belongs to the original request, never this resolved execution copy.
 	input.Inputs.ReferenceAssetIDs = append([]string(nil), input.Inputs.ReferenceAssetIDs...)
-	record := &taskRecord{Task: task, Input: input, NextPoll: now}
+	record := &taskRecord{Task: task, Input: input, NextPoll: now, sourceVideo: sourceVideo}
 	approval.attach(record)
 	task = record.Task
-	if operation == "edit" || operation == "first_frame" {
+	if operation == "edit" || operation == "first_frame" || sourceVideo != nil {
 		var prepareErr error
 		a.mu.Unlock()
 		func() {
 			defer a.mu.Lock()
-			if firstFrame != nil {
+			if sourceVideo != nil {
+				record.Submission, prepareErr = a.prepareSourceVideo(ctx, input, model.UpstreamModel, sourceVideo.info)
+			} else if firstFrame != nil {
 				record.Submission, prepareErr = a.prepareFirstFrame(ctx, input, model.UpstreamModel, *firstFrame)
 			} else {
 				record.Submission, prepareErr = a.prepareImageEdit(ctx, input, model.UpstreamModel, refs)
@@ -878,6 +912,10 @@ func (a *App) createTaskApproved(ctx context.Context, input TaskInput, key strin
 			existing, err := a.getTaskLocked(old.ID)
 			if err != nil {
 				return Task{}, false, err
+			}
+			if sourceVideoOperation(existing.Task.Operation) {
+				receipt, e := a.sourceVideoReceipt(accountRequestPrincipal(ctx), input.ProjectID, key)
+				return receipt, e == nil, e
 			}
 			return copyTask(existing.Task), true, nil
 		}

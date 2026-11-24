@@ -60,7 +60,11 @@ func TestExplicitFeatureFlags(t *testing.T) {
 
 func TestAdmissionEnvironmentStrictValues(t *testing.T) {
 	for _, name := range []string{"ADMISSION_WORKSPACE_RUNS", "ADMISSION_MODEL_RUNS", "ADMISSION_WORKSPACE_TASKS", "ADMISSION_MODEL_TASKS", "ADMISSION_WORKSPACE_STREAMS", "ADMISSION_GLOBAL_STREAMS"} {
-		for _, raw := range []string{"", "0", "-1", "1.5", "abc", "4097", "9999999999999999999999999"} {
+		high := "4097"
+		if name == "ADMISSION_GLOBAL_STREAMS" {
+			high = "16385"
+		}
+		for _, raw := range []string{"", "0", "-1", "1.5", "abc", high, "9999999999999999999999999"} {
 			t.Run(name+"/"+raw, func(t *testing.T) {
 				_, err := admissionFromEnv(func(key string) (string, bool) { return raw, key == name })
 				if err == nil {
@@ -80,5 +84,14 @@ func TestAdmissionEnvironmentStrictValues(t *testing.T) {
 	_, err = admissionFromEnv(func(key string) (string, bool) { return "129", key == "ADMISSION_WORKSPACE_STREAMS" })
 	if err == nil {
 		t.Fatal("stream ceiling ignored")
+	}
+	for _, tt := range []struct {
+		raw  string
+		want int
+	}{{"128", 128}, {"256", 256}, {"10000", 10000}, {"16384", 16384}, {"16385", 0}} {
+		limits, err := admissionFromEnv(func(key string) (string, bool) { return tt.raw, key == "ADMISSION_GLOBAL_STREAMS" })
+		if (err == nil) != (tt.want != 0) || err == nil && limits.GlobalStreams != tt.want {
+			t.Fatalf("unexpected global stream bound for %s", tt.raw)
+		}
 	}
 }

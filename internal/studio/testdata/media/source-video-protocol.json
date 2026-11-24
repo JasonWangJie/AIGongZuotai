@@ -1,0 +1,16 @@
+{
+  "documentation_url": "https://api.aiimg.lol/async-image-api-docs",
+  "public_document_asset": "https://api.aiimg.lol/static/js/async/6168.5abcbf94eb.js",
+  "document_updated": "2026-11-20",
+  "observed_on": "2026-11-22",
+  "asset_bytes": 36004,
+  "asset_sha256": "3f2a55146093aea1778c6d2985470ca0bcb1dfd6c225a5ebc9f8ab198b103c85",
+  "sections": ["2", "3", "5.1", "5.3", "6.1", "6.2", "7.2", "8"],
+  "post_paths": ["/v1/videos/edits_async", "/v1/videos/extensions_async"],
+  "content_type": "application/json",
+  "documented_request_limit_bytes": 67108864,
+  "source_field": "video",
+  "tested_source_form": "data:video/mp4;base64,",
+  "requires_explicit_model_data_uri_support": true,
+  "live_generation_requests_sent": 0
+}

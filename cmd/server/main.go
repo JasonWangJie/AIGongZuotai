@@ -299,7 +299,7 @@ func admissionFromEnv(lookup func(string) (string, bool)) (studio.AdmissionLimit
 		{"ADMISSION_WORKSPACE_TASKS", &limits.WorkspaceTasks, 4096},
 		{"ADMISSION_MODEL_TASKS", &limits.ModelTasks, 4096},
 		{"ADMISSION_WORKSPACE_STREAMS", &limits.WorkspaceStreams, 128},
-		{"ADMISSION_GLOBAL_STREAMS", &limits.GlobalStreams, 256},
+		{"ADMISSION_GLOBAL_STREAMS", &limits.GlobalStreams, studio.MaxGlobalStreams},
 	} {
 		if raw, present := lookup(setting.name); present {
 			value, err := strconv.Atoi(raw)
