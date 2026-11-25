@@ -268,6 +268,8 @@ Go31个测试函数及子用例、真实PostgreSQL18.7集成、Go vet、前端36
 
 ## 最近变更
 
+- [262 · 原 GET 进度保存的 Outbox 分段耗时与事务归属](../changes/2026-11-25-262-outbox-progress-save-timing.md)
+- [260 · 原查询保存时的工作区计数成本](../changes/2026-11-25-260-media-workspace-count-experiment.md)
 - [259 · 定速媒体受理与完整生命周期](../changes/2026-11-24-259-openloop-media-lifecycle.md)
 - [258 · 受管聊天 1,024 路并发对照](../changes/2026-11-24-258-managed-chat-1024.md)
 - [257 · 正常受理任务的多轮原查询](../changes/2026-11-24-257-recurring-original-query.md)
@@ -276,7 +278,7 @@ Go31个测试函数及子用例、真实PostgreSQL18.7集成、Go vet、前端36
 - [254 · 六万项正常媒体受理及原库重开](../changes/2026-11-24-254-normal-admission-60000.md)
 - [253 · 受管模型全执行位联合验收](../changes/2026-11-23-253-managed-chat-512.md)
 - [252 · 准入配额与原库恢复扫描](../changes/2026-11-23-252-admission-thresholds-and-recovery.md)
-- [251 · 040 同源程序累计回归](../changes/2026-11-23-251-format-040-regression.md)
+- [251 · 040 同源程序累计回归](../changes/2026-11-23-251-format-040-regression.md)（本机 040 完整实库 789 项通过、31 项跳过、0 项失败，六组同制品冒烟通过）
 - [250 · 原查询结果合批的实库对照](../changes/2026-11-23-250-known-query-save-batch.md)
 - [249 · 原任务查询的并发登记](../changes/2026-11-23-249-large-query-entry-pin.md)
 - [248 · 原任务查询的分段耗时](../changes/2026-11-23-248-query-stage-timing.md)

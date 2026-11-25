@@ -1,12 +1,387 @@
 {
   "format": "040",
-  "service_sha256": "78aaebf8897d7215673b810b332d3bbf84be4ef508c853919b10199c7d1d78aa",
+  "ledger": 251,
+  "status": "passed",
+  "history": {
+    "unchanged_existing_files": {
+      "format-040-regression-first.json": "d0f37206ca0e4bc525470f30e0d18c95af1fce015541d6099e40039ee7452c75",
+      "format-040-regression-through253.json": "4351b0b40100dcac5def4ca562e822583a9594232ce72a50e388cfb4b579bf17",
+      "format-040-regression-interrupted.json": "0ff2791f20ab8505cfb0ca08fc43d98b823f67d54ec33219324f8e4fd386aee7"
+    },
+    "first_database_attempt": {
+      "exit": 1,
+      "top_level": {
+        "pass": 763,
+        "skip": 27,
+        "fail": 1
+      },
+      "studio_seconds": 2374.815,
+      "failed_workflow_group_seconds": 91.52,
+      "workflow_repeat": {
+        "test": "TestPostgresWorkflowCancelQueuedUnknownAndKnownMedia",
+        "test_seconds": 8.66,
+        "submit_seconds": 2.44,
+        "query_seconds": 6.23,
+        "exit": 0
+      },
+      "cancel_evidence": {
+        "migration_active_at_cancel": 10,
+        "migration_file_sha256": "c3a1be19d367ace3e293f63d6dbb31a948f3d41eb8f70ed0b0f274da5db0aa2d",
+        "matched_normalized_complete_sql": true,
+        "startup_transaction_timeout_seconds": 60,
+        "individual_statement_duration_known": false,
+        "wait_cause_known": false
+      }
+    },
+    "earlier_main": {
+      "integrated_source_ledgers": [
+        249,
+        252,
+        253
+      ],
+      "service_sha256": "78aaebf8897d7215673b810b332d3bbf84be4ef508c853919b10199c7d1d78aa",
+      "frontend_files": 57,
+      "frontend_tests": 609,
+      "first_frontend_attempt": {
+        "passed": 608,
+        "timed_out": 1,
+        "case": "sourceVideo.test.tsx video_edit",
+        "timeout_ms": 5000,
+        "isolated_original_pass_count": 3,
+        "isolated_original_seconds": 9.74,
+        "isolated_controlled_clock_pass_count": 3,
+        "isolated_controlled_clock_seconds": 2.91
+      },
+      "database_status_at_that_time": "pending_full_retry"
+    }
+  },
+  "receipt_sha256": {
+    "main_result": "30ec72eaeb8ebfc36a5ceef08b89453f8235fc541af0c66a2c388a1daa0a6b01",
+    "fresh_controller": "4d976ff9341866198a5d2bb6ff621f702a5aa6d57dbfa06f54150e1fc3a4771f",
+    "regression": "c6f472fe31154cc76ec77f98552421e7b034fef415bd4c8f29960b590fd76cd0",
+    "pg_offline": "7df2745518063c3f4fe466eeb39000ef90453021f26b9ee33a78b8684e42836e",
+    "object_offline": "169a846b1e539c5d49f6957d21bc07fb1a77ee4be063c4e9889a9feb67835bc9",
+    "observer": "eba17298a06e3bd0cc76df38d366ba617a887d6fbdb60e41a6c5f83deaf876d8",
+    "observer_exit": "cc1595ac39091fe6949427106e7ccd550d6594acaadcb8bd4379854a926bc4dc"
+  },
+  "main_check": {
+    "status": "passed",
+    "commands": {
+      "check": {
+        "exit": 0,
+        "seconds": 172.5,
+        "log_present": true
+      },
+      "smoke": {
+        "exit": 0,
+        "seconds": 11.59,
+        "log_present": true
+      },
+      "smoke:runtime": {
+        "exit": 0,
+        "seconds": 3.69,
+        "log_present": true
+      },
+      "smoke:catalog": {
+        "exit": 0,
+        "seconds": 4.86,
+        "log_present": true
+      },
+      "smoke:references": {
+        "exit": 0,
+        "seconds": 9.41,
+        "log_present": true
+      },
+      "smoke:library": {
+        "exit": 0,
+        "seconds": 9.67,
+        "log_present": true
+      },
+      "smoke:conversations": {
+        "exit": 0,
+        "seconds": 4.47,
+        "log_present": true
+      },
+      "check:changes": {
+        "exit": 0,
+        "seconds": 1.5,
+        "log_present": true
+      },
+      "check:todo": {
+        "exit": 0,
+        "seconds": 0.56,
+        "log_present": true
+      }
+    },
+    "frontend_files": {
+      "passed": 57,
+      "total": 57
+    },
+    "frontend_tests": {
+      "passed": 609,
+      "total": 609
+    },
+    "vite_modules": 183,
+    "service_sha256": "d47b11d64f7a2f40300be01735060f8475c3dbd457dae2b50baf092e41b36ae4",
+    "six_smokes_exit_zero": true,
+    "smoke_binary_check": "runner_hashes_before_each_smoke"
+  },
+  "fresh_database": {
+    "status": "passed",
+    "process_exits": {
+      "powershell_exit": 0,
+      "runner_exit": 0,
+      "npm_exit": 0,
+      "observer_exit": 0,
+      "controller_exit": 0,
+      "runner_file": 0,
+      "npm_file": 0,
+      "observer_receipt_exit": 0
+    },
+    "top_level": {
+      "pass": 789,
+      "skip": 31,
+      "fail": 0
+    },
+    "key_tests": {
+      "TestPostgresAdmissionTerminalPredicateAndIndexes": {
+        "status": "pass",
+        "seconds": 1.41
+      },
+      "TestPostgresGenerationAdmissionOriginalReplayAndExistingWork": {
+        "status": "pass",
+        "seconds": 2.38
+      },
+      "TestPostgresMediaQueryUpgrade039Restore040": {
+        "status": "pass",
+        "seconds": 43.07
+      },
+      "TestPostgresRunReplayPoolModeratedSnapshot": {
+        "status": "pass",
+        "seconds": 1.24
+      },
+      "TestPostgresSourceVideoBrowser039": {
+        "status": "pass",
+        "seconds": 17.92
+      },
+      "TestPostgresSourceVideoOperationsAndRestore039": {
+        "status": "pass",
+        "seconds": 23.76
+      },
+      "TestPostgresSourceVideoTransportBrowser039": {
+        "status": "pass",
+        "seconds": 11.51
+      },
+      "TestPostgresWorkflowCancelQueuedUnknownAndKnownMedia": {
+        "status": "pass",
+        "seconds": 8.52
+      }
+    },
+    "workflow_subtests": {
+      "submit": {
+        "status": "pass",
+        "seconds": 2.24
+      },
+      "query": {
+        "status": "pass",
+        "seconds": 6.28
+      }
+    },
+    "known_failed_tests": [],
+    "known_skipped_tests": [
+      "TestChatChild1024SlotsAndReap258",
+      "TestChatChildKernelPeerHelper",
+      "TestLongReplyProcessFixture",
+      "TestLoopbackNetworkCalibrationChromium",
+      "TestMediaOriginalQueryCapacity",
+      "TestPostgresActiveStreamCapacity",
+      "TestPostgresBatchedDeltaAcceptance",
+      "TestPostgresBatchedDeltaBusinessBoundaries",
+      "TestPostgresBoundedCacheCompleteStartup",
+      "TestPostgresCanvasPanBrowser037",
+      "TestPostgresChatChildAcceptance",
+      "TestPostgresDeepConversationHistory036",
+      "TestPostgresDeepConversationQuoteModerationAndFrozenRequest036",
+      "TestPostgresLibraryTenThousandBrowserResources",
+      "TestPostgresMediaNormalAdmissionCapacity",
+      "TestPostgresMediaOriginalQueryCapacity",
+      "TestPostgresMediaSchedulerLargePlan",
+      "TestPostgresMediaSchedulerLargeUpgrade019",
+      "TestPostgresMixedServiceSoak256",
+      "TestPostgresMixedWorkspaceWorkload",
+      "TestPostgresOpenLoopMediaLifecycle259",
+      "TestPostgresOriginalQueryRateCurve040",
+      "TestPostgresPooledOriginalQueryCapacity",
+      "TestPostgresQueryStageHeartbeat248",
+      "TestPostgresQueryStageTiming248",
+      "TestPostgresRecoveryNewLargeBacklog",
+      "TestPostgresRecurringOriginalQuery257",
+      "TestPostgresStreamJournalCapacity",
+      "TestPostgresStreamJournalCommitAndEpoch",
+      "TestPostgresTenThousandProjectSubscribers",
+      "TestPostgresWorkbenchNetworkBrowser"
+    ],
+    "other_failed_tests": 0,
+    "studio_package": "ok",
+    "studio_seconds": 1601.565,
+    "startup_migration_failure_message_seen": false,
+    "lifecycle": {
+      "pg_identity": true,
+      "pg_shutdown": true,
+      "fresh_versioned_object": true,
+      "object_shutdown": true
+    },
+    "migration_observer": {
+      "complete": true,
+      "state": "complete",
+      "exit": 0,
+      "forced_stop": false,
+      "interval_seconds": 5,
+      "slow_threshold_ms": 5000,
+      "polls": 340,
+      "missed_polls": 0,
+      "valid_rows": 0,
+      "invalid_rows": 0,
+      "groups": []
+    },
+    "required_reports_present": {
+      "history.json": true,
+      "long-quick.json": true,
+      "source-video-browser.json": true,
+      "source-video-transport.json": true
+    },
+    "source_video_report_invariants": true,
+    "service_sha256": "d47b11d64f7a2f40300be01735060f8475c3dbd457dae2b50baf092e41b36ae4",
+    "order_reconcile_sha256": "ed2d6942960493ce984669ef11e8aca568226e58fbaad22d14af74bdac7ed288",
+    "pinned_039_fixture_matches": true,
+    "previous_format_fixture_sha256": "16c44bf284c015ef6fbf9db75d824494ade794aab227a95e001a199e4839c843"
+  },
+  "artifact_comparison": {
+    "standard_service": "identical",
+    "check_main_sha256": "d47b11d64f7a2f40300be01735060f8475c3dbd457dae2b50baf092e41b36ae4",
+    "fresh_service_sha256": "d47b11d64f7a2f40300be01735060f8475c3dbd457dae2b50baf092e41b36ae4",
+    "check_binary_metadata": {
+      "go": "go1.26.11",
+      "server_main_package": true,
+      "-trimpath": "true",
+      "CGO_ENABLED": "0",
+      "GOARCH": "amd64",
+      "GOOS": "windows",
+      "GOAMD64": "v1",
+      "vcs": "git",
+      "vcs.revision": "9c041a42ac633d0d4e673da023ed8cb8c9ed2794",
+      "vcs.modified": "true"
+    },
+    "fresh_binary_metadata": {
+      "go": "go1.26.11",
+      "server_main_package": true,
+      "-trimpath": "true",
+      "CGO_ENABLED": "0",
+      "GOARCH": "amd64",
+      "GOOS": "windows",
+      "GOAMD64": "v1",
+      "vcs": "git",
+      "vcs.revision": "9c041a42ac633d0d4e673da023ed8cb8c9ed2794",
+      "vcs.modified": "true"
+    },
+    "observed_different_build_fields": [],
+    "frontend_dist_hash_comparison": "not_recorded"
+  },
+  "main_check_id": "main-check-20261125-095042",
+  "fresh_run_id": "r20261125-092117-91428ce52017f0c8",
+  "completed_on": "2026-11-25",
+  "service_sha256": "d47b11d64f7a2f40300be01735060f8475c3dbd457dae2b50baf092e41b36ae4",
   "integrated_source_ledgers": [
     249,
     252,
-    253
+    253,
+    254,
+    256,
+    257,
+    258,
+    259
   ],
-  "previous_report": "format-040-regression-first.json",
+  "previous_report": "format-040-regression-through253.json",
+  "interrupted_report": "format-040-regression-interrupted.json",
+  "interrupted_attempt": {
+    "run_id": "r20261124-160436-02bb3f559d1bd87f",
+    "top_level": {
+      "pass": 646,
+      "skip": 29,
+      "fail": 1
+    },
+    "status": "interrupted_before_suite_exit",
+    "failure": {
+      "name": "TestPostgresRunReplayPoolModeratedSnapshot",
+      "elapsed_seconds": 14.06,
+      "source": "internal/studio/run_replay_pool_test.go:331",
+      "phase": "outboxStore initialization; failed SASL auth, timeout, context deadline exceeded",
+      "snapshot_read_reached": false
+    },
+    "isolated_retests": [
+      {
+        "case": "replay",
+        "source": "original",
+        "go_exit": 0,
+        "go_command_seconds": 55.984,
+        "passed": [
+          "TestPostgresRunReplayPoolModeratedSnapshot"
+        ],
+        "run_id": "run-20261124-163647-5d3f4897"
+      },
+      {
+        "case": "cancel",
+        "source": "original",
+        "go_exit": 0,
+        "go_command_seconds": 15.781,
+        "passed": [
+          "TestPostgresWorkflowCancelQueuedUnknownAndKnownMedia",
+          "TestPostgresWorkflowCancelQueuedUnknownAndKnownMedia/submit",
+          "TestPostgresWorkflowCancelQueuedUnknownAndKnownMedia/query"
+        ],
+        "run_id": "run-20261124-163647-5d3f4897"
+      },
+      {
+        "case": "replay",
+        "source": "without_unused_admin_connection",
+        "go_exit": 0,
+        "go_command_seconds": 19.375,
+        "passed": [
+          "TestPostgresRunReplayPoolModeratedSnapshot"
+        ],
+        "run_id": "run-20261124-163828-aa6dbaa5"
+      }
+    ]
+  },
+  "first_database_attempt_diagnostics": {
+    "migration_active_at_cancel": 10,
+    "migration_file_sha256": "c3a1be19d367ace3e293f63d6dbb31a948f3d41eb8f70ed0b0f274da5db0aa2d",
+    "matched_normalized_complete_sql": true,
+    "startup_transaction_timeout_seconds": 60,
+    "individual_statement_duration_known": false,
+    "wait_cause_known": false
+  },
+  "paused_attempt": {
+    "run_id": "r20261124-163905-468430eb4064d37f",
+    "status": "paused_by_user",
+    "controller_exit": 1,
+    "reason": "regression stop requested",
+    "top_level": {
+      "pass": 385,
+      "skip": 22,
+      "fail": 0
+    },
+    "full_npm_exit": null,
+    "full_runner_exit": null,
+    "pg_clean_shutdown": true,
+    "object_clean_shutdown": true,
+    "receipt_sha256": {
+      "cumulative/all-packages.log": "e85969258eecd3426894555b9d28bd9065e0aa1e8912632b004f4f038dd60870",
+      "result.json": "52d17c4b120375ff04e809f2e61bf8df904e6e763df0d1407ce08d95e40ca6b0",
+      "offline.json": "bcdbdc5486d994bbf884594eb4c038782b5455eb8725ef89f82f8dcc5adfd780",
+      "object-offline.json": "e05323def6cedd698b7d9f7ce229b728ce7099792d40d24658bdbded2309a0c7"
+    }
+  },
   "local_build_and_smokes": {
     "go": "1.26.11",
     "frontend_tests": 609,
@@ -14,39 +389,48 @@
     "commands": {
       "check": {
         "exit": 0,
-        "seconds": 133.2
+        "seconds": 172.5,
+        "log_present": true
       },
       "smoke": {
         "exit": 0,
-        "seconds": 11.2
+        "seconds": 11.59,
+        "log_present": true
       },
       "smoke:runtime": {
         "exit": 0,
-        "seconds": 2.64
+        "seconds": 3.69,
+        "log_present": true
       },
       "smoke:catalog": {
         "exit": 0,
-        "seconds": 11.08
+        "seconds": 4.86,
+        "log_present": true
       },
       "smoke:references": {
         "exit": 0,
-        "seconds": 8.99
+        "seconds": 9.41,
+        "log_present": true
       },
       "smoke:library": {
         "exit": 0,
-        "seconds": 8.95
+        "seconds": 9.67,
+        "log_present": true
       },
       "smoke:conversations": {
         "exit": 0,
-        "seconds": 2.92
+        "seconds": 4.47,
+        "log_present": true
       },
       "check:changes": {
         "exit": 0,
-        "seconds": 0.78
+        "seconds": 1.5,
+        "log_present": true
       },
       "check:todo": {
         "exit": 0,
-        "seconds": 0.59
+        "seconds": 0.56,
+        "log_present": true
       }
     },
     "first_frontend_attempt": {
@@ -61,14 +445,12 @@
     }
   },
   "database_regression": {
-    "status": "pending_full_retry"
-  },
-  "first_database_attempt_diagnostics": {
-    "migration_active_at_cancel": 10,
-    "migration_file_sha256": "c3a1be19d367ace3e293f63d6dbb31a948f3d41eb8f70ed0b0f274da5db0aa2d",
-    "matched_normalized_complete_sql": true,
-    "startup_transaction_timeout_seconds": 60,
-    "individual_statement_duration_known": false,
-    "wait_cause_known": false
+    "status": "passed",
+    "top_level": {
+      "pass": 789,
+      "skip": 31,
+      "fail": 0
+    },
+    "studio_seconds": 1601.565
   }
 }

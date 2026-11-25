@@ -187,6 +187,8 @@ db/migrations/         内嵌数据库SQL脚本
 
 视频工作室支持从项目素材库选择已交付 MP4，分别报价编辑或延长。工作台按原键查询受理不明的任务。本机 Chromium 已验证响应正文截断与无响应头重送两种情况。[配置与验收范围](docs/wiki/decisions/0039-source-video.md)
 
+- [262 · 原 GET 进度保存的 Outbox 分段耗时与事务归属](docs/changes/2026-11-25-262-outbox-progress-save-timing.md)
+- [260 · 原查询保存时的工作区计数成本](docs/changes/2026-11-25-260-media-workspace-count-experiment.md)
 - [259 · 定速媒体受理与完整生命周期](docs/changes/2026-11-24-259-openloop-media-lifecycle.md)
 - [258 · 受管聊天 1,024 路并发对照](docs/changes/2026-11-24-258-managed-chat-1024.md)
 - [257 · 正常受理任务的多轮原查询](docs/changes/2026-11-24-257-recurring-original-query.md)
@@ -195,7 +197,7 @@ db/migrations/         内嵌数据库SQL脚本
 - [254 · 六万项正常媒体受理及原库重开](docs/changes/2026-11-24-254-normal-admission-60000.md)（本机通过，重开后零新增生成提交）
 - [253 · 受管模型全执行位联合验收](docs/changes/2026-11-23-253-managed-chat-512.md)
 - [252 · 准入配额与原库恢复扫描](docs/changes/2026-11-23-252-admission-thresholds-and-recovery.md)
-- [251 · 040 同源程序累计回归](docs/changes/2026-11-23-251-format-040-regression.md)（主树 609 项前端与六组冒烟通过）
+- [251 · 040 同源程序累计回归](docs/changes/2026-11-23-251-format-040-regression.md)（本机 040 完整实库 789 项通过、31 项跳过、0 项失败，六组同制品冒烟通过）
 - [250 · 原查询结果合批的实库对照](docs/changes/2026-11-23-250-known-query-save-batch.md)
 - [249 · 原任务查询的并发登记](docs/changes/2026-11-23-249-large-query-entry-pin.md)
 - [248 · 原任务查询的分段耗时](docs/changes/2026-11-23-248-query-stage-timing.md)

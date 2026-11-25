@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_on": "2026-11-24",
+  "updated_on": "2026-11-25",
   "modules": [
     {
       "id": "H01",
@@ -2629,7 +2629,7 @@
         },
         {
           "path": "docs/changes/2026-11-23-251-format-040-regression.md",
-          "note": "040 同源程序累计回归"
+          "note": "040 同源程序累计回归。11 月 24 日暂停时已通过 385 项，22 项跳过，数据库与对象存储干净停机。11 月 25 日从新库重验。"
         },
         {
           "path": "docs/changes/2026-11-24-254-normal-admission-60000.md",
@@ -2637,7 +2637,7 @@
         },
         {
           "path": "docs/wiki/assets/format-040-regression.json",
-          "note": "040 主树累计复验、原视频测试时钟及六组同制品冒烟的结果"
+          "note": "本机 040 完整 `npm run test:db` 退出 0，顶层 789 项通过、31 项跳过、0 项失败，核心包耗时 1601.565 秒。受审核回放快照与工作流取消的 submit、query 均在本次全量中通过。039 原库升级到 040、原视频浏览器编辑与延长、断线核对和版本化对象恢复也已通过。"
         },
         {
           "path": "docs/changes/2026-11-24-255-original-query-page.md",
@@ -2681,23 +2681,43 @@
         },
         {
           "path": "docs/wiki/assets/format-040-regression-interrupted.json",
-          "note": "040 全量复跑中断前的测试数、辅助连接认证超时、Windows 重启与原进程核对。"
+          "note": "Windows 重启前 646 项通过、29 项跳过、1 项失败，两项原用例的三次定向复验均通过。"
+        },
+        {
+          "path": "docs/wiki/assets/format-040-regression-through253.json",
+          "note": "截至 253 的前端测试时钟、609 项测试和六组冒烟，保留当时的实库状态。"
+        },
+        {
+          "path": "docs/changes/2026-11-25-260-media-workspace-count-experiment.md",
+          "note": "原查询保存时的工作区计数成本"
+        },
+        {
+          "path": "docs/wiki/assets/media-workspace-count-260.json",
+          "note": "24 个原句柄按 A、B、B、A 实测 9.597、9.535、9.597、9.534 次原 GET/秒。512 个原句柄按 A、B、B、A 实测 100.293、111.188、83.632、92.994 次原 GET/秒。逐事务 WAL 和无物理探针计时分别记录。"
+        },
+        {
+          "path": "docs/changes/2026-11-25-262-outbox-progress-save-timing.md",
+          "note": "原 GET 进度保存的 Outbox 分段耗时与事务归属"
+        },
+        {
+          "path": "docs/wiki/assets/media-query-outbox-262-040.json",
+          "note": "两次分段各核对 69 笔 RUNNING 保存。Outbox 占完整事务累计耗时的 15.94%、17.06%，去重后四步占 12.55%、13.65%。独立物理观测轮的 69 笔任务行版本与对应事件新行具有相同的 xmin。"
         }
       ],
       "ledgers": [
         "docs/changes/2026-11-22-161-owned-resource-sampling.md",
         "docs/changes/2026-11-22-171-workbench-frontend-benchmark.md",
         "docs/changes/2026-11-22-172-mixed-resource-observation.md",
-        "docs/changes/2026-11-22-181-library-virtual-grid.md",
         "docs/changes/2026-11-22-180-private-library-browser-resources.md",
+        "docs/changes/2026-11-22-181-library-virtual-grid.md",
         "docs/changes/2026-11-22-183-durable-long-reply.md",
         "docs/changes/2026-11-22-184-chat-run-timeout.md",
         "docs/changes/2026-11-22-185-long-reply-gateway-and-observation.md",
         "docs/changes/2026-11-22-186-long-reply-browser.md",
-        "docs/changes/2026-11-22-190-frontend-acceptance-coverage.md",
         "docs/changes/2026-11-22-187-variable-height-chat-timeline.md",
         "docs/changes/2026-11-22-188-conversation-message-pages.md",
         "docs/changes/2026-11-22-189-persistent-conversation-history-browser.md",
+        "docs/changes/2026-11-22-190-frontend-acceptance-coverage.md",
         "docs/changes/2026-11-22-191-chat-message-body-cache.md",
         "docs/changes/2026-11-22-192-durable-conversation-ancestry.md",
         "docs/changes/2026-11-22-193-long-history-format-and-restore.md",
@@ -2706,8 +2726,8 @@
         "docs/changes/2026-11-22-196-free-canvas-workbench.md",
         "docs/changes/2026-11-22-197-canvas-pan-browser.md",
         "docs/changes/2026-11-22-198-project-canvas-integration.md",
-        "docs/changes/2026-11-22-200-workbench-network-browser.md",
         "docs/changes/2026-11-22-199-startup-javascript-compression.md",
+        "docs/changes/2026-11-22-200-workbench-network-browser.md",
         "docs/changes/2026-11-22-201-active-stream-capacity.md",
         "docs/changes/2026-11-22-202-sharded-stream-journal-poc.md",
         "docs/changes/2026-11-22-203-pr-bundle-diff.md",
@@ -2740,15 +2760,17 @@
         "docs/changes/2026-11-23-248-query-stage-timing.md",
         "docs/changes/2026-11-23-249-large-query-entry-pin.md",
         "docs/changes/2026-11-23-250-known-query-save-batch.md",
+        "docs/changes/2026-11-23-251-format-040-regression.md",
         "docs/changes/2026-11-23-252-admission-thresholds-and-recovery.md",
         "docs/changes/2026-11-23-253-managed-chat-512.md",
-        "docs/changes/2026-11-23-251-format-040-regression.md",
         "docs/changes/2026-11-24-254-normal-admission-60000.md",
         "docs/changes/2026-11-24-255-original-query-page.md",
         "docs/changes/2026-11-24-256-mixed-service-soak.md",
         "docs/changes/2026-11-24-257-recurring-original-query.md",
         "docs/changes/2026-11-24-258-managed-chat-1024.md",
-        "docs/changes/2026-11-24-259-openloop-media-lifecycle.md"
+        "docs/changes/2026-11-24-259-openloop-media-lifecycle.md",
+        "docs/changes/2026-11-25-260-media-workspace-count-experiment.md",
+        "docs/changes/2026-11-25-262-outbox-progress-save-timing.md"
       ],
       "completed_on": null,
       "blocker": null
@@ -3093,11 +3115,19 @@
         },
         {
           "path": "docs/changes/2026-11-23-251-format-040-regression.md",
-          "note": "040 同源程序累计回归"
+          "note": "040 同源程序累计回归。11 月 24 日暂停时已通过 385 项，22 项跳过，数据库与对象存储干净停机。11 月 25 日从新库重验。"
         },
         {
           "path": "docs/wiki/assets/format-040-regression.json",
-          "note": "040 主树累计复验、原视频测试时钟及六组同制品冒烟的结果"
+          "note": "本机 040 完整 `npm run test:db` 退出 0，顶层 789 项通过、31 项跳过、0 项失败，核心包耗时 1601.565 秒。受审核回放快照与工作流取消的 submit、query 均在本次全量中通过。039 原库升级到 040、原视频浏览器编辑与延长、断线核对和版本化对象恢复也已通过。"
+        },
+        {
+          "path": "docs/wiki/assets/format-040-regression-through253.json",
+          "note": "截至 253 的前端测试时钟、609 项测试和六组冒烟，保留当时的实库状态。"
+        },
+        {
+          "path": "docs/wiki/assets/format-040-regression-interrupted.json",
+          "note": "Windows 重启前 646 项通过、29 项跳过、1 项失败，两项原用例的三次定向复验均通过。"
         }
       ],
       "ledgers": [

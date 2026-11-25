@@ -1,0 +1,708 @@
+{
+  "batch": "262",
+  "purpose": "running_progress_outbox_transaction_profile",
+  "run_id": "run-20261125-102102-500e3fef",
+  "platform": "Windows/amd64",
+  "go": "1.26.11",
+  "postgres": "16.14",
+  "format": "040",
+  "gomaxprocs": 14,
+  "query_workers": 128,
+  "lease_connections": 4,
+  "fsync": true,
+  "synchronous_commit": true,
+  "full_page_writes": true,
+  "per_wave": {
+    "workspaces": 2,
+    "known_handles": 24,
+    "original_posts": 25,
+    "original_gets": 72,
+    "rounds": 3,
+    "fixture_service_ms": 200,
+    "running": 21,
+    "failed": 3,
+    "unknown_without_handle": 1
+  },
+  "main_source_sha256": "65451f388783835bf2dd8338b684f33e1e61b66117abdcf916f303ba6f32ab00",
+  "review_sha256": "792b12d5309e4cf6e8fb7f43ec62333b1e323ad1324979d3b3141b922a77d077",
+  "patches": {
+    "base": {
+      "filename": "media-query-outbox-262-040-base.patch.gz",
+      "uncompressed_sha256": "cb2cb85c0874e321611fee4be3462416e183598168ab097d8d3af7c1b54e0790",
+      "gzip_sha256": "352e59df9a883aba2130b63b10657fdd9f66ec6cf08749676072655a05a75f83"
+    },
+    "profile": {
+      "filename": "media-query-outbox-262-040-profile.patch.gz",
+      "uncompressed_sha256": "521d5970f7492651562e815c2c394516b873718870920b62b0607e01cc2202e9",
+      "gzip_sha256": "6425404a84fe90f7716cdf67cc3e17cdfdc5950bf5f16f01691ed1a70ce65d2b"
+    }
+  },
+  "clean_shutdown": true,
+  "original_owners_exited": true,
+  "all_wave_descendants_exited": true,
+  "waves": [
+    {
+      "order": 1,
+      "mode": "clean",
+      "report_sha256": "bb06bde582da4097b184e7f254bb5095c440c7180ac6474d69e016a28a39f789",
+      "go_exit": 0,
+      "go_seconds": 24.296,
+      "query_window_ms": 7678.5494,
+      "gets_per_second": 9.376771086476309,
+      "committed_running_saves": 69,
+      "saves_per_scope": [
+        33,
+        36
+      ]
+    },
+    {
+      "order": 2,
+      "mode": "profile",
+      "report_sha256": "a4286a7759ddb5fae354cd15e87649cb9b0bebc4e350f6ae3f09ba8e77c4043d",
+      "go_exit": 0,
+      "go_seconds": 25.359,
+      "query_window_ms": 7452.6977,
+      "gets_per_second": 9.660931235678593,
+      "committed_running_saves": 69,
+      "saves_per_scope": [
+        33,
+        36
+      ],
+      "scope_summaries": {
+        "scope_0": {
+          "saves": 33,
+          "phases": {
+            "begin": {
+              "n": 33,
+              "sum_us": 3299.5,
+              "p50_us": 0,
+              "p95_us": 550.8,
+              "zero_us_count": 27
+            },
+            "business_before_outbox": {
+              "n": 33,
+              "sum_us": 171506.7,
+              "p50_us": 5308.6,
+              "p95_us": 6862.7,
+              "zero_us_count": 0
+            },
+            "pending_row_lock": {
+              "n": 33,
+              "sum_us": 4498,
+              "p50_us": 0,
+              "p95_us": 629.8,
+              "zero_us_count": 25
+            },
+            "deduplicate_key": {
+              "n": 33,
+              "sum_us": 2966.9,
+              "p50_us": 0,
+              "p95_us": 628.7,
+              "zero_us_count": 28
+            },
+            "ensure_project_head": {
+              "n": 33,
+              "sum_us": 4318.9,
+              "p50_us": 0,
+              "p95_us": 762.1,
+              "zero_us_count": 26
+            },
+            "allocate_project_seq": {
+              "n": 33,
+              "sum_us": 6735,
+              "p50_us": 0,
+              "p95_us": 607.1,
+              "zero_us_count": 21
+            },
+            "insert_event": {
+              "n": 33,
+              "sum_us": 8192.5,
+              "p50_us": 0,
+              "p95_us": 621.6,
+              "zero_us_count": 19
+            },
+            "increment_pending": {
+              "n": 33,
+              "sum_us": 7109.4,
+              "p50_us": 0,
+              "p95_us": 711.2,
+              "zero_us_count": 21
+            },
+            "before_commit_gap": {
+              "n": 33,
+              "sum_us": 0,
+              "p50_us": 0,
+              "p95_us": 0,
+              "zero_us_count": 33
+            },
+            "commit_ack": {
+              "n": 33,
+              "sum_us": 13008.6,
+              "p50_us": 519.8,
+              "p95_us": 716.3,
+              "zero_us_count": 11
+            },
+            "outbox_write_tail": {
+              "n": 33,
+              "sum_us": 26355.8,
+              "p50_us": 586,
+              "p95_us": 1452.5,
+              "zero_us_count": 1
+            },
+            "outbox_total": {
+              "n": 33,
+              "sum_us": 33820.7,
+              "p50_us": 1103.5,
+              "p95_us": 1519.5,
+              "zero_us_count": 0
+            },
+            "full_transaction": {
+              "n": 33,
+              "sum_us": 221635.5,
+              "p50_us": 6725.9,
+              "p95_us": 8651,
+              "zero_us_count": 0
+            }
+          },
+          "outbox_share_of_transaction": 0.15259604169909602,
+          "outbox_write_tail_share_of_transaction": 0.11891506550169084
+        },
+        "scope_1": {
+          "saves": 36,
+          "phases": {
+            "begin": {
+              "n": 36,
+              "sum_us": 4326,
+              "p50_us": 0,
+              "p95_us": 651.4,
+              "zero_us_count": 29
+            },
+            "business_before_outbox": {
+              "n": 36,
+              "sum_us": 182580.8,
+              "p50_us": 4970.7,
+              "p95_us": 6971.5,
+              "zero_us_count": 0
+            },
+            "pending_row_lock": {
+              "n": 36,
+              "sum_us": 3300.4,
+              "p50_us": 0,
+              "p95_us": 567.3,
+              "zero_us_count": 30
+            },
+            "deduplicate_key": {
+              "n": 36,
+              "sum_us": 4912.6,
+              "p50_us": 0,
+              "p95_us": 623.4,
+              "zero_us_count": 28
+            },
+            "ensure_project_head": {
+              "n": 36,
+              "sum_us": 6026.7,
+              "p50_us": 0,
+              "p95_us": 750.5,
+              "zero_us_count": 26
+            },
+            "allocate_project_seq": {
+              "n": 36,
+              "sum_us": 6628.4,
+              "p50_us": 0,
+              "p95_us": 676,
+              "zero_us_count": 25
+            },
+            "insert_event": {
+              "n": 36,
+              "sum_us": 7793.8,
+              "p50_us": 0,
+              "p95_us": 630,
+              "zero_us_count": 23
+            },
+            "increment_pending": {
+              "n": 36,
+              "sum_us": 11257.1,
+              "p50_us": 518,
+              "p95_us": 798.3,
+              "zero_us_count": 17
+            },
+            "before_commit_gap": {
+              "n": 36,
+              "sum_us": 0,
+              "p50_us": 0,
+              "p95_us": 0,
+              "zero_us_count": 36
+            },
+            "commit_ack": {
+              "n": 36,
+              "sum_us": 14172.5,
+              "p50_us": 520.5,
+              "p95_us": 639.6,
+              "zero_us_count": 11
+            },
+            "outbox_write_tail": {
+              "n": 36,
+              "sum_us": 31706,
+              "p50_us": 741.5,
+              "p95_us": 1474.3,
+              "zero_us_count": 0
+            },
+            "outbox_total": {
+              "n": 36,
+              "sum_us": 39919,
+              "p50_us": 1107.8,
+              "p95_us": 1670.9,
+              "zero_us_count": 0
+            },
+            "full_transaction": {
+              "n": 36,
+              "sum_us": 240998.3,
+              "p50_us": 6639.2,
+              "p95_us": 8735.1,
+              "zero_us_count": 0
+            }
+          },
+          "outbox_share_of_transaction": 0.16564017256553262,
+          "outbox_write_tail_share_of_transaction": 0.13156109399941826
+        },
+        "all": {
+          "saves": 69,
+          "phases": {
+            "begin": {
+              "n": 69,
+              "sum_us": 7625.5,
+              "p50_us": 0,
+              "p95_us": 596.5,
+              "zero_us_count": 56
+            },
+            "business_before_outbox": {
+              "n": 69,
+              "sum_us": 354087.5,
+              "p50_us": 5051.8,
+              "p95_us": 6862.7,
+              "zero_us_count": 0
+            },
+            "pending_row_lock": {
+              "n": 69,
+              "sum_us": 7798.4,
+              "p50_us": 0,
+              "p95_us": 604,
+              "zero_us_count": 55
+            },
+            "deduplicate_key": {
+              "n": 69,
+              "sum_us": 7879.5,
+              "p50_us": 0,
+              "p95_us": 623.4,
+              "zero_us_count": 56
+            },
+            "ensure_project_head": {
+              "n": 69,
+              "sum_us": 10345.6,
+              "p50_us": 0,
+              "p95_us": 750.5,
+              "zero_us_count": 52
+            },
+            "allocate_project_seq": {
+              "n": 69,
+              "sum_us": 13363.4,
+              "p50_us": 0,
+              "p95_us": 647.4,
+              "zero_us_count": 46
+            },
+            "insert_event": {
+              "n": 69,
+              "sum_us": 15986.3,
+              "p50_us": 0,
+              "p95_us": 627.6,
+              "zero_us_count": 42
+            },
+            "increment_pending": {
+              "n": 69,
+              "sum_us": 18366.5,
+              "p50_us": 0,
+              "p95_us": 711.2,
+              "zero_us_count": 38
+            },
+            "before_commit_gap": {
+              "n": 69,
+              "sum_us": 0,
+              "p50_us": 0,
+              "p95_us": 0,
+              "zero_us_count": 69
+            },
+            "commit_ack": {
+              "n": 69,
+              "sum_us": 27181.1,
+              "p50_us": 520.5,
+              "p95_us": 683.4,
+              "zero_us_count": 22
+            },
+            "outbox_write_tail": {
+              "n": 69,
+              "sum_us": 58061.8,
+              "p50_us": 607.1,
+              "p95_us": 1452.5,
+              "zero_us_count": 1
+            },
+            "outbox_total": {
+              "n": 69,
+              "sum_us": 73739.7,
+              "p50_us": 1105.4,
+              "p95_us": 1563.5,
+              "zero_us_count": 0
+            },
+            "full_transaction": {
+              "n": 69,
+              "sum_us": 462633.8,
+              "p50_us": 6673.1,
+              "p95_us": 8651,
+              "zero_us_count": 0
+            }
+          },
+          "outbox_share_of_transaction": 0.15939107778117378,
+          "outbox_write_tail_share_of_transaction": 0.12550271942949262
+        }
+      }
+    },
+    {
+      "order": 3,
+      "mode": "physical",
+      "report_sha256": "5dfa57cf14358a9fc464e3991b53c4ff9254af24d86a6de362625b159deeef01",
+      "go_exit": 0,
+      "go_seconds": 25.437,
+      "query_window_ms": 11079.0186,
+      "gets_per_second": 6.498770567999588,
+      "committed_running_saves": 69,
+      "saves_per_scope": [
+        33,
+        36
+      ],
+      "same_task_and_event_xmin_matches": 69
+    },
+    {
+      "order": 4,
+      "mode": "profile",
+      "report_sha256": "5bd677a82af78426aa4b7feb22670e078cc8f20add9f10744af25f6ee2addf0e",
+      "go_exit": 0,
+      "go_seconds": 26.969,
+      "query_window_ms": 7703.8542,
+      "gets_per_second": 9.345971267213235,
+      "committed_running_saves": 69,
+      "saves_per_scope": [
+        33,
+        36
+      ],
+      "scope_summaries": {
+        "scope_0": {
+          "saves": 33,
+          "phases": {
+            "begin": {
+              "n": 33,
+              "sum_us": 4782.6,
+              "p50_us": 0,
+              "p95_us": 530.1,
+              "zero_us_count": 24
+            },
+            "business_before_outbox": {
+              "n": 33,
+              "sum_us": 192459.1,
+              "p50_us": 5801.2,
+              "p95_us": 8750.1,
+              "zero_us_count": 0
+            },
+            "pending_row_lock": {
+              "n": 33,
+              "sum_us": 2723.3,
+              "p50_us": 0,
+              "p95_us": 555.7,
+              "zero_us_count": 28
+            },
+            "deduplicate_key": {
+              "n": 33,
+              "sum_us": 4802.9,
+              "p50_us": 0,
+              "p95_us": 571,
+              "zero_us_count": 27
+            },
+            "ensure_project_head": {
+              "n": 33,
+              "sum_us": 9806.7,
+              "p50_us": 0,
+              "p95_us": 787.7,
+              "zero_us_count": 18
+            },
+            "allocate_project_seq": {
+              "n": 33,
+              "sum_us": 4434.7,
+              "p50_us": 0,
+              "p95_us": 597.4,
+              "zero_us_count": 25
+            },
+            "insert_event": {
+              "n": 33,
+              "sum_us": 10363.7,
+              "p50_us": 515.7,
+              "p95_us": 707.4,
+              "zero_us_count": 15
+            },
+            "increment_pending": {
+              "n": 33,
+              "sum_us": 10705.4,
+              "p50_us": 506.4,
+              "p95_us": 729.7,
+              "zero_us_count": 15
+            },
+            "before_commit_gap": {
+              "n": 33,
+              "sum_us": 0,
+              "p50_us": 0,
+              "p95_us": 0,
+              "zero_us_count": 33
+            },
+            "commit_ack": {
+              "n": 33,
+              "sum_us": 12479.2,
+              "p50_us": 515.4,
+              "p95_us": 704.9,
+              "zero_us_count": 11
+            },
+            "outbox_write_tail": {
+              "n": 33,
+              "sum_us": 35310.5,
+              "p50_us": 1066.1,
+              "p95_us": 1699.7,
+              "zero_us_count": 0
+            },
+            "outbox_total": {
+              "n": 33,
+              "sum_us": 42836.7,
+              "p50_us": 1163.1,
+              "p95_us": 2607.7,
+              "zero_us_count": 0
+            },
+            "full_transaction": {
+              "n": 33,
+              "sum_us": 252557.6,
+              "p50_us": 7733.6,
+              "p95_us": 10858.4,
+              "zero_us_count": 0
+            }
+          },
+          "outbox_share_of_transaction": 0.1696116054317906,
+          "outbox_write_tail_share_of_transaction": 0.13981167068423203
+        },
+        "scope_1": {
+          "saves": 36,
+          "phases": {
+            "begin": {
+              "n": 36,
+              "sum_us": 2815.3,
+              "p50_us": 0,
+              "p95_us": 766.4,
+              "zero_us_count": 32
+            },
+            "business_before_outbox": {
+              "n": 36,
+              "sum_us": 203659.5,
+              "p50_us": 5383.1,
+              "p95_us": 8507.9,
+              "zero_us_count": 0
+            },
+            "pending_row_lock": {
+              "n": 36,
+              "sum_us": 2985.5,
+              "p50_us": 0,
+              "p95_us": 527.8,
+              "zero_us_count": 30
+            },
+            "deduplicate_key": {
+              "n": 36,
+              "sum_us": 7078.9,
+              "p50_us": 0,
+              "p95_us": 587.7,
+              "zero_us_count": 23
+            },
+            "ensure_project_head": {
+              "n": 36,
+              "sum_us": 7670.6,
+              "p50_us": 0,
+              "p95_us": 603.7,
+              "zero_us_count": 22
+            },
+            "allocate_project_seq": {
+              "n": 36,
+              "sum_us": 6336.9,
+              "p50_us": 0,
+              "p95_us": 1008.2,
+              "zero_us_count": 26
+            },
+            "insert_event": {
+              "n": 36,
+              "sum_us": 8560.1,
+              "p50_us": 0,
+              "p95_us": 637,
+              "zero_us_count": 21
+            },
+            "increment_pending": {
+              "n": 36,
+              "sum_us": 12665.4,
+              "p50_us": 508.5,
+              "p95_us": 658.6,
+              "zero_us_count": 13
+            },
+            "before_commit_gap": {
+              "n": 36,
+              "sum_us": 0,
+              "p50_us": 0,
+              "p95_us": 0,
+              "zero_us_count": 36
+            },
+            "commit_ack": {
+              "n": 36,
+              "sum_us": 12392.6,
+              "p50_us": 514,
+              "p95_us": 801.8,
+              "zero_us_count": 15
+            },
+            "outbox_write_tail": {
+              "n": 36,
+              "sum_us": 35233,
+              "p50_us": 1074.2,
+              "p95_us": 1597.5,
+              "zero_us_count": 1
+            },
+            "outbox_total": {
+              "n": 36,
+              "sum_us": 45297.4,
+              "p50_us": 1147,
+              "p95_us": 1778.4,
+              "zero_us_count": 0
+            },
+            "full_transaction": {
+              "n": 36,
+              "sum_us": 264164.8,
+              "p50_us": 7416.4,
+              "p95_us": 10577.2,
+              "zero_us_count": 0
+            }
+          },
+          "outbox_share_of_transaction": 0.1714740192485903,
+          "outbox_write_tail_share_of_transaction": 0.13337507495321102
+        },
+        "all": {
+          "saves": 69,
+          "phases": {
+            "begin": {
+              "n": 69,
+              "sum_us": 7597.9,
+              "p50_us": 0,
+              "p95_us": 658.8,
+              "zero_us_count": 56
+            },
+            "business_before_outbox": {
+              "n": 69,
+              "sum_us": 396118.6,
+              "p50_us": 5646.5,
+              "p95_us": 8584.6,
+              "zero_us_count": 0
+            },
+            "pending_row_lock": {
+              "n": 69,
+              "sum_us": 5708.8,
+              "p50_us": 0,
+              "p95_us": 537.1,
+              "zero_us_count": 58
+            },
+            "deduplicate_key": {
+              "n": 69,
+              "sum_us": 11881.8,
+              "p50_us": 0,
+              "p95_us": 571,
+              "zero_us_count": 50
+            },
+            "ensure_project_head": {
+              "n": 69,
+              "sum_us": 17477.3,
+              "p50_us": 0,
+              "p95_us": 622.9,
+              "zero_us_count": 40
+            },
+            "allocate_project_seq": {
+              "n": 69,
+              "sum_us": 10771.6,
+              "p50_us": 0,
+              "p95_us": 612.7,
+              "zero_us_count": 51
+            },
+            "insert_event": {
+              "n": 69,
+              "sum_us": 18923.8,
+              "p50_us": 0,
+              "p95_us": 638.9,
+              "zero_us_count": 36
+            },
+            "increment_pending": {
+              "n": 69,
+              "sum_us": 23370.8,
+              "p50_us": 508.5,
+              "p95_us": 696,
+              "zero_us_count": 28
+            },
+            "before_commit_gap": {
+              "n": 69,
+              "sum_us": 0,
+              "p50_us": 0,
+              "p95_us": 0,
+              "zero_us_count": 69
+            },
+            "commit_ack": {
+              "n": 69,
+              "sum_us": 24871.8,
+              "p50_us": 515.4,
+              "p95_us": 714.8,
+              "zero_us_count": 26
+            },
+            "outbox_write_tail": {
+              "n": 69,
+              "sum_us": 70543.5,
+              "p50_us": 1068.2,
+              "p95_us": 1597.5,
+              "zero_us_count": 1
+            },
+            "outbox_total": {
+              "n": 69,
+              "sum_us": 88134.1,
+              "p50_us": 1163.1,
+              "p95_us": 1778.4,
+              "zero_us_count": 0
+            },
+            "full_transaction": {
+              "n": 69,
+              "sum_us": 516722.4,
+              "p50_us": 7454.3,
+              "p95_us": 10577.2,
+              "zero_us_count": 0
+            }
+          },
+          "outbox_share_of_transaction": 0.1705637301576243,
+          "outbox_write_tail_share_of_transaction": 0.1365210797906187
+        }
+      }
+    },
+    {
+      "order": 5,
+      "mode": "clean",
+      "report_sha256": "4e6dca9a77a5241c2b2316f157af635a58655e66ca4b152b4df09632312c1694",
+      "go_exit": 0,
+      "go_seconds": 26.953,
+      "query_window_ms": 7870.3067,
+      "gets_per_second": 9.148309302863636,
+      "committed_running_saves": 69,
+      "saves_per_scope": [
+        33,
+        36
+      ]
+    }
+  ]
+}

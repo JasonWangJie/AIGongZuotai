@@ -1,6 +1,6 @@
 # 开发 TODO · 导航
 
-更新时间：2026-11-24。已验收 **14/24 个批次**。进行中批次列出已登记验收子项的通过数，整批验收还需满足依赖和交付条件。
+更新时间：2026-11-25。已验收 **14/24 个批次**。进行中批次列出已登记验收子项的通过数，整批验收还需满足依赖和交付条件。
 
 完整范围、依赖、验收与证据统一在 [开发 TODO](docs/planning/TODO.md)。唯一状态源为 [docs/planning/tasks.json](docs/planning/tasks.json)；运行 `npm run todo:sync` 同步本入口与完整清单，不直接勾选。
 
@@ -21,7 +21,7 @@
 - [ ] **V14 审核、风控与运营控制台** — 进行中 · 已登记 13 项验收，通过 10 项 · [台账 227](docs/changes/2026-11-22-227-local-acceptance.md)
 - [ ] **V15 真实网关与产物交付验收** — 待外部条件
 - [x] **V16 分布式流与配额公平调度** — 已验收 · [台账 134](docs/changes/2026-11-22-134-recovery-barrier-observation.md)
-- [ ] **V17 性能与长稳态放行** — 进行中 · 已登记 27 项验收，通过 25 项 · [台账 259](docs/changes/2026-11-24-259-openloop-media-lifecycle.md)
+- [ ] **V17 性能与长稳态放行** — 进行中 · 已登记 27 项验收，通过 25 项 · [台账 262](docs/changes/2026-11-25-262-outbox-progress-save-timing.md)
 - [ ] **V18 部署、备份与灾备演练** — 进行中 · 已登记 6 项验收，通过 5 项 · [台账 227](docs/changes/2026-11-22-227-local-acceptance.md)
 - [x] **V19 可执行工作流与模板** — 已验收 · [台账 118](docs/changes/2026-11-21-118-workflow-attempt-integration.md)
 - [ ] **V20 视频编辑与分镜创作** — 待外部条件 · [台账 251](docs/changes/2026-11-23-251-format-040-regression.md)
